@@ -42,7 +42,11 @@ Every design decision serves that one principle.
 
 ## Status
 
-Pre-development. Next action: **sports-data vendor spike** (see `docs/VENDOR-SPIKE.md`) — validate reliable **closing-odds** coverage before writing any pick-engine code.
+**MVP feature-complete — ready for local testing.** Backend (11 modules), web app
+(marketplace, blog, auth, tipster dashboard, subscribe flow), and settlement
+worker are implemented. Runs fully offline with mock providers (no API keys).
+
+👉 **New here? See [`HOW_TO_RUN.md`](./HOW_TO_RUN.md) for step-by-step setup.**
 
 ---
 
