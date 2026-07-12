@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 interface LeaderboardRow {
@@ -29,6 +31,11 @@ export default async function Home() {
       <p style={{ color: '#9aa4b2', marginTop: 0 }}>
         Find the overlay. Beat the close. Verified edge, not screenshots.
       </p>
+      <p style={{ marginTop: '0.5rem' }}>
+        <Link href="/blog" style={{ color: '#6ea8fe' }}>
+          Read the strategy blog →
+        </Link>
+      </p>
 
       <h2 style={{ marginTop: '2.5rem' }}>Leaderboard</h2>
       {rows.length === 0 ? (
@@ -50,7 +57,14 @@ export default async function Home() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.tipsterId} style={{ borderTop: '1px solid #1c2430' }}>
-                <td style={{ padding: '0.5rem 0' }}>{r.tipsterId}</td>
+                <td style={{ padding: '0.5rem 0' }}>
+                  <Link
+                    href={`/tipsters/${r.tipsterId}`}
+                    style={{ color: '#6ea8fe' }}
+                  >
+                    {r.tipsterId}
+                  </Link>
+                </td>
                 <td>{r.yield.toFixed(1)}%</td>
                 <td>{(r.clvAvg * 100).toFixed(2)}%</td>
                 <td>{(r.winRate * 100).toFixed(0)}%</td>

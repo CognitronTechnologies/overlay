@@ -1,4 +1,7 @@
 export const metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  ),
   title: 'Overlay Bets — Verified tipster marketplace',
   description:
     'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — picks locked before kickoff.',

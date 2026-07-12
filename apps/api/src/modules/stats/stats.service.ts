@@ -39,7 +39,11 @@ export class StatsService {
    */
   leaderboard(minSampleSize = 50, limit = 100) {
     return this.prisma.tipsterStats.findMany({
-      where: { sampleSize: { gte: minSampleSize } },
+      where: {
+        sampleSize: { gte: minSampleSize },
+        // Hide suspended tipsters from the public marketplace/leaderboard.
+        tipster: { status: 'active' },
+      },
       orderBy: [{ yield: 'desc' }, { clvAvg: 'desc' }],
       take: limit,
     });

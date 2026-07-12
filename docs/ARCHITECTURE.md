@@ -73,7 +73,9 @@ Single deployable, internally split into modules with clear boundaries:
 | **subscriptions** | Stripe checkout, entitlement checks, gating |
 | **payouts** | Stripe Connect transfers, platform fee accounting |
 | **notifications** | Email + web push dispatch |
-| **admin** | Moderation, dispute/void oversight, ops tooling |
+| **articles** | SEO content (blog/strategy guides): public read + admin authoring |
+| **admin** | Moderation, tipster suspension, role management, audit-log, dashboard metrics |
+| **events** | Fixture ingestion from sports-data vendors |
 
 > Modular monolith (not microservices) for MVP: simpler ops, easy transactions, refactor to services later along module seams if needed.
 

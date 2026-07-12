@@ -27,13 +27,16 @@ export class SubscriptionsController {
     return this.subs.createCheckout(user.userId, dto.tipsterId);
   }
 
-  // Public endpoint; authenticity is verified via the provider signature.
+  // Public endpoint; authenticity is verified via the provider signature over
+  // the raw request bytes (populated by `rawBody: true` in main.ts).
   @Post('webhook')
   webhook(
-    @Req() req: { rawBody?: string; body?: unknown },
+    @Req() req: { rawBody?: Buffer; body?: unknown },
     @Headers('stripe-signature') signature = '',
   ) {
-    const raw = req.rawBody ?? JSON.stringify(req.body ?? {});
+    const raw = req.rawBody
+      ? req.rawBody.toString('utf8')
+      : JSON.stringify(req.body ?? {});
     return this.subs.applyWebhook(raw, signature);
   }
 

@@ -8,6 +8,8 @@ import { EventsModule } from './modules/events/events.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PayoutsModule } from './modules/payouts/payouts.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ArticlesModule } from './modules/articles/articles.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { SettlementModule } from './workers/settlement.module';
 
 /**
@@ -24,6 +26,8 @@ import { SettlementModule } from './workers/settlement.module';
     SubscriptionsModule,
     PayoutsModule,
     NotificationsModule,
+    ArticlesModule,
+    AdminModule,
     SettlementModule,
   ],
   providers: [PrismaService],
