@@ -61,3 +61,23 @@
 2. Single-source vs. dual-source settlement for trust?
 3. Which sports/leagues to launch with? (Soft, high-liquidity markets favor CLV signal.)
 4. Use Betfair Exchange closing price as the "true" line for CLV, or book closing odds?
+
+---
+
+## Decision (v1)
+
+We adopt a **multi-vendor, provider-agnostic** approach behind a single `SportsDataProvider` interface so no single vendor lock-in and we can cross-check for trust.
+
+| Role | Vendor | Why |
+|---|---|---|
+| **Pre-match + closing odds (primary)** | **The Odds API** | Multi-bookmaker aggregation; snapshot near kickoff gives the closing line for CLV; affordable tiers; historical odds for backfill |
+| **Fixtures + results/settlement (primary)** | **API-Football (API-Sports)** | Broad league coverage and reliable final scores for auto-grading; affordable |
+| **"True" closing line (CLV reference, stretch)** | **Betfair Exchange** | Exchange last-traded price at kickoff is the sharpest available "true" probability — the gold standard for CLV |
+
+**Settlement trust model:** dual-source cross-check — grade primarily from API-Football scores, and flag any disagreement with The Odds API scores for manual review. Start single-source, enable cross-check before public launch.
+
+**CLV source:** use The Odds API closing snapshot for v1 (simpler); upgrade top markets to Betfair Exchange last-traded price in v2.
+
+**Abstraction:** all of the above sit behind `apps/api/src/integrations/sports/SportsDataProvider`. A `MockSportsDataProvider` powers local dev and tests so the pipeline runs end-to-end before any paid key is provisioned.
+
+> ⚠️ Coverage/pricing figures still need live confirmation against each vendor's current docs before committing spend. The interface makes swapping or adding vendors cheap.

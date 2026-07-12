@@ -1,17 +1,31 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { PicksService } from './picks.service';
 import { CreatePickDto } from './dto/create-pick.dto';
+import { JwtAuthGuard } from '../../common/jwt-auth.guard';
+import { RolesGuard, Roles } from '../../common/roles.guard';
+import { CurrentUser } from '../../common/current-user.decorator';
+import type { AuthUser } from '../../common/crypto';
 
-// NOTE: auth guard + resolving the tipster from the session lands in Phase 0.
-// For now the tipsterId is a placeholder until auth is wired.
 @Controller('picks')
 export class PicksController {
   constructor(private readonly picks: PicksService) {}
 
   @Post()
-  create(@Body() dto: CreatePickDto) {
-    const tipsterId = 'placeholder-tipster';
-    return this.picks.createLockedPick(tipsterId, dto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('tipster')
+  create(@Body() dto: CreatePickDto, @CurrentUser() user: AuthUser) {
+    if (!user.tipsterId) {
+      throw new ForbiddenException('Not a tipster account');
+    }
+    return this.picks.createLockedPick(user.tipsterId, dto);
   }
 
   @Get('tipster/:tipsterId')
