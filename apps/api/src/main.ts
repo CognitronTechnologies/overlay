@@ -27,8 +27,8 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();
 
-  const port = Number(process.env.API_PORT ?? 4000);
-  await app.listen(port);
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
+  await app.listen(port, '0.0.0.0');
   new Logger('Bootstrap').log(`Overlay API listening on :${port}`);
 }
 

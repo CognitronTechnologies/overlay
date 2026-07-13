@@ -1,0 +1,94 @@
+# Render Blueprint for Overlay Bets staging (OB-101 / OB-105).
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo/branch.
+# Provisions: Postgres + Redis + API (web) + settlement worker, all from the
+# root Dockerfile. Migrations run via preDeployCommand before each API deploy.
+#
+# After first deploy: set CORS_ORIGINS on overlay-api to your Vercel URL.
+# Docs: https://render.com/docs/blueprint-spec
+
+# Shared secrets used by BOTH the API and the worker (same value on both).
+envVarGroups:
+  - name: overlay-shared
+    envVars:
+      # Server-side pepper mixed into pick hashes — MUST match across services.
+      - key: PICK_HASH_PEPPER
+        generateValue: true
+
+databases:
+  - name: overlay-postgres
+    plan: free
+    databaseName: overlay
+    user: overlay
+
+services:
+  # --- Redis (BullMQ backend) ------------------------------------------------
+  - type: redis
+    name: overlay-redis
+    plan: free
+    ipAllowList: [] # internal connections only
+    # BullMQ requires keys are never evicted.
+    maxmemoryPolicy: noeviction
+
+  # --- API (HTTP) ------------------------------------------------------------
+  - type: web
+    name: overlay-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/leaderboard
+    # Apply DB migrations once, before the new version goes live.
+    preDeployCommand: npm run db:deploy
+    envVars:
+      - fromGroup: overlay-shared
+      - key: NODE_ENV
+        value: production
+      - key: WORKER_MODE
+        value: queue
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: overlay-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: overlay-redis
+          property: connectionString
+      - key: PAYMENTS_PROVIDER
+        value: mock
+      - key: SPORTS_API_PROVIDER
+        value: mock
+      # Set to your Vercel domain(s) after the web app is deployed.
+      - key: CORS_ORIGINS
+        sync: false
+
+  # --- Settlement worker -----------------------------------------------------
+  - type: worker
+    name: overlay-worker
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: node apps/api/dist/worker.js
+    envVars:
+      - fromGroup: overlay-shared
+      - key: NODE_ENV
+        value: production
+      - key: WORKER_MODE
+        value: queue
+      # Worker doesn't verify JWTs, but validateEnv() requires a strong value.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: overlay-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: overlay-redis
+          property: connectionString
+      - key: SPORTS_API_PROVIDER
+        value: mock
