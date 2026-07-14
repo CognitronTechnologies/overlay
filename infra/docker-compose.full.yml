@@ -35,6 +35,9 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-mock}
       SPORTS_API_PROVIDER: ${SPORTS_API_PROVIDER:-mock}
+      NOTIFIER_PROVIDER: ${NOTIFIER_PROVIDER:-mock}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Overlay Bets <no-reply@overlay.bet>}
     ports:
       - "4000:4000"
 

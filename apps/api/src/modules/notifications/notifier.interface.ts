@@ -18,3 +18,6 @@ export interface Notifier {
   sendEmail(msg: EmailMessage): Promise<void>;
   sendPush(msg: PushMessage): Promise<void>;
 }
+
+/** DI token for the active notifier (mock in dev/test, Resend in prod). */
+export const NOTIFIER = Symbol('NOTIFIER');

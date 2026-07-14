@@ -174,7 +174,9 @@ git push -u origin main
   `STRIPE_WEBHOOK_SECRET`, and wire Connect onboarding.
 - **Sports data** — set `SPORTS_API_PROVIDER` + `SPORTS_API_KEY`
   (see `docs/VENDOR-SPIKE.md`).
-- **Email / Web Push** — `RESEND_API_KEY`, `VAPID_*`.
+- **Email / Web Push** — `RESEND_API_KEY`, `VAPID_*`. For email, set
+  `NOTIFIER_PROVIDER=resend`, `RESEND_API_KEY`, and `EMAIL_FROM`; leave
+  `NOTIFIER_PROVIDER=mock` (default) to log instead of sending.
 
 See `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` (Phase 4) for the hardening
 checklist before going live.

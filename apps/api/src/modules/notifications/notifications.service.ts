@@ -1,19 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { MockNotifier } from './mock.notifier';
+import { NOTIFIER, type Notifier } from './notifier.interface';
+import {
+  dispatchNewPick,
+  passwordResetEmail,
+  receiptEmail,
+  verificationEmail,
+  type NewPickNotification,
+} from './templates';
 
-export interface NewPickNotification {
-  tipsterId: string;
-  market: string;
-  selection: string;
-  oddsAtPick: number;
-}
+export type { NewPickNotification };
 
 @Injectable()
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notifier: MockNotifier,
+    @Inject(NOTIFIER) private readonly notifier: Notifier,
   ) {}
 
   /**
@@ -27,14 +29,34 @@ export class NotificationsService {
       include: { user: true },
     });
 
-    const title = 'New pick posted';
-    const body = `${pick.market}: ${pick.selection} @ ${pick.oddsAtPick}`;
+    const recipients = subs.map((sub) => ({
+      userId: sub.userId,
+      email: sub.user.email,
+    }));
 
-    await Promise.all(
-      subs.flatMap((sub) => [
-        this.notifier.sendEmail({ to: sub.user.email, subject: title, body }),
-        this.notifier.sendPush({ userId: sub.userId, title, body }),
-      ]),
-    );
+    await dispatchNewPick(this.notifier, pick, recipients);
+  }
+
+  /** Send an email-verification link to a newly registered user. */
+  async sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
+    await this.notifier.sendEmail({ to, ...verificationEmail({ verifyUrl }) });
+  }
+
+  /** Send a password-reset link. */
+  async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+    await this.notifier.sendEmail({ to, ...passwordResetEmail({ resetUrl }) });
+  }
+
+  /** Send a payment receipt after a successful subscription charge. */
+  async sendReceiptEmail(
+    to: string,
+    receipt: {
+      tipsterName: string;
+      amountCents: number;
+      currency?: string;
+      periodEnd?: Date;
+    },
+  ): Promise<void> {
+    await this.notifier.sendEmail({ to, ...receiptEmail(receipt) });
   }
 }
