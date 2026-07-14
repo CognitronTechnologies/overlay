@@ -204,7 +204,7 @@ export default function AccountPage() {
       </section>
 
       {/* --- Subscriptions --- */}
-      {role === 'admin' ? (
+      {profile.role === 'admin' ? (
         <p>
           <Link href="/admin/users" style={{ color: '#6ea8fe' }}>
             → Manage users
