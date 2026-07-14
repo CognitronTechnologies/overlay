@@ -14,7 +14,9 @@ COPY . .
 # NEXT_PUBLIC_* are inlined at build time — pass them as build args if needed.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SITE_URL
-RUN npm run build -w @overlay/web
+# Build the shared workspace package first (web consumes it), then the web app.
+RUN npm run build -w @overlay/shared \
+ && npm run build -w @overlay/web
 
 # ─── runtime ───
 FROM node:22-slim AS runtime

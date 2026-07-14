@@ -130,6 +130,11 @@ export default function DashboardPage() {
           → Earnings &amp; payouts
         </Link>
       </p>
+      <p style={{ margin: '0 0 0.5rem' }}>
+        <Link href="/dashboard/profile" style={{ color: '#6ea8fe' }}>
+          → Edit public profile
+        </Link>
+      </p>
 
       <h2 style={{ marginTop: '2rem' }}>Submit a pick</h2>
       <form
