@@ -1,0 +1,109 @@
+# Render Blueprint for Overlay Bets staging (OB-101 / OB-105).
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo/branch.
+# Provisions: Postgres + Redis + API (web) + settlement worker, all from the
+# root Dockerfile. Migrations run via preDeployCommand before each API deploy.
+#
+# After first deploy: set CORS_ORIGINS on overlay-api to your Vercel URL.
+# Docs: https://render.com/docs/blueprint-spec
+
+# Shared secrets used by BOTH the API and the worker (same value on both).
+envVarGroups:
+  - name: overlay-shared
+    envVars:
+      # Server-side pepper mixed into pick hashes — MUST match across services.
+      - key: PICK_HASH_PEPPER
+        generateValue: true
+
+databases:
+  - name: overlay-postgres
+    plan: free
+    databaseName: overlay
+    user: overlay
+
+services:
+  # --- Redis (BullMQ backend) ------------------------------------------------
+  - type: redis
+    name: overlay-redis
+    plan: free
+    ipAllowList: [] # internal connections only
+    # BullMQ requires keys are never evicted.
+    maxmemoryPolicy: noeviction
+
+  # --- API (HTTP) ------------------------------------------------------------
+  - type: web
+    name: overlay-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    # Free tier doesn't support preDeployCommand, so run migrations at startup
+    # via a script (before the server binds its port). Unquoted command avoids
+    # Render mis-splitting a quoted string (which caused exit 127).
+    dockerCommand: sh apps/api/start-api.sh
+    envVars:
+      - fromGroup: overlay-shared
+      - key: NODE_ENV
+        value: production
+      # Free-tier: run settlement inside the API (interval mode, no Redis) since
+      # a dedicated Render worker needs a paid plan. Switch off + enable the
+      # overlay-worker service below when on a paid plan (see OB-143).
+      - key: EMBED_WORKER
+        value: "true"
+      - key: WORKER_MODE
+        value: interval
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: overlay-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: overlay-redis
+          property: connectionString
+      - key: PAYMENTS_PROVIDER
+        value: mock
+      - key: SPORTS_API_PROVIDER
+        value: mock
+      # Public URL of the web app — used to build post-checkout redirect URLs.
+      # Set to your Vercel domain after the web app is deployed.
+      - key: WEB_APP_URL
+        sync: false
+      # Set to your Vercel domain(s) after the web app is deployed.
+      - key: CORS_ORIGINS
+        sync: false
+
+  # --- Settlement worker (PAID plans only) -----------------------------------
+  # Render background workers require a paid instance. On free tier we run
+  # settlement embedded in the API (EMBED_WORKER=true above). To switch to a
+  # dedicated always-on worker (needed for timely real-vendor closing-odds
+  # capture — see OB-143): set the API's EMBED_WORKER=false and WORKER_MODE=queue,
+  # then uncomment this service and pick a paid `plan`.
+  # - type: worker
+  #   name: overlay-worker
+  #   runtime: docker
+  #   plan: starter
+  #   dockerfilePath: ./Dockerfile
+  #   dockerContext: .
+  #   dockerCommand: node apps/api/dist/worker.js
+  #   envVars:
+  #     - fromGroup: overlay-shared
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: WORKER_MODE
+  #       value: queue
+  #     - key: JWT_SECRET
+  #       generateValue: true
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: overlay-postgres
+  #         property: connectionString
+  #     - key: REDIS_URL
+  #       fromService:
+  #         type: redis
+  #         name: overlay-redis
+  #         property: connectionString
+  #     - key: SPORTS_API_PROVIDER
+  #       value: mock
