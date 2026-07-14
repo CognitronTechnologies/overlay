@@ -1,11 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
+import { SettlementService } from '../../workers/settlement.service';
 import {
   normalizeUsersQuery,
   paginateUsers,
   type RawUsersQuery,
 } from './users-query';
+import {
+  InvalidVoidReasonError,
+  PickAlreadyVoidError,
+  PickNotFoundError,
+  normalizeSettlementsQuery,
+  type RawSettlementsQuery,
+} from './settlements';
 
 type TipsterStatus = 'active' | 'suspended';
 
@@ -20,7 +33,10 @@ function withNote(
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settlement: SettlementService,
+  ) {}
 
   /** High-level platform metrics for the admin dashboard. */
   async dashboard() {
@@ -162,6 +178,97 @@ export class AdminService {
       });
       return updated;
     });
+  }
+
+  /**
+   * Read-only view of recent settlement outcomes for the oversight console
+   * (OB-029). Returns settled (won/lost/void) picks — optionally filtered to a
+   * single outcome — newest first, with the tipster email and event context.
+   */
+  async listRecentSettlements(raw: RawSettlementsQuery = {}) {
+    const query = normalizeSettlementsQuery(raw);
+    const where: Prisma.PickWhereInput = query.status
+      ? { status: query.status }
+      : { status: { in: ['won', 'lost', 'void'] } };
+
+    const [total, items] = await Promise.all([
+      this.prisma.pick.count({ where }),
+      this.prisma.pick.findMany({
+        where,
+        orderBy: { settledAt: 'desc' },
+        take: query.take,
+        skip: query.skip,
+        select: {
+          id: true,
+          tipsterId: true,
+          market: true,
+          selection: true,
+          oddsAtPick: true,
+          stakeUnits: true,
+          status: true,
+          closingOdds: true,
+          clv: true,
+          settledAt: true,
+          tipster: { select: { user: { select: { email: true } } } },
+          event: {
+            select: {
+              sport: true,
+              league: true,
+              home: true,
+              away: true,
+              startTime: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return { items, total, take: query.take, skip: query.skip };
+  }
+
+  /**
+   * Manually trigger one settlement cycle for a stuck queue (OB-029). Delegates
+   * to the settlement worker's idempotent {@link SettlementService.runOnce}.
+   */
+  async rerunSettlement(actorId: string) {
+    await this.settlement.runOnce();
+    await this.prisma.auditLog.create({
+      data: {
+        actor: `admin:${actorId}`,
+        action: 'settlement.rerun',
+        entity: 'Settlement',
+        entityId: 'cycle',
+        payload: {},
+      },
+    });
+    return { ok: true };
+  }
+
+  /**
+   * Void a pick for an objective data error (OB-029). A reason is mandatory;
+   * the void writes an audit entry and recomputes the tipster's stats. Pure
+   * workflow errors are mapped to the matching HTTP responses.
+   */
+  async voidPick(actorId: string, pickId: string, reason: unknown) {
+    try {
+      const { pick, audit } = await this.settlement.voidPick(
+        actorId,
+        pickId,
+        reason,
+      );
+      return { id: pick.id, status: 'void' as const, audit };
+    } catch (err) {
+      if (err instanceof InvalidVoidReasonError) {
+        throw new BadRequestException(err.message);
+      }
+      if (err instanceof PickNotFoundError) {
+        throw new NotFoundException(err.message);
+      }
+      if (err instanceof PickAlreadyVoidError) {
+        throw new ConflictException(err.message);
+      }
+      throw err;
+    }
   }
 
   listAuditLog(opts: { entity?: string; take?: number; skip?: number } = {}) {

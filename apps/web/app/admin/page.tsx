@@ -83,6 +83,15 @@ export default function AdminPage() {
         payouts.
       </p>
 
+      <nav style={{ display: 'flex', gap: '1rem', margin: '1rem 0 0' }}>
+        <a href="/admin/users" style={{ color: '#6ea8fe' }}>
+          Manage users →
+        </a>
+        <a href="/admin/settlements" style={{ color: '#6ea8fe' }}>
+          Settlement oversight →
+        </a>
+      </nav>
+
       {error ? (
         <p style={{ color: '#ff6b8a' }}>{error}</p>
       ) : metrics === null ? (
