@@ -77,6 +77,13 @@ export async function getTipster(id: string): Promise<TipsterProfile | null> {
   return getJson<TipsterProfile>(`/api/tipsters/${encodeURIComponent(id)}`, 60);
 }
 
+/** Fields a tipster can edit on their own profile (OB-021). */
+export interface UpdateTipsterProfile {
+  bio: string;
+  sports: string[];
+  subscriptionPriceCents: number;
+}
+
 export type MarketplaceSort = 'yield' | 'clv' | 'winRate';
 
 export interface MarketplaceTipster {

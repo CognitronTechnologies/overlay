@@ -12,6 +12,10 @@
     "./password": {
       "types": "./dist/password.d.ts",
       "default": "./dist/password.js"
+    },
+    "./tipster-profile": {
+      "types": "./src/tipster-profile.ts",
+      "default": "./src/tipster-profile.ts"
     }
   },
   "scripts": {
