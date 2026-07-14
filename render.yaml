@@ -67,6 +67,8 @@ services:
         value: mock
       - key: SPORTS_API_PROVIDER
         value: mock
+      - key: NOTIFIER_PROVIDER
+        value: mock
       # Set to your Vercel domain(s) after the web app is deployed.
       - key: CORS_ORIGINS
         sync: false
