@@ -50,6 +50,9 @@ export default function SiteHeader() {
         {role === 'tipster' ? (
           <Link href="/earnings" style={{ color: '#9aa4b2' }}>
             Earnings
+        {role === 'admin' ? (
+          <Link href="/admin" style={{ color: '#9aa4b2' }}>
+            Admin
           </Link>
         ) : null}
       </nav>
