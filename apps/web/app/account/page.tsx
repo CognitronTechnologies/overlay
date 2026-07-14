@@ -55,6 +55,14 @@ export default function AccountPage() {
         </p>
       ) : null}
 
+      {role === 'admin' ? (
+        <p>
+          <Link href="/admin/users" style={{ color: '#6ea8fe' }}>
+            → Manage users
+          </Link>
+        </p>
+      ) : null}
+
       <h2 style={{ marginTop: '2rem' }}>Your subscriptions</h2>
       {subs === null ? (
         <p style={{ color: '#9aa4b2' }}>Loading…</p>
