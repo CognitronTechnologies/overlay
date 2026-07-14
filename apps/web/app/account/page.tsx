@@ -47,6 +47,12 @@ export default function AccountPage() {
         {role ? `Signed in as ${role}` : 'Loading…'}
       </p>
 
+      <p>
+        <Link href="/feed" style={{ color: '#6ea8fe' }}>
+          → My feed (live picks)
+        </Link>
+      </p>
+
       {role === 'tipster' ? (
         <p>
           <Link href="/dashboard" style={{ color: '#6ea8fe' }}>

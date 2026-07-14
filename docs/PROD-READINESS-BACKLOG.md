@@ -128,9 +128,9 @@
 **Category:** User UI · **Priority:** P0
 **Description:** A logged-in subscriber view aggregating live/pending picks from all subscribed tipsters, newest first, with settlement status updates.
 **Acceptance criteria:**
-- [ ] Aggregated feed; entitlement-checked; realtime or polled updates.
+- [x] Aggregated feed; entitlement-checked; realtime or polled updates.
 **Tests:**
-- [ ] e2e: only entitled tipsters' picks appear.
+- [x] e2e: only entitled tipsters' picks appear.
 
 ### OB-013 — Subscriptions management UI
 **Category:** User UI · **Priority:** P1

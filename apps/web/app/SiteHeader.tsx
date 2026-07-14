@@ -42,6 +42,11 @@ export default function SiteHeader() {
         <Link href="/blog" style={{ color: '#9aa4b2' }}>
           Blog
         </Link>
+        {role ? (
+          <Link href="/feed" style={{ color: '#9aa4b2' }}>
+            My feed
+          </Link>
+        ) : null}
         {role === 'tipster' ? (
           <Link href="/dashboard" style={{ color: '#9aa4b2' }}>
             Dashboard

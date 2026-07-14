@@ -38,6 +38,12 @@ export class PicksController {
     return this.picks.performanceForTipster(user.tipsterId);
   }
 
+  @Get('me/feed')
+  @UseGuards(JwtAuthGuard)
+  myFeed(@CurrentUser() user: AuthUser) {
+    return this.picks.feedForSubscriber(user.userId);
+  }
+
   @Get('tipster/:tipsterId')
   listByTipster(@Param('tipsterId') tipsterId: string) {
     return this.picks.listByTipster(tipsterId);
