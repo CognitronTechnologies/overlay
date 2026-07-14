@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { API_URL } from '../lib/api';
+import { useRouter } from 'next/navigation';
+import { authFetch, getAccessToken } from '../lib/auth';
 
 /**
- * Minimal subscribe CTA. Reads a bearer token from localStorage ('ob_token')
- * set by the (future) auth flow, calls the checkout endpoint, and redirects to
- * the returned checkout URL. Falls back to a sign-in prompt when unauthenticated.
+ * Subscribe CTA. Uses the Supabase session; unauthenticated users are sent to
+ * sign in with a return path back to this tipster, then the checkout runs.
  */
 export default function SubscribeButton({
   tipsterId,
@@ -15,6 +15,7 @@ export default function SubscribeButton({
   tipsterId: string;
   priceCents: number;
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,20 +29,20 @@ export default function SubscribeButton({
 
   async function subscribe() {
     setError(null);
-    const token =
-      typeof window !== 'undefined' ? localStorage.getItem('ob_token') : null;
+    const token = await getAccessToken();
     if (!token) {
-      setError('Please sign in to subscribe.');
+      // Not signed in — send to login, then return here to subscribe.
+      const next =
+        typeof window !== 'undefined'
+          ? window.location.pathname + window.location.search
+          : `/tipsters/${tipsterId}`;
+      router.push(`/login?next=${encodeURIComponent(next)}`);
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/subscriptions/checkout`, {
+      const res = await authFetch('/api/subscriptions/checkout', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ tipsterId }),
       });
       if (!res.ok) throw new Error(`Checkout failed (${res.status})`);
