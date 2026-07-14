@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma.service';
 import { PAYMENT_PROVIDER } from '../../integrations/payments/payments.module';
 import { subscriptionStatusFromEvent } from '@overlay/shared';
+import { webhookEventsTotal } from '../../common/metrics';
 import type {
   PaymentProvider,
   SubscriptionEvent,
