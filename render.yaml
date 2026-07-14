@@ -36,7 +36,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/leaderboard
+    healthCheckPath: /api/health
     # Free tier doesn't support preDeployCommand, so run migrations at startup
     # via a script (before the server binds its port). Unquoted command avoids
     # Render mis-splitting a quoted string (which caused exit 127).
@@ -45,8 +45,13 @@ services:
       - fromGroup: overlay-shared
       - key: NODE_ENV
         value: production
+      # Free-tier: run settlement inside the API (interval mode, no Redis) since
+      # a dedicated Render worker needs a paid plan. Switch off + enable the
+      # overlay-worker service below when on a paid plan (see OB-143).
+      - key: EMBED_WORKER
+        value: "true"
       - key: WORKER_MODE
-        value: queue
+        value: interval
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
@@ -66,31 +71,35 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
-  # --- Settlement worker -----------------------------------------------------
-  - type: worker
-    name: overlay-worker
-    runtime: docker
-    plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: node apps/api/dist/worker.js
-    envVars:
-      - fromGroup: overlay-shared
-      - key: NODE_ENV
-        value: production
-      - key: WORKER_MODE
-        value: queue
-      # Worker doesn't verify JWTs, but validateEnv() requires a strong value.
-      - key: JWT_SECRET
-        generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: overlay-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: overlay-redis
-          property: connectionString
-      - key: SPORTS_API_PROVIDER
-        value: mock
+  # --- Settlement worker (PAID plans only) -----------------------------------
+  # Render background workers require a paid instance. On free tier we run
+  # settlement embedded in the API (EMBED_WORKER=true above). To switch to a
+  # dedicated always-on worker (needed for timely real-vendor closing-odds
+  # capture — see OB-143): set the API's EMBED_WORKER=false and WORKER_MODE=queue,
+  # then uncomment this service and pick a paid `plan`.
+  # - type: worker
+  #   name: overlay-worker
+  #   runtime: docker
+  #   plan: starter
+  #   dockerfilePath: ./Dockerfile
+  #   dockerContext: .
+  #   dockerCommand: node apps/api/dist/worker.js
+  #   envVars:
+  #     - fromGroup: overlay-shared
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: WORKER_MODE
+  #       value: queue
+  #     - key: JWT_SECRET
+  #       generateValue: true
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: overlay-postgres
+  #         property: connectionString
+  #     - key: REDIS_URL
+  #       fromService:
+  #         type: redis
+  #         name: overlay-redis
+  #         property: connectionString
+  #     - key: SPORTS_API_PROVIDER
+  #       value: mock
