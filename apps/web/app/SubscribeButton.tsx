@@ -11,9 +11,11 @@ import { authFetch, getAccessToken } from '../lib/auth';
 export default function SubscribeButton({
   tipsterId,
   priceCents,
+  billingInterval = 'monthly',
 }: {
   tipsterId: string;
   priceCents: number;
+  billingInterval?: 'weekly' | 'monthly';
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -77,7 +79,9 @@ export default function SubscribeButton({
       >
         {loading
           ? 'Redirecting…'
-          : `Subscribe · $${(priceCents / 100).toFixed(2)}/mo`}
+          : `Subscribe · $${(priceCents / 100).toFixed(2)}/${
+              billingInterval === 'weekly' ? 'wk' : 'mo'
+            }`}
       </button>
       {error ? (
         <p style={{ color: 'var(--danger)', marginTop: '0.5rem' }}>{error}</p>

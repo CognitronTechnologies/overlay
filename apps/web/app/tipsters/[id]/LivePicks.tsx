@@ -24,9 +24,11 @@ type State =
 export default function LivePicks({
   tipsterId,
   priceCents,
+  billingInterval = 'monthly',
 }: {
   tipsterId: string;
   priceCents: number;
+  billingInterval?: 'weekly' | 'monthly';
 }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
 
@@ -77,6 +79,7 @@ export default function LivePicks({
         <Paywall
           tipsterId={tipsterId}
           priceCents={priceCents}
+          billingInterval={billingInterval}
           signedOut={state.kind === 'signedout'}
         />
       )}
@@ -123,10 +126,12 @@ function EntitledPicks({ picks }: { picks: LivePick[] }) {
 function Paywall({
   tipsterId,
   priceCents,
+  billingInterval,
   signedOut,
 }: {
   tipsterId: string;
   priceCents: number;
+  billingInterval: 'weekly' | 'monthly';
   signedOut: boolean;
 }) {
   return (
@@ -182,7 +187,11 @@ function Paywall({
             : 'Subscribe to see this tipster’s picks the moment they’re locked — before the event starts.'}
         </p>
         <div style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-          <SubscribeButton tipsterId={tipsterId} priceCents={priceCents} />
+          <SubscribeButton
+            tipsterId={tipsterId}
+            priceCents={priceCents}
+            billingInterval={billingInterval}
+          />
         </div>
       </div>
     </div>

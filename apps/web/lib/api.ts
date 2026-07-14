@@ -58,10 +58,20 @@ export interface TipsterStats {
 
 export interface TipsterProfile {
   tipsterId: string;
+  displayName: string | null;
+  country: string | null;
   bio: string | null;
   sports: string[];
   subscriptionPriceCents: number;
+  billingInterval: 'weekly' | 'monthly';
+  verified: boolean;
+  socials: {
+    x: string | null;
+    instagram: string | null;
+    telegram: string | null;
+  };
   stats: TipsterStats | null;
+  subscriberCount: number;
   articlesPublished: number;
   recentPicks: {
     id: string;
@@ -103,6 +113,22 @@ export interface UpdateTipsterProfile {
   subscriptionPriceCents: number;
 }
 
+/** The caller's own editable tipster profile (GET /api/tipsters/me/profile). */
+export interface EditableTipsterProfile {
+  displayName: string | null;
+  country: string | null;
+  contactMethod: 'phone' | 'telegram' | 'whatsapp' | null;
+  contactValue: string | null;
+  bio: string | null;
+  sports: string[];
+  subscriptionPriceCents: number;
+  billingInterval: 'weekly' | 'monthly';
+  socialX: string | null;
+  socialInstagram: string | null;
+  socialTelegram: string | null;
+  identityVerified: boolean;
+  identityDocName: string | null;
+}
 export type MarketplaceSort = 'yield' | 'clv' | 'winRate';
 
 export interface MarketplaceTipster {
@@ -185,8 +211,9 @@ export interface PerformanceDashboard {
 
 /** One step of the tipster onboarding wizard (OB-020). */
 export type OnboardingStepKey =
-  | 'bio'
+  | 'profile'
   | 'sports'
+  | 'bio'
   | 'pricing'
   | 'stripe'
   | 'verification';
@@ -195,6 +222,7 @@ export interface OnboardingStep {
   key: OnboardingStepKey;
   label: string;
   complete: boolean;
+  optional: boolean;
 }
 
 /** Payload of GET /api/tipsters/me/onboarding (OB-020). */
@@ -204,6 +232,7 @@ export interface OnboardingStatus {
   totalSteps: number;
   complete: boolean;
   canPublish: boolean;
+  verified: boolean;
   nextStep: OnboardingStepKey | null;
 }
 

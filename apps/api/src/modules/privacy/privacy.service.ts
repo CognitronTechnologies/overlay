@@ -30,9 +30,17 @@ export class PrivacyService {
       this.prisma.tipster.findUnique({
         where: { userId },
         select: {
+          displayName: true,
+          country: true,
+          contactMethod: true,
+          contactValue: true,
           bio: true,
           sports: true,
           subscriptionPriceCents: true,
+          billingInterval: true,
+          socialX: true,
+          socialInstagram: true,
+          socialTelegram: true,
           status: true,
           createdAt: true,
         },

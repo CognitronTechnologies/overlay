@@ -1,36 +1,80 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { authFetch, getProfile } from '../../lib/auth';
+import { authFetch, getAccessToken, getProfile } from '../../lib/auth';
 import { API_URL } from '../../lib/api';
-import type { OnboardingStatus, OnboardingStepKey } from '../../lib/api';
+import type {
+  EditableTipsterProfile,
+  OnboardingStatus,
+  OnboardingStepKey,
+} from '../../lib/api';
 import { formStyles } from '../formStyles';
 
-interface ProfileFields {
-  bio: string;
+type ContactMethod = 'phone' | 'telegram' | 'whatsapp';
+
+interface WizardFields {
+  displayName: string;
+  country: string;
+  contactMethod: ContactMethod;
+  contactValue: string;
   sports: string;
+  bio: string;
+  billingInterval: 'weekly' | 'monthly';
   price: string;
+  socialX: string;
+  socialInstagram: string;
+  socialTelegram: string;
 }
 
-const STEP_HELP: Record<OnboardingStepKey, string> = {
-  bio: 'Tell subscribers who you are and what edge you bring.',
-  sports: 'Comma-separate the sports you post picks for (e.g. soccer, basketball).',
-  pricing: 'Set your monthly subscription price in your local currency units.',
-  stripe: 'Connect Stripe so we can pay out your earnings.',
-  verification: 'Verify your identity to keep the marketplace trustworthy.',
+const EMPTY_FIELDS: WizardFields = {
+  displayName: '',
+  country: '',
+  contactMethod: 'phone',
+  contactValue: '',
+  sports: '',
+  bio: '',
+  billingInterval: 'monthly',
+  price: '',
+  socialX: '',
+  socialInstagram: '',
+  socialTelegram: '',
+};
+
+const STEP_ORDER: OnboardingStepKey[] = [
+  'profile',
+  'sports',
+  'bio',
+  'pricing',
+  'stripe',
+  'verification',
+];
+
+const STEP_TITLES: Record<OnboardingStepKey, string> = {
+  profile: 'Your details',
+  sports: 'Your sports',
+  bio: 'Your bio',
+  pricing: 'Pricing',
+  stripe: 'Payouts',
+  verification: 'Verification',
+};
+
+const CONTACT_LABELS: Record<ContactMethod, string> = {
+  phone: 'Mobile number',
+  telegram: 'Telegram',
+  whatsapp: 'WhatsApp',
 };
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
-  const [fields, setFields] = useState<ProfileFields>({
-    bio: '',
-    sports: '',
-    price: '',
-  });
+  const [fields, setFields] = useState<WizardFields>(EMPTY_FIELDS);
+  const [docName, setDocName] = useState<string | null>(null);
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [current, setCurrent] = useState(0);
   const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const loadStatus = useCallback(async () => {
@@ -49,22 +93,26 @@ export default function OnboardingPage() {
         router.replace('/account');
         return;
       }
-      // Prefill the editable steps from the public profile.
       try {
-        const res = await fetch(`${API_URL}/api/tipsters/${profile.tipsterId}`);
+        const res = await authFetch('/api/tipsters/me/profile');
         if (res.ok) {
-          const t = (await res.json()) as {
-            bio: string | null;
-            sports: string[];
-            subscriptionPriceCents: number;
-          };
+          const p = (await res.json()) as EditableTipsterProfile;
           setFields({
-            bio: t.bio ?? '',
-            sports: t.sports.join(', '),
-            price: t.subscriptionPriceCents
-              ? (t.subscriptionPriceCents / 100).toFixed(2)
+            displayName: p.displayName ?? '',
+            country: p.country ?? '',
+            contactMethod: p.contactMethod ?? 'phone',
+            contactValue: p.contactValue ?? '',
+            sports: p.sports.join(', '),
+            bio: p.bio ?? '',
+            billingInterval: p.billingInterval ?? 'monthly',
+            price: p.subscriptionPriceCents
+              ? (p.subscriptionPriceCents / 100).toFixed(2)
               : '',
+            socialX: p.socialX ?? '',
+            socialInstagram: p.socialInstagram ?? '',
+            socialTelegram: p.socialTelegram ?? '',
           });
+          setDocName(p.identityDocName ?? null);
         }
       } catch {
         /* keep empty defaults */
@@ -73,152 +121,547 @@ export default function OnboardingPage() {
     })();
   }, [router, loadStatus]);
 
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
+  const done = useCallback(
+    (key: OnboardingStepKey) =>
+      status?.steps.find((s) => s.key === key)?.complete ?? false,
+    [status],
+  );
+
+  // Land the tipster on their first incomplete step, once, when the wizard
+  // first loads. Afterwards navigation is driven by the Back/Continue buttons
+  // and step chips so it never yanks focus away mid-edit.
+  const [placed, setPlaced] = useState(false);
+  useEffect(() => {
+    if (!status || placed) return;
+    const idx = STEP_ORDER.findIndex((k) => !done(k));
+    setCurrent(idx === -1 ? STEP_ORDER.length - 1 : idx);
+    setPlaced(true);
+  }, [status, placed, done]);
+
+  function set<K extends keyof WizardFields>(key: K, value: WizardFields[K]) {
+    setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  async function patchProfile(body: Record<string, unknown>) {
+    const res = await authFetch('/api/tipsters/me', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const b = (await res.json().catch(() => ({}))) as { message?: string };
+      throw new Error(b.message ?? `Failed (${res.status})`);
+    }
+    await loadStatus();
+  }
+
+  const stepKey = STEP_ORDER[current];
+
+  async function saveCurrentStep(): Promise<boolean> {
+    setError(null);
     setMsg(null);
     setBusy(true);
     try {
-      const body: Record<string, unknown> = {
-        bio: fields.bio.trim(),
-        sports: fields.sports
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-      };
-      const price = Number(fields.price);
-      if (Number.isFinite(price) && price > 0) {
-        body.subscriptionPriceCents = Math.round(price * 100);
+      switch (stepKey) {
+        case 'profile':
+          if (!fields.displayName.trim() || !fields.country.trim()) {
+            throw new Error('Add your name and country to continue.');
+          }
+          if (!fields.contactValue.trim()) {
+            throw new Error('Add a contact so subscribers can reach you.');
+          }
+          await patchProfile({
+            displayName: fields.displayName.trim(),
+            country: fields.country.trim(),
+            contactMethod: fields.contactMethod,
+            contactValue: fields.contactValue.trim(),
+          });
+          break;
+        case 'sports': {
+          const sports = fields.sports
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (sports.length === 0) throw new Error('Add at least one sport.');
+          await patchProfile({ sports });
+          break;
+        }
+        case 'bio':
+          if (!fields.bio.trim()) throw new Error('Add a short bio.');
+          await patchProfile({ bio: fields.bio.trim() });
+          break;
+        case 'pricing': {
+          const price = Number(fields.price);
+          if (!Number.isFinite(price) || price <= 0) {
+            throw new Error('Set a price greater than zero.');
+          }
+          await patchProfile({
+            billingInterval: fields.billingInterval,
+            subscriptionPriceCents: Math.round(price * 100),
+          });
+          break;
+        }
+        case 'stripe':
+          if (!done('stripe')) {
+            const res = await authFetch('/api/tipsters/me/onboarding/stripe', {
+              method: 'POST',
+            });
+            if (!res.ok) throw new Error(`Failed (${res.status})`);
+            setStatus((await res.json()) as OnboardingStatus);
+          }
+          break;
+        case 'verification':
+          await submitVerification();
+          break;
       }
-      const res = await authFetch('/api/tipsters/me', {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`Failed (${res.status})`);
       setMsg('Saved ✓');
-      await loadStatus();
+      return true;
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'Failed to save');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
-  async function completeStep(step: 'stripe' | 'verification') {
+  async function submitVerification() {
+    if (!docFile) {
+      throw new Error('Choose an ID, passport or driver licence to upload.');
+    }
+    const form = new FormData();
+    form.append('document', docFile);
+    if (fields.socialX.trim()) form.append('socialX', fields.socialX.trim());
+    if (fields.socialInstagram.trim())
+      form.append('socialInstagram', fields.socialInstagram.trim());
+    if (fields.socialTelegram.trim())
+      form.append('socialTelegram', fields.socialTelegram.trim());
+
+    const token = await getAccessToken();
+    const res = await fetch(`${API_URL}/api/tipsters/me/onboarding/verification`, {
+      method: 'POST',
+      headers: token ? { authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    });
+    if (!res.ok) {
+      const b = (await res.json().catch(() => ({}))) as { message?: string };
+      throw new Error(b.message ?? `Upload failed (${res.status})`);
+    }
+    setStatus((await res.json()) as OnboardingStatus);
+    setDocName(docFile.name);
+    setDocFile(null);
+  }
+
+  async function onContinue() {
+    const ok = await saveCurrentStep();
+    if (ok && current < STEP_ORDER.length - 1) setCurrent((c) => c + 1);
+  }
+
+  function onBack() {
+    setError(null);
     setMsg(null);
-    setBusy(true);
-    try {
-      const res = await authFetch(`/api/tipsters/me/onboarding/${step}`, {
-        method: 'POST',
-      });
-      if (!res.ok) throw new Error(`Failed (${res.status})`);
-      setStatus((await res.json()) as OnboardingStatus);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'Failed to complete step');
-    } finally {
-      setBusy(false);
-    }
+    if (current > 0) setCurrent((c) => c - 1);
   }
 
-  const done = (key: OnboardingStepKey) =>
-    status?.steps.find((s) => s.key === key)?.complete ?? false;
+  function onSkip() {
+    setError(null);
+    setMsg(null);
+    if (current < STEP_ORDER.length - 1) setCurrent((c) => c + 1);
+  }
+
+  const progress = useMemo(() => {
+    if (!status) return 0;
+    return Math.round((status.completedSteps / status.totalSteps) * 100);
+  }, [status]);
+
+  if (!status) {
+    return (
+      <main style={{ maxWidth: 680, margin: '0 auto', padding: '3rem 1.5rem' }}>
+        <h1>Tipster onboarding</h1>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+      </main>
+    );
+  }
 
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+    <main style={{ maxWidth: 680, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>Tipster onboarding</h1>
-      <p style={{ color: 'var(--muted)' }}>
-        Complete every step to unlock pick publishing. Your progress is saved as
-        you go.
+      <p style={{ color: 'var(--muted)', marginTop: 0 }}>
+        A few quick steps unlock pick publishing. Progress saves as you go — you
+        can leave and pick up where you left off.
       </p>
 
-      {status ? (
-        <p style={{ color: 'var(--muted)', margin: '0 0 1.5rem' }}>
-          {status.completedSteps}/{status.totalSteps} steps complete
-          {status.canPublish ? ' — you’re ready to publish! ' : ''}
+      {/* Progress bar + step chips */}
+      <div style={{ margin: '1.5rem 0 0.75rem' }}>
+        <div
+          style={{
+            height: 8,
+            borderRadius: 999,
+            background: 'var(--border)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              background: 'var(--accent)',
+              transition: 'width 200ms ease',
+            }}
+          />
+        </div>
+        <p style={{ color: 'var(--muted)', margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
+          {status.completedSteps}/{status.totalSteps} required steps complete
           {status.canPublish ? (
-            <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
-              Go to dashboard →
-            </Link>
+            <>
+              {' — you’re ready! '}
+              <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
+                Go to dashboard →
+              </Link>
+            </>
           ) : null}
         </p>
-      ) : (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
-      )}
+      </div>
 
-      <section aria-label="Profile steps" style={{ marginTop: '1rem' }}>
-        <h2 style={{ fontSize: '1.15rem' }}>
-          {stepMark(done('bio') && done('sports') && done('pricing'))} Profile,
-          sports &amp; pricing
-        </h2>
-        <p style={{ color: 'var(--muted)', margin: '0 0 0.75rem' }}>
-          {STEP_HELP.bio} {STEP_HELP.sports} {STEP_HELP.pricing}
-        </p>
-        <form onSubmit={saveProfile} style={formStyles.form}>
-          <textarea
-            style={{ ...formStyles.input, minHeight: 80, resize: 'vertical' }}
-            placeholder="Your bio"
-            value={fields.bio}
-            onChange={(e) => setFields({ ...fields, bio: e.target.value })}
-          />
-          <input
-            style={formStyles.input}
-            placeholder="Sports (comma separated)"
-            value={fields.sports}
-            onChange={(e) => setFields({ ...fields, sports: e.target.value })}
-          />
-          <input
-            style={formStyles.input}
-            type="number"
-            step="0.01"
-            min="0.01"
-            placeholder="Monthly price (e.g. 19.99)"
-            value={fields.price}
-            onChange={(e) => setFields({ ...fields, price: e.target.value })}
-          />
-          <button style={formStyles.button} disabled={busy}>
-            {busy ? 'Saving…' : 'Save profile'}
+      <ol
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+          listStyle: 'none',
+          padding: 0,
+          margin: '0 0 1.5rem',
+        }}
+      >
+        {STEP_ORDER.map((key, i) => {
+          const isDone = done(key);
+          const isCurrent = i === current;
+          const optional = key === 'verification';
+          return (
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setMsg(null);
+                  setCurrent(i);
+                }}
+                style={{
+                  border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`,
+                  background: isCurrent ? 'var(--surface)' : 'transparent',
+                  color: isDone ? 'var(--accent)' : 'var(--muted)',
+                  borderRadius: 999,
+                  padding: '0.35rem 0.8rem',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {isDone ? '✓ ' : `${i + 1}. `}
+                {STEP_TITLES[key]}
+                {optional ? ' (optional)' : ''}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      <section
+        aria-label={STEP_TITLES[stepKey]}
+        style={{
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: '1.5rem',
+          background: 'var(--surface)',
+        }}
+      >
+        {stepKey === 'profile' ? (
+          <div style={formStyles.form}>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Your details</h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+              Tell subscribers who you are and how to reach you.
+            </p>
+            <label style={labelStyle}>
+              Name
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                placeholder="e.g. Alex Morgan"
+                value={fields.displayName}
+                onChange={(e) => set('displayName', e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              Country
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                placeholder="e.g. United Kingdom"
+                value={fields.country}
+                onChange={(e) => set('country', e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              Preferred contact
+              <select
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                value={fields.contactMethod}
+                onChange={(e) =>
+                  set('contactMethod', e.target.value as ContactMethod)
+                }
+              >
+                {(Object.keys(CONTACT_LABELS) as ContactMethod[]).map((m) => (
+                  <option key={m} value={m}>
+                    {CONTACT_LABELS[m]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <input
+              style={formStyles.input}
+              placeholder={
+                fields.contactMethod === 'phone'
+                  ? '+44 7700 900000'
+                  : `@your-${fields.contactMethod}`
+              }
+              value={fields.contactValue}
+              onChange={(e) => set('contactValue', e.target.value)}
+            />
+          </div>
+        ) : null}
+
+        {stepKey === 'sports' ? (
+          <div style={formStyles.form}>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Your sports</h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+              Which sports do you post picks for most? Comma-separate them.
+            </p>
+            <input
+              style={formStyles.input}
+              placeholder="soccer, basketball, tennis"
+              value={fields.sports}
+              onChange={(e) => set('sports', e.target.value)}
+            />
+          </div>
+        ) : null}
+
+        {stepKey === 'bio' ? (
+          <div style={formStyles.form}>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Your bio</h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+              Tell subscribers who you are and what edge you bring.
+            </p>
+            <textarea
+              style={{ ...formStyles.input, minHeight: 120, resize: 'vertical' }}
+              placeholder="Data-driven soccer analyst with a focus on Asian handicaps…"
+              value={fields.bio}
+              onChange={(e) => set('bio', e.target.value)}
+            />
+          </div>
+        ) : null}
+
+        {stepKey === 'pricing' ? (
+          <div style={formStyles.form}>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Pricing</h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+              Choose how often subscribers are billed and set your price.
+            </p>
+            <label style={labelStyle}>
+              Billing cadence
+              <select
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                value={fields.billingInterval}
+                onChange={(e) =>
+                  set(
+                    'billingInterval',
+                    e.target.value as 'weekly' | 'monthly',
+                  )
+                }
+              >
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </label>
+            <label style={labelStyle}>
+              Price per {fields.billingInterval === 'weekly' ? 'week' : 'month'}
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="19.99"
+                value={fields.price}
+                onChange={(e) => set('price', e.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {stepKey === 'stripe' ? (
+          <div style={formStyles.form}>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>
+              Connect Stripe payouts
+            </h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+              Connect Stripe so we can pay out your earnings securely.
+            </p>
+            {done('stripe') ? (
+              <p style={{ color: 'var(--accent)', margin: 0 }}>
+                Stripe connected ✓
+              </p>
+            ) : (
+              <button
+                type="button"
+                style={formStyles.button}
+                disabled={busy}
+                onClick={() => saveCurrentStep()}
+              >
+                {busy ? 'Connecting…' : 'Connect Stripe'}
+              </button>
+            )}
+          </div>
+        ) : null}
+
+        {stepKey === 'verification' ? (
+          <div style={formStyles.form}>
+            <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>
+              Verify your identity{' '}
+              <span style={{ color: 'var(--muted)', fontWeight: 400 }}>
+                (optional)
+              </span>
+            </h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+              Verified tipsters earn a trust badge and rank higher in the
+              marketplace. Add your socials and upload an official document
+              (ID, passport or driver licence).
+            </p>
+            {done('verification') ? (
+              <p style={{ color: 'var(--accent)', margin: '0 0 0.5rem' }}>
+                Verified ✓{docName ? ` — ${docName}` : ''}
+              </p>
+            ) : null}
+
+            <label style={labelStyle}>
+              X / Twitter
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                placeholder="@handle"
+                value={fields.socialX}
+                onChange={(e) => set('socialX', e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              Instagram
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                placeholder="@handle"
+                value={fields.socialInstagram}
+                onChange={(e) => set('socialInstagram', e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              Telegram
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                placeholder="@handle"
+                value={fields.socialTelegram}
+                onChange={(e) => set('socialTelegram', e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              Official document (JPG, PNG, WEBP or PDF, max 5 MB)
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {error ? <p style={{ ...formStyles.error, marginTop: '1rem' }}>{error}</p> : null}
+        {msg && !error ? (
+          <p style={{ color: 'var(--accent)', marginTop: '1rem' }}>{msg}</p>
+        ) : null}
+
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.75rem',
+            marginTop: '1.25rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={current === 0 || busy}
+            style={{
+              background: 'transparent',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '0.6rem 1.2rem',
+              cursor: current === 0 ? 'default' : 'pointer',
+            }}
+          >
+            ← Back
           </button>
-        </form>
-      </section>
 
-      <section aria-label="Stripe step" style={{ marginTop: '2rem' }}>
-        <h2 style={{ fontSize: '1.15rem' }}>
-          {stepMark(done('stripe'))} Connect Stripe payouts
-        </h2>
-        <p style={{ color: 'var(--muted)', margin: '0 0 0.75rem' }}>
-          {STEP_HELP.stripe}
-        </p>
-        <button
-          style={formStyles.button}
-          disabled={busy || done('stripe')}
-          onClick={() => completeStep('stripe')}
-        >
-          {done('stripe') ? 'Stripe connected ✓' : 'Connect Stripe'}
-        </button>
-      </section>
+          {stepKey === 'verification' && !done('verification') ? (
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={busy}
+              style={{
+                background: 'transparent',
+                color: 'var(--muted)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '0.6rem 1.2rem',
+                cursor: 'pointer',
+              }}
+            >
+              Skip for now
+            </button>
+          ) : null}
 
-      <section aria-label="Verification step" style={{ marginTop: '2rem' }}>
-        <h2 style={{ fontSize: '1.15rem' }}>
-          {stepMark(done('verification'))} Verify your identity
-        </h2>
-        <p style={{ color: 'var(--muted)', margin: '0 0 0.75rem' }}>
-          {STEP_HELP.verification}
-        </p>
-        <button
-          style={formStyles.button}
-          disabled={busy || done('verification')}
-          onClick={() => completeStep('verification')}
-        >
-          {done('verification') ? 'Verified ✓' : 'Verify identity'}
-        </button>
-      </section>
+          {current < STEP_ORDER.length - 1 ? (
+            <button
+              type="button"
+              onClick={onContinue}
+              disabled={busy}
+              style={formStyles.button}
+            >
+              {busy ? 'Saving…' : 'Save & continue'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => saveCurrentStep()}
+              disabled={busy}
+              style={formStyles.button}
+            >
+              {busy ? 'Saving…' : done('verification') ? 'Update' : 'Verify identity'}
+            </button>
+          )}
 
-      {msg ? (
-        <p style={{ color: 'var(--accent)', marginTop: '1.5rem' }}>{msg}</p>
-      ) : null}
+          {status.canPublish ? (
+            <Link
+              href="/dashboard"
+              style={{
+                marginLeft: 'auto',
+                alignSelf: 'center',
+                color: 'var(--accent)',
+              }}
+            >
+              Finish →
+            </Link>
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }
 
-function stepMark(complete: boolean): string {
-  return complete ? '✓' : '○';
-}
+const labelStyle = {
+  color: 'var(--muted)',
+  fontSize: '0.9rem',
+  display: 'block',
+} as const;

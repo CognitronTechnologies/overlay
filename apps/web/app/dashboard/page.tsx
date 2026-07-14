@@ -38,6 +38,7 @@ export default function DashboardPage() {
     null,
   );
   const [onboarding, setOnboarding] = useState<OnboardingStatus | null>(null);
+  const [subscriberCount, setSubscriberCount] = useState<number | null>(null);
   const [form, setForm] = useState({
     eventId: '',
     market: '1X2',
@@ -72,6 +73,18 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadSubscribers = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/tipsters/me/subscribers');
+      if (res.ok) {
+        const { count } = (await res.json()) as { count: number };
+        setSubscriberCount(count);
+      }
+    } catch {
+      setSubscriberCount(null);
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       const profile = await getProfile();
@@ -91,8 +104,9 @@ export default function DashboardPage() {
       loadPicks(profile.tipsterId);
       loadPerformance();
       loadOnboarding();
+      loadSubscribers();
     })();
-  }, [router, loadPicks, loadPerformance, loadOnboarding]);
+  }, [router, loadPicks, loadPerformance, loadOnboarding, loadSubscribers]);
 
   async function submitPick(e: React.FormEvent) {
     e.preventDefault();
@@ -138,6 +152,27 @@ export default function DashboardPage() {
         Picks are hash-locked and timestamped the moment you submit — before
         kickoff. That’s what makes your record verifiable.
       </p>
+
+      <div
+        style={{
+          display: 'inline-flex',
+          flexDirection: 'column',
+          gap: '0.15rem',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: '0.9rem 1.4rem',
+          background: 'var(--surface)',
+          margin: '0.5rem 0 1rem',
+        }}
+      >
+        <span style={{ fontSize: '1.9rem', fontWeight: 700, lineHeight: 1 }}>
+          {subscriberCount ?? '—'}
+        </span>
+        <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+          Active subscriber{subscriberCount === 1 ? '' : 's'}
+        </span>
+      </div>
+
       <p style={{ margin: '0 0 0.5rem' }}>
         <Link href="/earnings" style={{ color: 'var(--accent)' }}>
           → Earnings &amp; payouts

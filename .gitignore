@@ -17,6 +17,9 @@ out/
 # Prisma
 prisma/*.db
 
+# Uploaded identity documents (local storage; use object storage in prod)
+uploads/
+
 # Logs
 *.log
 npm-debug.log*

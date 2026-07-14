@@ -72,6 +72,23 @@ local + deployed origins under **Auth → URL Configuration → Redirect URLs**.
 For quick local testing, turn **"Confirm email" off** so signup logs you in
 immediately (otherwise you must confirm via the emailed link first).
 
+### Storage (Supabase — identity documents)
+
+Tipster identity documents (ID / passport / driver licence) uploaded during
+onboarding are stored in a **private Supabase Storage bucket** (OB-020).
+
+1. In the Supabase dashboard: **Storage → New bucket** → name
+   `identity-documents`, and keep **Public** _off_ (private bucket).
+2. Set in `.env` (API side):
+   - `SUPABASE_SERVICE_ROLE_KEY` — Project Settings → API → **service_role**
+     secret. Server-only — never expose it to the browser or commit it.
+   - `SUPABASE_STORAGE_BUCKET` — `identity-documents` (default).
+
+Documents are written with the service role key and only ever read back through
+short-lived **signed URLs** minted server-side (admins review them from the
+Users console). When `SUPABASE_SERVICE_ROLE_KEY` is unset the API falls back to
+a local `UPLOAD_DIR` (`./uploads`) so local dev works with zero config.
+
 ---
 
 ## 5. Set up the database
