@@ -16,6 +16,10 @@
     "./tipster-profile": {
       "types": "./src/tipster-profile.ts",
       "default": "./src/tipster-profile.ts"
+    },
+    "./consent": {
+      "types": "./src/consent.ts",
+      "default": "./src/consent.ts"
     }
   },
   "scripts": {
