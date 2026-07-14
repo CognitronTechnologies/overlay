@@ -50,6 +50,11 @@ export default function SiteHeader() {
           <Link href="/blog" onClick={closeMenu}>
             Blog
           </Link>
+          {role ? (
+            <Link href="/feed" onClick={closeMenu}>
+              My feed
+            </Link>
+          ) : null}
           {role === 'tipster' ? (
             <Link href="/dashboard" onClick={closeMenu}>
               Dashboard

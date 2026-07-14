@@ -16,6 +16,7 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { canPublishPicks } from '../tipsters/onboarding';
 import { CreatePickDto } from './dto/create-pick.dto';
+import { buildSubscriberFeed, entitledTipsterIds, type FeedPick } from './feed';
 
 @Injectable()
 export class PicksService {
@@ -125,6 +126,55 @@ export class PicksService {
       orderBy: { lockedAt: 'desc' },
       take: 100,
     });
+  }
+
+  /**
+   * Aggregated subscriber "My feed" (OB-012): live/pending + settled picks from
+   * every tipster the user is *actively* subscribed to, newest first. Entitlement
+   * is enforced by only querying tipsters with an active subscription, so a lapsed
+   * or never-subscribed tipster's picks can never appear. Clients poll this to pick
+   * up settlement status updates.
+   */
+  async feedForSubscriber(userId: string): Promise<FeedPick[]> {
+    const subscriptions = await this.subs.listForUser(userId);
+    const tipsterIds = entitledTipsterIds(subscriptions);
+    if (tipsterIds.length === 0) return [];
+
+    const picks = await this.prisma.pick.findMany({
+      where: { tipsterId: { in: tipsterIds } },
+      orderBy: { lockedAt: 'desc' },
+      take: 100,
+      include: {
+        event: {
+          select: { sport: true, home: true, away: true, startTime: true },
+        },
+      },
+    });
+
+    const rows: FeedPick[] = picks.map((p) => ({
+      id: p.id,
+      tipsterId: p.tipsterId,
+      market: p.market,
+      selection: p.selection,
+      oddsAtPick: p.oddsAtPick,
+      stakeUnits: p.stakeUnits,
+      status: p.status,
+      clv: p.clv,
+      result: p.result,
+      lockedAt: p.lockedAt.getTime(),
+      settledAt: p.settledAt ? p.settledAt.getTime() : null,
+      event: p.event
+        ? {
+            sport: p.event.sport,
+            home: p.event.home,
+            away: p.event.away,
+            startTime: p.event.startTime.getTime(),
+          }
+        : null,
+    }));
+
+    // Defense-in-depth: re-apply the entitlement gate and deterministic ordering.
+    return buildSubscriberFeed(rows, subscriptions);
   }
 
   /**

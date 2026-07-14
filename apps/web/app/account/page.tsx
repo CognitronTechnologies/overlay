@@ -116,6 +116,12 @@ export default function AccountPage() {
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>Your account</h1>
 
+      <p>
+        <Link href="/feed" style={{ color: '#6ea8fe' }}>
+          → My feed (live picks)
+        </Link>
+      </p>
+
       {/* --- Profile summary --- */}
       <div style={cardStyle}>
         <div style={{ display: 'grid', gap: '0.5rem' }}>

@@ -204,3 +204,26 @@ export interface OnboardingStatus {
   canPublish: boolean;
   nextStep: OnboardingStepKey | null;
 }
+
+/** One pick in the subscriber "My feed" (OB-012). */
+export interface FeedPick {
+  id: string;
+  tipsterId: string;
+  market: string;
+  selection: string;
+  oddsAtPick: number;
+  stakeUnits: number;
+  status: string;
+  clv: number | null;
+  result: string | null;
+  /** Lock time as epoch milliseconds. */
+  lockedAt: number;
+  /** Settlement time as epoch milliseconds, or null while pending. */
+  settledAt: number | null;
+  event: {
+    sport: string;
+    home: string;
+    away: string;
+    startTime: number;
+  } | null;
+}
