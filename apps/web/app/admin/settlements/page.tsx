@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../../lib/auth';
 import { formStyles } from '../../formStyles';
 
-type Outcome = 'won' | 'lost' | 'void';
+type Outcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';
 type StatusFilter = '' | Outcome;
 
 interface Settlement {
@@ -42,6 +42,8 @@ const FILTERS: { label: string; value: StatusFilter }[] = [
   { label: 'Won', value: 'won' },
   { label: 'Lost', value: 'lost' },
   { label: 'Void', value: 'void' },
+  { label: '½ Won', value: 'half_won' },
+  { label: '½ Lost', value: 'half_lost' },
 ];
 
 const muted = { color: '#9aa4b2' } as const;
@@ -50,6 +52,8 @@ const outcomeColor: Record<Outcome, string> = {
   won: '#4ade80',
   lost: '#ff6b8a',
   void: '#9aa4b2',
+  half_won: '#86efac',
+  half_lost: '#fca5b5',
 };
 
 function formatClv(clv: number | null): string {

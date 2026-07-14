@@ -1,7 +1,13 @@
 // Shared domain types. Kept dependency-free so the stats engine and
 // integrity helpers can run in the API, workers, and tests alike.
 
-export type PickStatus = 'pending' | 'won' | 'lost' | 'void';
+export type PickStatus =
+  | 'pending'
+  | 'won'
+  | 'lost'
+  | 'void'
+  | 'half_won'
+  | 'half_lost';
 
 /** Minimal shape needed to compute a tipster's stats. */
 export interface SettledPick {

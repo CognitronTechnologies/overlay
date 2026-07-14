@@ -10,14 +10,17 @@ import type { FeedPick } from '../../lib/api';
 const POLL_MS = 30_000;
 
 function statusColor(status: string): string {
-  if (status === 'won') return '#3fb950';
-  if (status === 'lost') return '#f85149';
+  if (status === 'won' || status === 'half_won') return '#3fb950';
+  if (status === 'lost' || status === 'half_lost') return '#f85149';
   if (status === 'void') return '#9aa4b2';
   return '#6ea8fe'; // pending / live
 }
 
 function statusLabel(status: string): string {
-  return status === 'pending' ? 'Live' : status;
+  if (status === 'pending') return 'Live';
+  if (status === 'half_won') return '½ won';
+  if (status === 'half_lost') return '½ lost';
+  return status;
 }
 
 function timeAgo(ms: number): string {

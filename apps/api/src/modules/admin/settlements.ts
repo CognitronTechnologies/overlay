@@ -14,11 +14,18 @@ export const MAX_SETTLEMENTS_LIMIT = 200;
 export const MAX_VOID_REASON_LENGTH = 500;
 
 /** Settled (non-pending) pick outcomes the oversight view can filter by. */
-export type SettlementStatusFilter = 'won' | 'lost' | 'void';
+export type SettlementStatusFilter =
+  | 'won'
+  | 'lost'
+  | 'void'
+  | 'half_won'
+  | 'half_lost';
 const SETTLEMENT_STATUSES: readonly SettlementStatusFilter[] = [
   'won',
   'lost',
   'void',
+  'half_won',
+  'half_lost',
 ];
 
 /** Raw string params as received from the query string. */

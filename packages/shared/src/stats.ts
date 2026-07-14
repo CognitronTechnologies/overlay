@@ -1,17 +1,23 @@
-import type { SettledPick, TipsterStats } from './types.ts';
+import type { PickStatus, SettledPick, TipsterStats } from './types.ts';
 
 /**
  * Profit (in stake units) for a single settled pick using decimal odds.
- *   won  → stake * (odds - 1)
- *   lost → -stake
- *   void → 0 (stake returned)
+ *   won        → stake * (odds - 1)
+ *   half_won   → 0.5 * stake * (odds - 1)   (Asian quarter-line half-win)
+ *   lost       → -stake
+ *   half_lost  → -0.5 * stake               (Asian quarter-line half-loss)
+ *   void       → 0 (stake returned)
  */
 export function pickProfitUnits(pick: SettledPick): number {
   switch (pick.status) {
     case 'won':
       return pick.stakeUnits * (pick.oddsAtPick - 1);
+    case 'half_won':
+      return 0.5 * pick.stakeUnits * (pick.oddsAtPick - 1);
     case 'lost':
       return -pick.stakeUnits;
+    case 'half_lost':
+      return -0.5 * pick.stakeUnits;
     default:
       return 0;
   }
@@ -28,9 +34,19 @@ export function pickClv(pick: SettledPick): number | null {
   return pick.oddsAtPick / pick.closingOdds - 1;
 }
 
-/** Is this pick decisive (counts toward turnover / win rate)? */
-function isDecisive(pick: SettledPick): boolean {
-  return pick.status === 'won' || pick.status === 'lost';
+/** Does this status count toward turnover / win rate? (Full or half result.) */
+export function isDecisive(status: PickStatus): boolean {
+  return (
+    status === 'won' ||
+    status === 'lost' ||
+    status === 'half_won' ||
+    status === 'half_lost'
+  );
+}
+
+/** Does this status count as a win for win-rate / streak? (Full or half win.) */
+export function isWin(status: PickStatus): boolean {
+  return status === 'won' || status === 'half_won';
 }
 
 /**
@@ -60,10 +76,10 @@ export function computeTipsterStats(picks: SettledPick[]): TipsterStats {
   let maxDrawdown = 0;
 
   for (const p of ordered) {
-    if (isDecisive(p)) {
+    if (isDecisive(p.status)) {
       turnover += p.stakeUnits;
       decisive += 1;
-      if (p.status === 'won') won += 1;
+      if (isWin(p.status)) won += 1;
     }
 
     profit += pickProfitUnits(p);
@@ -104,7 +120,7 @@ export function computeCurrentStreak(orderedPicks: SettledPick[]): number {
   for (let i = orderedPicks.length - 1; i >= 0; i--) {
     const s = orderedPicks[i].status;
     if (s === 'void' || s === 'pending') continue;
-    const thisSign = s === 'won' ? 1 : -1;
+    const thisSign = isWin(s) ? 1 : -1;
     if (sign === 0) {
       sign = thisSign;
       streak = thisSign;

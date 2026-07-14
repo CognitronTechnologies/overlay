@@ -1,5 +1,11 @@
 import type { SettledPick, TipsterStats } from './types.ts';
-import { computeTipsterStats, pickClv, pickProfitUnits } from './stats.ts';
+import {
+  computeTipsterStats,
+  isDecisive,
+  isWin,
+  pickClv,
+  pickProfitUnits,
+} from './stats.ts';
 
 /**
  * One step in a tipster's performance time-series. Each point is the running,
@@ -67,10 +73,10 @@ export function buildPerformanceSeries(picks: SettledPick[]): PerformancePoint[]
   let peak = 0;
 
   return ordered.map((p, i) => {
-    if (p.status === 'won' || p.status === 'lost') {
+    if (isDecisive(p.status)) {
       turnover += p.stakeUnits;
       decisive += 1;
-      if (p.status === 'won') won += 1;
+      if (isWin(p.status)) won += 1;
     }
 
     const gain = pickProfitUnits(p);
@@ -99,7 +105,8 @@ export function buildPerformanceSeries(picks: SettledPick[]): PerformancePoint[]
   });
 }
 
-/** Count a tipster's picks by status for the pending-vs-settled breakdown. */
+/** Count a tipster's picks by status for the pending-vs-settled breakdown.
+ * Asian half-results fold into won/lost so the coarse breakdown stays 4-way. */
 export function pickBreakdown(picks: SettledPick[]): PickBreakdown {
   let pending = 0;
   let won = 0;
@@ -112,9 +119,11 @@ export function pickBreakdown(picks: SettledPick[]): PickBreakdown {
         pending += 1;
         break;
       case 'won':
+      case 'half_won':
         won += 1;
         break;
       case 'lost':
+      case 'half_lost':
         lost += 1;
         break;
       case 'void':

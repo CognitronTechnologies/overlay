@@ -5,6 +5,7 @@ import type {
   ProviderEvent,
   SportsDataProvider,
 } from './sports-provider.interface';
+import { fetchJson } from './http';
 import {
   mapEvents,
   mapOdds,
@@ -35,7 +36,9 @@ export class TheOddsApiProvider implements SportsDataProvider {
 
   async getUpcomingEvents(sport: string): Promise<ProviderEvent[]> {
     const url = `${this.base}/sports/${sport}/events?apiKey=${this.apiKey}`;
-    const raw = await this.fetchJson<OddsApiEvent[]>(url);
+    const raw = await fetchJson<OddsApiEvent[]>(url, undefined, {
+      label: this.name,
+    });
     // Encode sport into the id so later odds/scores lookups can route.
     return mapEvents(raw).map((e) => ({
       ...e,
@@ -45,8 +48,11 @@ export class TheOddsApiProvider implements SportsDataProvider {
 
   async getOdds(vendorEventId: string): Promise<MarketOdds[]> {
     const { sport, eventId } = this.splitId(vendorEventId);
-    const url = `${this.base}/sports/${sport}/odds?apiKey=${this.apiKey}&regions=eu&markets=h2h&oddsFormat=decimal`;
-    const raw = await this.fetchJson<OddsApiEventOdds[]>(url);
+    // Pull h2h + spreads + totals (credits = regions × markets = 1 × 3).
+    const url = `${this.base}/sports/${sport}/odds?apiKey=${this.apiKey}&regions=eu&markets=h2h,spreads,totals&oddsFormat=decimal`;
+    const raw = await fetchJson<OddsApiEventOdds[]>(url, undefined, {
+      label: this.name,
+    });
     const event = raw.find((e) => e.id === eventId);
     return event ? mapOdds(event) : [];
   }
@@ -54,7 +60,9 @@ export class TheOddsApiProvider implements SportsDataProvider {
   async getResult(vendorEventId: string): Promise<EventResult | null> {
     const { sport, eventId } = this.splitId(vendorEventId);
     const url = `${this.base}/sports/${sport}/scores?apiKey=${this.apiKey}&daysFrom=3`;
-    const raw = await this.fetchJson<OddsApiScoreEvent[]>(url);
+    const raw = await fetchJson<OddsApiScoreEvent[]>(url, undefined, {
+      label: this.name,
+    });
     const event = raw.find((e) => e.id === eventId);
     if (!event || !event.completed) return null;
     return toEventResult(event);
@@ -71,11 +79,5 @@ export class TheOddsApiProvider implements SportsDataProvider {
       sport: vendorEventId.slice(0, idx),
       eventId: vendorEventId.slice(idx + 1),
     };
-  }
-
-  private async fetchJson<T>(url: string): Promise<T> {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`the-odds-api ${res.status} for ${url}`);
-    return (await res.json()) as T;
   }
 }

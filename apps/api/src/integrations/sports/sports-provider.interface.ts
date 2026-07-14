@@ -18,7 +18,7 @@ export interface MarketOdds {
   prices: Record<string, number>;
 }
 
-export type EventOutcome = 'won' | 'lost' | 'void';
+export type EventOutcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';
 
 export interface EventResult {
   vendorEventId: string;
