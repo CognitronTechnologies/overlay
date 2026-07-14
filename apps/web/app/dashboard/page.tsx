@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../lib/auth';
 import { API_URL } from '../../lib/api';
@@ -107,6 +108,11 @@ export default function DashboardPage() {
       <p style={{ color: '#9aa4b2' }}>
         Picks are hash-locked and timestamped the moment you submit — before
         kickoff. That’s what makes your record verifiable.
+      </p>
+      <p style={{ margin: '0 0 0.5rem' }}>
+        <Link href="/earnings" style={{ color: '#6ea8fe' }}>
+          → Earnings &amp; payouts
+        </Link>
       </p>
 
       <h2 style={{ marginTop: '2rem' }}>Submit a pick</h2>

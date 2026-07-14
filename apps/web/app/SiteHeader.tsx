@@ -47,6 +47,11 @@ export default function SiteHeader() {
             Dashboard
           </Link>
         ) : null}
+        {role === 'tipster' ? (
+          <Link href="/earnings" style={{ color: '#9aa4b2' }}>
+            Earnings
+          </Link>
+        ) : null}
       </nav>
       {ready ? (
         role ? (
