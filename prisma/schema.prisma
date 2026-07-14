@@ -37,6 +37,7 @@ enum PayoutStatus {
 
 enum ArticleStatus {
   draft
+  pending
   published
   archived
 }
