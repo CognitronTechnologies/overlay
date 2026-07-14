@@ -22,12 +22,12 @@ interface Subscription {
 }
 
 const cardStyle: React.CSSProperties = {
-  border: '1px solid #1c2430',
+  border: '1px solid var(--border)',
   borderRadius: 10,
   padding: '1.25rem 1.4rem',
   marginTop: '1.25rem',
 };
-const labelStyle: React.CSSProperties = { color: '#9aa4b2', fontSize: '0.9rem' };
+const labelStyle: React.CSSProperties = { color: 'var(--muted)', fontSize: '0.9rem' };
 
 export default function AccountPage() {
   const router = useRouter();
@@ -107,7 +107,7 @@ export default function AccountPage() {
   if (!profile) {
     return (
       <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
-        <p style={{ color: '#9aa4b2' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
       </main>
     );
   }
@@ -137,15 +137,15 @@ export default function AccountPage() {
         </div>
         {profile.role === 'tipster' ? (
           <p style={{ marginTop: '1rem' }}>
-            <Link href="/dashboard" style={{ color: '#6ea8fe' }}>
+            <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
               → Go to tipster dashboard
             </Link>
             {' · '}
-            <Link href="/onboarding" style={{ color: '#6ea8fe' }}>
+            <Link href="/onboarding" style={{ color: 'var(--accent)' }}>
               Onboarding
             </Link>
             {' · '}
-            <Link href="/earnings" style={{ color: '#6ea8fe' }}>
+            <Link href="/earnings" style={{ color: 'var(--accent)' }}>
               Earnings
             </Link>
           </p>
@@ -222,7 +222,7 @@ export default function AccountPage() {
 
       <h2 style={{ marginTop: '2rem' }}>Your subscriptions</h2>
       <p>
-        <Link href="/account/subscriptions" style={{ color: '#6ea8fe' }}>
+        <Link href="/account/subscriptions" style={{ color: 'var(--accent)' }}>
           → Manage subscriptions
         </Link>
       </p>
@@ -281,7 +281,7 @@ export default function AccountPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: '#9aa4b2' }}>{label}</span>
+      <span style={{ color: 'var(--muted)' }}>{label}</span>
       <span>{value}</span>
     </div>
   );

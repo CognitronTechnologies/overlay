@@ -43,9 +43,9 @@ export default function ResetPasswordPage() {
     <main style={formStyles.wrap}>
       <h1>Set a new password</h1>
       {ready === false ? (
-        <p style={{ color: '#9aa4b2' }}>
+        <p style={{ color: 'var(--muted)' }}>
           Open the reset link from your email to continue.{' '}
-          <Link href="/forgot-password" style={{ color: '#6ea8fe' }}>
+          <Link href="/forgot-password" style={{ color: 'var(--accent)' }}>
             Request a new link
           </Link>
           .
@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
             required
           />
           {error ? <p style={formStyles.error}>{error}</p> : null}
-          {msg ? <p style={{ color: '#6ee7b7' }}>{msg}</p> : null}
+          {msg ? <p style={{ color: 'var(--success)' }}>{msg}</p> : null}
           <button style={formStyles.button}>Update password</button>
         </form>
       )}

@@ -94,18 +94,18 @@ function VerificationExplainer() {
       style={{
         marginTop: '2.5rem',
         padding: '1.25rem',
-        border: '1px solid #1c2430',
+        border: '1px solid var(--border)',
         borderRadius: 12,
       }}
     >
       <h2 id="verify-heading" style={{ marginTop: 0 }}>
         How verification works
       </h2>
-      <p style={{ color: '#c7cdd6' }}>
+      <p style={{ color: 'var(--fg)' }}>
         Every pick is locked before the event starts, so a tipster can never
         edit a selection, odds or stake after the fact.
       </p>
-      <ol style={{ color: '#c7cdd6', paddingLeft: '1.2rem', lineHeight: 1.6 }}>
+      <ol style={{ color: 'var(--fg)', paddingLeft: '1.2rem', lineHeight: 1.6 }}>
         <li>
           <strong>Hashed at lock time.</strong> When a pick is submitted we
           compute a SHA-256 hash over its canonical fields (selection, market,
@@ -198,7 +198,7 @@ export default async function TipsterPage({
               {clv.averagePct.toFixed(2)}% avg
             </span>
           </div>
-          <p style={{ color: '#9aa4b2', marginTop: '0.25rem' }}>
+          <p style={{ color: 'var(--muted)', marginTop: '0.25rem' }}>
             Cumulative average CLV across {clv.sampleSize} settled pick
             {clv.sampleSize === 1 ? '' : 's'}. Positive CLV means beating the
             closing line — the strongest long-run signal of skill.
@@ -206,7 +206,7 @@ export default async function TipsterPage({
           <div
             style={{
               padding: '1rem',
-              border: '1px solid #1c2430',
+              border: '1px solid var(--border)',
               borderRadius: 12,
             }}
           >
