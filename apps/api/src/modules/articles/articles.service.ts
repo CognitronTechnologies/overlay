@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,6 +13,11 @@ import {
 import { PrismaService } from '../../prisma.service';
 import type { CreateArticleDto } from './dto/create-article.dto';
 import type { UpdateArticleDto } from './dto/update-article.dto';
+import {
+  canAuthorArticles,
+  canManageArticle,
+  type AuthoringActor,
+} from './authoring';
 
 @Injectable()
 export class ArticlesService {
@@ -69,14 +75,37 @@ export class ArticlesService {
     });
   }
 
-  // ---- authoring (admin) ----
+  // ---- authoring (admin + approved tipsters) ----
 
-  /** Admin list including drafts/archived. */
+  /** Admin list including drafts/archived across all authors. */
   listAll() {
     return this.prisma.article.findMany({ orderBy: { updatedAt: 'desc' } });
   }
 
-  async create(authorId: string, dto: CreateArticleDto) {
+  /** Articles the current author may manage: admins see all, tipsters see own. */
+  listMine(actor: AuthoringActor) {
+    return this.prisma.article.findMany({
+      where: actor.role === 'admin' ? {} : { authorId: actor.userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /** Throw unless the actor is allowed to author articles (approved tipster/admin). */
+  private async assertCanAuthor(actor: AuthoringActor) {
+    if (actor.role === 'admin') return;
+    const tipster =
+      actor.role === 'tipster'
+        ? await this.prisma.tipster.findUnique({
+            where: { userId: actor.userId },
+          })
+        : null;
+    if (!canAuthorArticles(actor, tipster)) {
+      throw new ForbiddenException('Not allowed to author articles');
+    }
+  }
+
+  async create(actor: AuthoringActor, dto: CreateArticleDto) {
+    await this.assertCanAuthor(actor);
     const base = slugify(dto.slug?.trim() || dto.title);
     if (!base) throw new BadRequestException('Title produces an empty slug');
     const taken = new Set(
@@ -103,16 +132,18 @@ export class ArticlesService {
         seoTitle: dto.seoTitle,
         seoDescription: dto.seoDescription,
         canonicalUrl: dto.canonicalUrl,
-        authorId,
+        authorId: actor.userId,
         publishedAt: status === 'published' ? new Date() : null,
       },
     });
   }
 
-  async update(id: string, dto: UpdateArticleDto) {
+  async update(id: string, dto: UpdateArticleDto, actor: AuthoringActor) {
     const existing = await this.prisma.article.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Article not found');
-
+    if (!canManageArticle(actor, existing)) {
+      throw new ForbiddenException('Not allowed to edit this article');
+    }
     const nextStatus = dto.status ?? existing.status;
     const wasPublished = existing.status === 'published';
     const nowPublished = nextStatus === 'published';
@@ -140,7 +171,12 @@ export class ArticlesService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actor: AuthoringActor) {
+    const existing = await this.prisma.article.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Article not found');
+    if (!canManageArticle(actor, existing)) {
+      throw new ForbiddenException('Not allowed to delete this article');
+    }
     await this.prisma.article.delete({ where: { id } });
     return { deleted: true };
   }
