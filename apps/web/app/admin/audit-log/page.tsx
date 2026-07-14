@@ -41,7 +41,7 @@ const EMPTY_FILTERS: Filters = {
 
 const PAGE_SIZE = 25;
 
-const muted = { color: '#9aa4b2' } as const;
+const muted = { color: 'var(--muted)' } as const;
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -190,8 +190,8 @@ export default function AdminAuditLogPage() {
             onClick={clearFilters}
             style={{
               background: 'transparent',
-              color: '#9aa4b2',
-              border: '1px solid #1c2430',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.6rem 1.2rem',
               cursor: 'pointer',
@@ -227,7 +227,7 @@ export default function AdminAuditLogPage() {
           </thead>
           <tbody>
             {data.items.map((entry) => (
-              <tr key={entry.id} style={{ borderTop: '1px solid #1c2430' }}>
+              <tr key={entry.id} style={{ borderTop: '1px solid var(--border)' }}>
                 <td
                   style={{
                     padding: '0.6rem 0.6rem 0.6rem 0',
@@ -256,7 +256,7 @@ export default function AdminAuditLogPage() {
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                       fontSize: '0.82rem',
-                      color: '#cbd3df',
+                      color: 'var(--fg)',
                       maxWidth: 360,
                     }}
                   >
@@ -284,8 +284,8 @@ export default function AdminAuditLogPage() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             style={{
               background: 'transparent',
-              color: '#9aa4b2',
-              border: '1px solid #1c2430',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.5rem 1rem',
               cursor: data.page <= 1 ? 'default' : 'pointer',
@@ -302,8 +302,8 @@ export default function AdminAuditLogPage() {
             onClick={() => setPage((p) => p + 1)}
             style={{
               background: 'transparent',
-              color: '#9aa4b2',
-              border: '1px solid #1c2430',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.5rem 1rem',
               cursor: data.page >= data.totalPages ? 'default' : 'pointer',
