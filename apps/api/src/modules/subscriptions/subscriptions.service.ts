@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { PAYMENT_PROVIDER } from '../../integrations/payments/payments.module';
+import { subscriptionStatusFromEvent } from '@overlay/shared';
+import { webhookEventsTotal } from '../../common/metrics';
 import type {
   PaymentProvider,
   SubscriptionEvent,
@@ -36,19 +38,20 @@ export class SubscriptionsService {
 
   /** Apply a verified provider webhook to subscription state. */
   async applyWebhook(rawBody: string, signature: string) {
+    // OB-093: a null event means the signature/payload failed verification —
+    // the webhook-failure SLI. Successful applies are counted as "handled".
     const evt = this.payments.parseWebhook(rawBody, signature);
-    if (!evt) return { handled: false };
+    if (!evt) {
+      webhookEventsTotal.inc({ result: 'failed' });
+      return { handled: false };
+    }
     await this.upsertFromEvent(evt);
+    webhookEventsTotal.inc({ result: 'handled' });
     return { handled: true };
   }
 
   private upsertFromEvent(evt: SubscriptionEvent) {
-    const status =
-      evt.type === 'activated'
-        ? 'active'
-        : evt.type === 'past_due'
-          ? 'past_due'
-          : 'canceled';
+    const status = subscriptionStatusFromEvent(evt.type);
     return this.prisma.subscription.upsert({
       where: { userId_tipsterId: { userId: evt.userId, tipsterId: evt.tipsterId } },
       create: {
@@ -72,6 +75,14 @@ export class SubscriptionsService {
 
   listForUser(userId: string) {
     return this.prisma.subscription.findMany({ where: { userId } });
+  }
+
+  /**
+   * Create a billing-portal link where the subscriber can cancel/resume their
+   * subscriptions. `returnUrl` is where the provider sends them back afterwards.
+   */
+  createBillingPortal(userId: string, returnUrl: string) {
+    return this.payments.createBillingPortalSession({ userId, returnUrl });
   }
 
   /** Active subscriber count per tipster — used by payouts. */
