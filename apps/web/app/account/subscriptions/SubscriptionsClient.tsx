@@ -10,7 +10,7 @@ import {
 } from '@overlay/shared/subscriptions';
 import { authFetch, getProfile } from '../../../lib/auth';
 
-const MUTED = '#9aa4b2';
+const MUTED = 'var(--muted)';
 
 /**
  * Subscriptions management UI (OB-013). Lists the subscriber's active/canceled
@@ -69,7 +69,7 @@ export default function SubscriptionsClient() {
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p>
-        <Link href="/account" style={{ color: '#6ea8fe' }}>
+        <Link href="/account" style={{ color: 'var(--accent)' }}>
           ← Back to account
         </Link>
       </p>
@@ -84,7 +84,7 @@ export default function SubscriptionsClient() {
       ) : views.length === 0 ? (
         <p style={{ color: MUTED }}>
           No subscriptions yet.{' '}
-          <Link href="/marketplace" style={{ color: '#6ea8fe' }}>
+          <Link href="/marketplace" style={{ color: 'var(--accent)' }}>
             Browse tipsters
           </Link>{' '}
           to get started.
@@ -95,7 +95,7 @@ export default function SubscriptionsClient() {
             <li
               key={v.id}
               style={{
-                borderTop: '1px solid #1c2430',
+                borderTop: '1px solid var(--border)',
                 padding: '1rem 0',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -106,7 +106,7 @@ export default function SubscriptionsClient() {
               <div>
                 <Link
                   href={`/tipsters/${v.tipsterId}`}
-                  style={{ color: '#6ea8fe', fontWeight: 600 }}
+                  style={{ color: 'var(--accent)', fontWeight: 600 }}
                 >
                   {v.tipsterId}
                 </Link>
@@ -118,7 +118,7 @@ export default function SubscriptionsClient() {
               </div>
               <span
                 style={{
-                  color: v.isActive ? '#4ade80' : MUTED,
+                  color: v.isActive ? 'var(--success)' : MUTED,
                   fontWeight: 600,
                   whiteSpace: 'nowrap',
                 }}
@@ -136,8 +136,8 @@ export default function SubscriptionsClient() {
           disabled={portalLoading}
           style={{
             marginTop: '1.5rem',
-            background: '#6ea8fe',
-            color: '#0b0e14',
+            background: 'var(--accent)',
+            color: 'var(--on-accent)',
             border: 'none',
             borderRadius: 8,
             padding: '0.7rem 1.4rem',
@@ -152,7 +152,7 @@ export default function SubscriptionsClient() {
         </button>
       ) : null}
       {error ? (
-        <p style={{ color: '#f0a', marginTop: '0.75rem' }}>{error}</p>
+        <p style={{ color: 'var(--danger)', marginTop: '0.75rem' }}>{error}</p>
       ) : null}
     </main>
   );
