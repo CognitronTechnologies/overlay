@@ -83,11 +83,36 @@ export default function AdminPage() {
         Live platform metrics across users, tipsters, subscriptions, picks and
         payouts.
       </p>
-      <p style={{ margin: '0 0 1rem' }}>
-        <Link href="/admin/blog" style={{ color: '#6ea8fe' }}>
-          Blog authoring →
-        </Link>
-      </p>
+      <nav
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          margin: '0 0 1rem',
+        }}
+      >
+        {[
+          { href: '/admin/users', label: 'Users & roles' },
+          { href: '/admin/audit-log', label: 'Audit log' },
+          { href: '/admin/blog', label: 'Blog authoring' },
+        ].map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={{
+              background: '#111826',
+              border: '1px solid #1c2430',
+              borderRadius: 10,
+              padding: '0.55rem 0.95rem',
+              color: '#6ea8fe',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+            }}
+          >
+            {item.label} →
+          </Link>
+        ))}
+      </nav>
 
       <nav style={{ display: 'flex', gap: '1rem', margin: '1rem 0 0' }}>
         <a href="/admin/users" style={{ color: '#6ea8fe' }}>
