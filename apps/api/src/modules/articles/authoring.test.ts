@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canAuthorArticles, canManageArticle } from './authoring.ts';
+import {
+  canAuthorArticles,
+  canManageArticle,
+  resolveArticleStatus,
+} from './authoring.ts';
 
 const admin = { userId: 'admin-1', role: 'admin' as const };
 const tipster = { userId: 't-1', role: 'tipster' as const };
@@ -36,4 +40,21 @@ test('tipsters can manage only their own articles', () => {
 
 test('plain users cannot manage articles', () => {
   assert.equal(canManageArticle(user, { authorId: 'u-1' }), false);
+});
+
+test('admins may set any status directly, including published', () => {
+  assert.equal(resolveArticleStatus(admin, 'published'), 'published');
+  assert.equal(resolveArticleStatus(admin, 'draft'), 'draft');
+  assert.equal(resolveArticleStatus(admin, 'pending'), 'pending');
+  assert.equal(resolveArticleStatus(admin, 'archived'), 'archived');
+});
+
+test('tipster publish requests are queued for admin review (pending)', () => {
+  assert.equal(resolveArticleStatus(tipster, 'published'), 'pending');
+});
+
+test('tipsters may still keep drafts, submit for review, or archive', () => {
+  assert.equal(resolveArticleStatus(tipster, 'draft'), 'draft');
+  assert.equal(resolveArticleStatus(tipster, 'pending'), 'pending');
+  assert.equal(resolveArticleStatus(tipster, 'archived'), 'archived');
 });

@@ -5,6 +5,8 @@
 
 export type AuthorRole = 'user' | 'tipster' | 'admin';
 
+export type ArticleStatus = 'draft' | 'pending' | 'published' | 'archived';
+
 export interface AuthoringActor {
   userId: string;
   role: AuthorRole;
@@ -37,4 +39,19 @@ export function canManageArticle(
 ): boolean {
   if (actor.role === 'admin') return true;
   return actor.role === 'tipster' && article.authorId === actor.userId;
+}
+
+/**
+ * Resolve the status an article should actually be persisted with. Author
+ * (tipster) posts require admin review before going live: a tipster cannot
+ * publish directly, so requesting `published` instead submits the article for
+ * review (`pending`). Admins may set any status directly, which is how a
+ * pending article gets approved and published.
+ */
+export function resolveArticleStatus(
+  actor: AuthoringActor,
+  requested: ArticleStatus,
+): ArticleStatus {
+  if (actor.role === 'admin') return requested;
+  return requested === 'published' ? 'pending' : requested;
 }

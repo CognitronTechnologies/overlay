@@ -16,6 +16,7 @@ import type { UpdateArticleDto } from './dto/update-article.dto';
 import {
   canAuthorArticles,
   canManageArticle,
+  resolveArticleStatus,
   type AuthoringActor,
 } from './authoring';
 
@@ -118,7 +119,9 @@ export class ArticlesService {
     );
     const slug = dedupeSlug(base, taken);
 
-    const status = dto.status ?? 'draft';
+    // Tipster posts require admin review: `resolveArticleStatus` downgrades a
+    // tipster's `published` request to `pending` (admins publish directly).
+    const status = resolveArticleStatus(actor, dto.status ?? 'draft');
     return this.prisma.article.create({
       data: {
         slug,
@@ -144,7 +147,10 @@ export class ArticlesService {
     if (!canManageArticle(actor, existing)) {
       throw new ForbiddenException('Not allowed to edit this article');
     }
-    const nextStatus = dto.status ?? existing.status;
+    const nextStatus = resolveArticleStatus(
+      actor,
+      dto.status ?? existing.status,
+    );
     const wasPublished = existing.status === 'published';
     const nowPublished = nextStatus === 'published';
 

@@ -8,7 +8,14 @@ import { sanitizeHtml } from '@overlay/shared/markdown';
 import { authFetch, getProfile } from '../../../lib/auth';
 import { formStyles } from '../../formStyles';
 
-type Status = 'draft' | 'published' | 'archived';
+type Status = 'draft' | 'pending' | 'published' | 'archived';
+
+const STATUS_LABELS: Record<Status, string> = {
+  draft: 'Draft',
+  pending: 'Pending review',
+  published: 'Published',
+  archived: 'Archived',
+};
 
 interface ManagedArticle {
   id: string;
@@ -72,6 +79,7 @@ function toDraft(a: ManagedArticle): Draft {
 export default function BlogAuthoringPage() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [role, setRole] = useState<'admin' | 'tipster' | null>(null);
   const [articles, setArticles] = useState<ManagedArticle[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,6 +112,7 @@ export default function BlogAuthoringPage() {
         router.replace('/account');
         return;
       }
+      setRole(profile.role);
       setAuthorized(true);
       await load();
     })();
@@ -202,7 +211,9 @@ export default function BlogAuthoringPage() {
       <h1>Blog authoring</h1>
       <p style={{ color: MUTED }}>
         Write articles in Markdown with a live, sanitized preview. Approved
-        tipsters can author their own posts; admins can manage all posts.
+        tipsters can author their own posts and submit them for review; an admin
+        approves each post before it goes live. Admins can manage and publish all
+        posts.
       </p>
 
       {error ? <p style={formStyles.error}>{error}</p> : null}
@@ -274,7 +285,14 @@ export default function BlogAuthoringPage() {
                   onChange={(e) => update('status', e.target.value as Status)}
                 >
                   <option value="draft">Draft</option>
-                  <option value="published">Published</option>
+                  {role === 'admin' ? (
+                    <>
+                      <option value="pending">Pending review</option>
+                      <option value="published">Published</option>
+                    </>
+                  ) : (
+                    <option value="pending">Submit for review</option>
+                  )}
                   <option value="archived">Archived</option>
                 </select>
               </label>
@@ -381,7 +399,7 @@ export default function BlogAuthoringPage() {
                   <div>
                     <strong>{a.title}</strong>
                     <div style={{ color: MUTED, fontSize: '0.85rem' }}>
-                      {a.status} · /{a.slug}
+                      {STATUS_LABELS[a.status]} · /{a.slug}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
