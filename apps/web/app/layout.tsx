@@ -30,13 +30,11 @@ export default function RootLayout({
           Skip to main content
         </a>
         <SiteHeader />
-        {children}
-        <SiteFooter />
-        <CookieConsent />
         <div id="main-content" tabIndex={-1}>
           {children}
         </div>
         <SiteFooter />
+        <CookieConsent />
       </body>
     </html>
   );

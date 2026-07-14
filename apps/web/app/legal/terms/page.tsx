@@ -14,28 +14,28 @@ export default function TermsPage() {
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: '#6ea8fe' }}>
+        <Link href="/" style={{ color: 'var(--accent)' }}>
           ← Overlay Bets
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
         Terms of Service
       </h1>
-      <p style={{ color: '#9aa4b2', marginTop: 0 }}>Last updated: {UPDATED}</p>
+      <p style={{ color: 'var(--muted)', marginTop: 0 }}>Last updated: {UPDATED}</p>
 
       <section
         style={{
-          border: '1px solid #3a2a1c',
-          background: '#1a130c',
+          border: '1px solid var(--border)',
+          background: 'var(--surface)',
           borderRadius: 10,
           padding: '1rem 1.25rem',
           margin: '1.5rem 0',
         }}
       >
-        <strong style={{ color: '#f0b072' }}>
+        <strong style={{ color: 'var(--warning)' }}>
           Information only — we take no bets.
         </strong>
-        <p style={{ color: '#c7cdd6', margin: '0.5rem 0 0' }}>
+        <p style={{ color: 'var(--fg)', margin: '0.5rem 0 0' }}>
           Overlay Bets is an information, analytics and tipster-marketplace
           service. We do not accept, place, broker or settle wagers of any kind,
           we do not hold betting stakes, and we are not a bookmaker, sportsbook
@@ -44,12 +44,12 @@ export default function TermsPage() {
         </p>
       </section>
 
-      <div style={{ color: '#c7cdd6', lineHeight: 1.7 }}>
+      <div style={{ color: 'var(--fg)', lineHeight: 1.7 }}>
         <h2>1. Acceptance of these terms</h2>
         <p>
           By accessing or using Overlay Bets (the &ldquo;Service&rdquo;), you
           agree to be bound by these Terms of Service and by our{' '}
-          <Link href="/legal/privacy" style={{ color: '#6ea8fe' }}>
+          <Link href="/legal/privacy" style={{ color: 'var(--accent)' }}>
             Privacy Policy
           </Link>
           . If you do not agree, do not use the Service.
@@ -114,7 +114,7 @@ export default function TermsPage() {
         <h2>9. Contact</h2>
         <p>
           Questions about these terms can be sent to{' '}
-          <a href="mailto:legal@overlaybets.com" style={{ color: '#6ea8fe' }}>
+          <a href="mailto:legal@overlaybets.com" style={{ color: 'var(--accent)' }}>
             legal@overlaybets.com
           </a>
           .

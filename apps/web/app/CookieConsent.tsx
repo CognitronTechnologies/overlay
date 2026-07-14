@@ -53,8 +53,8 @@ export default function CookieConsent() {
         right: 0,
         bottom: 0,
         zIndex: 50,
-        background: '#111722',
-        borderTop: '1px solid #1c2430',
+        background: 'var(--surface)',
+        borderTop: '1px solid var(--border)',
         padding: '1rem 1.5rem',
       }}
     >
@@ -69,10 +69,10 @@ export default function CookieConsent() {
           justifyContent: 'space-between',
         }}
       >
-        <p style={{ color: '#c7cdd6', margin: 0, flex: '1 1 320px' }}>
+        <p style={{ color: 'var(--fg)', margin: 0, flex: '1 1 320px' }}>
           We use strictly necessary cookies to run Overlay Bets and, with your
           consent, optional cookies for analytics. See our{' '}
-          <Link href="/legal/privacy" style={{ color: '#6ea8fe' }}>
+          <Link href="/legal/privacy" style={{ color: 'var(--accent)' }}>
             Privacy Policy
           </Link>
           .
@@ -83,8 +83,8 @@ export default function CookieConsent() {
             onClick={() => decide('rejected')}
             style={{
               background: 'transparent',
-              color: '#9aa4b2',
-              border: '1px solid #2a3444',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.5rem 1rem',
               cursor: 'pointer',
@@ -96,8 +96,8 @@ export default function CookieConsent() {
             type="button"
             onClick={() => decide('accepted')}
             style={{
-              background: '#6ea8fe',
-              color: '#0b0e14',
+              background: 'var(--accent)',
+              color: 'var(--on-accent)',
               border: 'none',
               borderRadius: 8,
               padding: '0.5rem 1rem',

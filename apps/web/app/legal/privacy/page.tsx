@@ -14,21 +14,21 @@ export default function PrivacyPage() {
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: '#6ea8fe' }}>
+        <Link href="/" style={{ color: 'var(--accent)' }}>
           ← Overlay Bets
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
         Privacy Policy
       </h1>
-      <p style={{ color: '#9aa4b2', marginTop: 0 }}>Last updated: {UPDATED}</p>
+      <p style={{ color: 'var(--muted)', marginTop: 0 }}>Last updated: {UPDATED}</p>
 
-      <div style={{ color: '#c7cdd6', lineHeight: 1.7 }}>
+      <div style={{ color: 'var(--fg)', lineHeight: 1.7 }}>
         <p>
           This Privacy Policy explains what personal data Overlay Bets (the
           &ldquo;Service&rdquo;) collects, how we use it, and the choices you
           have. It applies alongside our{' '}
-          <Link href="/legal/terms" style={{ color: '#6ea8fe' }}>
+          <Link href="/legal/terms" style={{ color: 'var(--accent)' }}>
             Terms of Service
           </Link>
           .
@@ -94,7 +94,7 @@ export default function PrivacyPage() {
         <h2>8. Contact</h2>
         <p>
           For privacy questions or requests, email{' '}
-          <a href="mailto:privacy@overlaybets.com" style={{ color: '#6ea8fe' }}>
+          <a href="mailto:privacy@overlaybets.com" style={{ color: 'var(--accent)' }}>
             privacy@overlaybets.com
           </a>
           .

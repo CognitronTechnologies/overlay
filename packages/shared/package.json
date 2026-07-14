@@ -20,6 +20,7 @@
     "./consent": {
       "types": "./src/consent.ts",
       "default": "./src/consent.ts"
+    },
     "./markdown": {
       "types": "./src/markdown.ts",
       "default": "./src/markdown.ts"
