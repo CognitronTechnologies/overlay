@@ -49,25 +49,6 @@ export default function SiteHeader() {
           </Link>
           <Link href="/blog" onClick={closeMenu}>
             Blog
-        ) : null}
-        {role === 'admin' ? (
-          <>
-            <Link href="/admin" style={{ color: '#9aa4b2' }}>
-              Admin
-            </Link>
-            <Link href="/admin/users" style={{ color: '#9aa4b2' }}>
-              Users
-            </Link>
-            <Link href="/admin/audit-log" style={{ color: '#9aa4b2' }}>
-              Audit log
-            </Link>
-          </>
-        ) : null}
-      </nav>
-      {ready ? (
-        role ? (
-          <Link href="/account" style={{ color: '#6ea8fe' }}>
-            Account
           </Link>
           {role === 'tipster' ? (
             <Link href="/dashboard" onClick={closeMenu}>
@@ -86,6 +67,9 @@ export default function SiteHeader() {
               </Link>
               <Link href="/admin/users" onClick={closeMenu}>
                 Users
+              </Link>
+              <Link href="/admin/audit-log" onClick={closeMenu}>
+                Audit log
               </Link>
             </>
           ) : null}

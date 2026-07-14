@@ -115,21 +115,6 @@ export default function AccountPage() {
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>Your account</h1>
-      <p style={{ color: 'var(--muted)' }}>
-        {role ? `Signed in as ${role}` : 'Loading…'}
-      </p>
-
-      {role === 'tipster' ? (
-        <p>
-          <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
-            → Go to tipster dashboard
-          </Link>
-          {' · '}
-          <Link href="/onboarding" style={{ color: 'var(--accent)' }}>
-            Onboarding
-          </Link>
-        </p>
-      ) : null}
 
       {/* --- Profile summary --- */}
       <div style={cardStyle}>
@@ -267,7 +252,6 @@ export default function AccountPage() {
                 href={`/tipsters/${s.tipsterId}`}
                 style={{ color: 'var(--accent)' }}
               >
-              <Link href={`/tipsters/${s.tipsterId}`} style={{ color: '#6ea8fe' }}>
                 {s.tipsterId}
               </Link>
               <span style={{ color: 'var(--muted)' }}>{s.status}</span>
