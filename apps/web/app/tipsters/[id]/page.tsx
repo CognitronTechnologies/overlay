@@ -14,12 +14,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const t = await getTipster(params.id);
   if (!t) return { title: 'Tipster not found — Overlay Bets' };
+  const name = t.displayName ?? t.tipsterId;
   const y = t.stats ? `${t.stats.yield.toFixed(1)}% yield` : 'verified picks';
   return {
-    title: `${t.tipsterId} — ${y} · Overlay Bets`,
+    title: `${name} — ${y} · Overlay Bets`,
     description:
       t.bio ??
-      `Verified betting record for ${t.tipsterId}: ROI, closing line value and settled picks — all cryptographically locked before kickoff.`,
+      `Verified betting record for ${name}: ROI, closing line value and settled picks — all cryptographically locked before kickoff.`,
     alternates: { canonical: `${SITE_URL}/tipsters/${t.tipsterId}` },
   };
 }
@@ -151,8 +152,26 @@ export default async function TipsterPage({
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
-        {t.tipsterId}
+        {t.displayName ?? t.tipsterId}
+        {t.verified ? (
+          <span
+            title="Verified identity"
+            style={{
+              marginLeft: '0.6rem',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              color: 'var(--accent)',
+              verticalAlign: 'middle',
+            }}
+          >
+            ✓ Verified
+          </span>
+        ) : null}
       </h1>
+      <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
+        {t.country ? `${t.country} · ` : ''}
+        {t.subscriberCount} subscriber{t.subscriberCount === 1 ? '' : 's'}
+      </p>
       {t.bio ? <p style={{ color: 'var(--fg)' }}>{t.bio}</p> : null}
       {t.sports.length ? (
         <p style={{ color: 'var(--muted)', marginTop: 0 }}>{t.sports.join(' · ')}</p>
@@ -225,6 +244,7 @@ export default async function TipsterPage({
         <LivePicks
           tipsterId={t.tipsterId}
           priceCents={t.subscriptionPriceCents}
+          billingInterval={t.billingInterval}
         />
       </div>
 

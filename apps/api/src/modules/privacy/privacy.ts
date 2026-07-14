@@ -53,8 +53,19 @@ export function userErasureData(userId: string) {
  */
 export function tipsterErasureData() {
   return {
+    displayName: null,
+    country: null,
+    contactMethod: null,
+    contactValue: null,
     bio: null,
     stripeAccountId: null,
+    socialX: null,
+    socialInstagram: null,
+    socialTelegram: null,
+    identityDocPath: null,
+    identityDocName: null,
+    identityDocSubmittedAt: null,
+    identityVerified: false,
     status: 'suspended' as const,
   };
 }
@@ -68,9 +79,17 @@ export interface ExportableUser {
 }
 
 export interface ExportableTipster {
+  displayName?: string | null;
+  country?: string | null;
+  contactMethod?: string | null;
+  contactValue?: string | null;
   bio: string | null;
   sports: string[];
   subscriptionPriceCents: number;
+  billingInterval?: string;
+  socialX?: string | null;
+  socialInstagram?: string | null;
+  socialTelegram?: string | null;
   status: string;
   createdAt: Date | string;
 }

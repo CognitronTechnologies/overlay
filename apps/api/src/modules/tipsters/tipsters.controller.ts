@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   ForbiddenException,
@@ -7,20 +8,56 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { IsArray, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { TipstersService } from './tipsters.service';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard, Roles } from '../../common/roles.guard';
 import { CurrentUser } from '../../common/current-user.decorator';
 import type { AuthUser } from '../../common/crypto';
 import type { RawMarketplaceQuery } from './marketplace';
+import {
+  InvalidDocumentError,
+  MAX_DOC_BYTES,
+  storeIdentityDocument,
+  type UploadedDoc,
+} from './uploads';
 
 class UpdateTipsterDto {
-  @IsOptional() @IsString() bio?: string;
+  @IsOptional() @IsString() @MaxLength(80) displayName?: string;
+  @IsOptional() @IsString() @MaxLength(80) country?: string;
+  @IsOptional() @IsIn(['phone', 'telegram', 'whatsapp']) contactMethod?:
+    | 'phone'
+    | 'telegram'
+    | 'whatsapp';
+  @IsOptional() @IsString() @MaxLength(120) contactValue?: string;
+  @IsOptional() @IsString() @MaxLength(2000) bio?: string;
   @IsOptional() @IsArray() sports?: string[];
   @IsOptional() @IsInt() @Min(0) subscriptionPriceCents?: number;
+  @IsOptional() @IsIn(['weekly', 'monthly']) billingInterval?:
+    | 'weekly'
+    | 'monthly';
+  @IsOptional() @IsString() @MaxLength(120) socialX?: string;
+  @IsOptional() @IsString() @MaxLength(120) socialInstagram?: string;
+  @IsOptional() @IsString() @MaxLength(120) socialTelegram?: string;
+}
+
+class SubmitVerificationDto {
+  @IsOptional() @IsString() @MaxLength(120) socialX?: string;
+  @IsOptional() @IsString() @MaxLength(120) socialInstagram?: string;
+  @IsOptional() @IsString() @MaxLength(120) socialTelegram?: string;
 }
 
 @Controller('tipsters')
@@ -46,6 +83,24 @@ export class TipstersController {
     return this.tipsters.updateProfile(user.tipsterId, dto);
   }
 
+  /** The caller's own editable profile (prefills the onboarding wizard). */
+  @Get('me/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('tipster')
+  myProfile(@CurrentUser() user: AuthUser) {
+    if (!user.tipsterId) throw new ForbiddenException('Not a tipster account');
+    return this.tipsters.getEditableProfile(user.tipsterId);
+  }
+
+  /** Active-subscriber count for the caller's own dashboard (OB-020). */
+  @Get('me/subscribers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('tipster')
+  subscribers(@CurrentUser() user: AuthUser) {
+    if (!user.tipsterId) throw new ForbiddenException('Not a tipster account');
+    return this.tipsters.getSubscriberCount(user.tipsterId);
+  }
+
   /** Onboarding wizard status for the calling tipster (OB-020). */
   @Get('me/onboarding')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -64,12 +119,37 @@ export class TipstersController {
     return this.tipsters.completeStripeOnboarding(user.tipsterId);
   }
 
-  /** Complete the identity-verification step (OB-020). */
+  /**
+   * Complete the optional identity-verification step (OB-020): upload an
+   * official document (multipart field `document`) and optionally attach social
+   * handles, unlocking the verified badge.
+   */
   @Post('me/onboarding/verification')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('tipster')
-  completeVerification(@CurrentUser() user: AuthUser) {
+  @UseInterceptors(
+    FileInterceptor('document', { limits: { fileSize: MAX_DOC_BYTES } }),
+  )
+  async submitVerification(
+    @UploadedFile() document: UploadedDoc | undefined,
+    @Body() dto: SubmitVerificationDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     if (!user.tipsterId) throw new ForbiddenException('Not a tipster account');
-    return this.tipsters.completeVerification(user.tipsterId);
+    try {
+      const stored = await storeIdentityDocument(document);
+      return await this.tipsters.submitVerification(user.tipsterId, {
+        docPath: stored.path,
+        docName: stored.name,
+        socialX: dto.socialX,
+        socialInstagram: dto.socialInstagram,
+        socialTelegram: dto.socialTelegram,
+      });
+    } catch (err) {
+      if (err instanceof InvalidDocumentError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 }

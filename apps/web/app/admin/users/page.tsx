@@ -13,7 +13,11 @@ interface AdminUser {
   email: string;
   role: Role;
   createdAt: string;
-  tipster: { status: TipsterStatus } | null;
+  tipster: {
+    status: TipsterStatus;
+    verified: boolean;
+    subscriberCount: number;
+  } | null;
 }
 
 interface AdminUsersPage {
@@ -111,6 +115,35 @@ export default function AdminUsersPage() {
       await load(query, page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to change role');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function viewDocument(user: AdminUser) {
+    setError(null);
+    setNotice(null);
+    setBusyId(user.id);
+    try {
+      const res = await authFetch(
+        `/api/admin/tipsters/${user.id}/identity-document`,
+      );
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      const doc = (await res.json()) as {
+        url: string | null;
+        name: string | null;
+      };
+      if (doc.url) {
+        window.open(doc.url, '_blank', 'noopener,noreferrer');
+      } else {
+        setNotice(
+          doc.name
+            ? `Document "${doc.name}" isn’t viewable in this environment.`
+            : 'No identity document uploaded.',
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load document');
     } finally {
       setBusyId(null);
     }
@@ -217,6 +250,7 @@ export default function AdminUsersPage() {
               <th style={{ padding: '0.5rem 0' }}>Email</th>
               <th>Role</th>
               <th>Tipster</th>
+              <th>Subscribers</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -243,29 +277,65 @@ export default function AdminUsersPage() {
                     ))}
                   </select>
                 </td>
-                <td style={muted}>{u.tipster ? u.tipster.status : '—'}</td>
+                <td style={muted}>
+                  {u.tipster ? (
+                    <>
+                      {u.tipster.status}
+                      {u.tipster.verified ? (
+                        <span
+                          title="Identity verified"
+                          style={{ color: 'var(--accent)', marginLeft: '0.4rem' }}
+                        >
+                          ✓ verified
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td style={muted}>
+                  {u.tipster ? u.tipster.subscriberCount : '—'}
+                </td>
                 <td>
                   {u.tipster ? (
-                    <button
-                      type="button"
-                      disabled={busyId === u.id}
-                      onClick={() => toggleSuspend(u)}
-                      style={{
-                        background: 'transparent',
-                        color:
-                          u.tipster.status === 'suspended'
-                            ? 'var(--accent)'
-                            : 'var(--danger)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 8,
-                        padding: '0.4rem 0.9rem',
-                        cursor: busyId === u.id ? 'default' : 'pointer',
-                      }}
-                    >
-                      {u.tipster.status === 'suspended'
-                        ? 'Reinstate'
-                        : 'Suspend'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        disabled={busyId === u.id}
+                        onClick={() => viewDocument(u)}
+                        style={{
+                          background: 'transparent',
+                          color: 'var(--accent)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: '0.4rem 0.9rem',
+                          cursor: busyId === u.id ? 'default' : 'pointer',
+                        }}
+                      >
+                        View ID
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === u.id}
+                        onClick={() => toggleSuspend(u)}
+                        style={{
+                          background: 'transparent',
+                          color:
+                            u.tipster.status === 'suspended'
+                              ? 'var(--accent)'
+                              : 'var(--danger)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: '0.4rem 0.9rem',
+                          cursor: busyId === u.id ? 'default' : 'pointer',
+                        }}
+                      >
+                        {u.tipster.status === 'suspended'
+                          ? 'Reinstate'
+                          : 'Suspend'}
+                      </button>
+                    </div>
                   ) : (
                     <span style={muted}>—</span>
                   )}

@@ -25,6 +25,7 @@ import {
   paginateAuditLog,
   type RawAuditLogQuery,
 } from './audit-query';
+import { resolveIdentityDocumentUrl } from '../tipsters/uploads';
 
 type TipsterStatus = 'active' | 'suspended';
 
@@ -108,12 +109,31 @@ export class AdminService {
         email: true,
         role: true,
         createdAt: true,
-        tipster: { select: { status: true } },
+        tipster: {
+          select: {
+            status: true,
+            identityVerified: true,
+            // Active subscribers backing this tipster (OB-020 admin oversight).
+            _count: { select: { subscriptions: { where: { status: 'active' } } } },
+          },
+        },
       },
     });
 
     return {
-      items,
+      items: items.map((u) => ({
+        id: u.id,
+        email: u.email,
+        role: u.role,
+        createdAt: u.createdAt,
+        tipster: u.tipster
+          ? {
+              status: u.tipster.status,
+              verified: u.tipster.identityVerified,
+              subscriberCount: u.tipster._count.subscriptions,
+            }
+          : null,
+      })),
       total,
       page: window.page,
       pageSize: window.pageSize,
@@ -184,6 +204,32 @@ export class AdminService {
       });
       return updated;
     });
+  }
+
+  /**
+   * Mint a short-lived signed URL for a tipster's uploaded identity document so
+   * an admin can review it during verification (OB-020). Returns a null `url`
+   * when no document has been uploaded or it isn't servable (e.g. a local-dev
+   * file). Never exposes the underlying storage path.
+   */
+  async getTipsterIdentityDocument(tipsterId: string) {
+    const tipster = await this.prisma.tipster.findUnique({
+      where: { userId: tipsterId },
+      select: {
+        identityDocPath: true,
+        identityDocName: true,
+        identityDocSubmittedAt: true,
+        identityVerified: true,
+      },
+    });
+    if (!tipster) throw new NotFoundException('Tipster not found');
+    const url = await resolveIdentityDocumentUrl(tipster.identityDocPath);
+    return {
+      name: tipster.identityDocName,
+      submittedAt: tipster.identityDocSubmittedAt,
+      verified: tipster.identityVerified,
+      url,
+    };
   }
 
   /**

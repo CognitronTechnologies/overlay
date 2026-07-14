@@ -49,6 +49,12 @@ enum NotificationFrequency {
   daily
 }
 
+/// Subscription billing cadence a tipster offers (OB-020).
+enum BillingInterval {
+  weekly
+  monthly
+}
+
 model User {
   id             String         @id @default(cuid())
   role           Role           @default(user)
@@ -69,15 +75,34 @@ model User {
 model Tipster {
   userId                 String   @id
   user                   User     @relation(fields: [userId], references: [id])
+  // Public identity (OB-020): shown on the profile / marketplace card.
+  displayName            String?
+  country                String?
+  // Preferred direct-contact channel captured at onboarding: one of
+  // `phone` | `telegram` | `whatsapp`, with the handle/number in contactValue.
+  contactMethod          String?
+  contactValue           String?
   bio                    String?
   sports                 String[]
   subscriptionPriceCents Int      @default(0)
+  // Billing cadence the subscription price is charged on (OB-020).
+  billingInterval        BillingInterval @default(monthly)
   stripeAccountId        String?
   // Onboarding wizard (OB-020): Stripe Connect onboarding + identity
   // verification progress. Publishing is gated until every required step
-  // (bio, sports, pricing, Stripe, verification) is complete.
+  // (profile, sports, bio, pricing, Stripe) is complete; verification is an
+  // optional trust step that unlocks the "verified" badge.
   stripeOnboarded        Boolean  @default(false)
   identityVerified       Boolean  @default(false)
+  // Social / "digital identity" handles surfaced on the verified profile.
+  socialX                String?
+  socialInstagram        String?
+  socialTelegram         String?
+  // Uploaded official document (ID / passport / driver licence) backing the
+  // verification step. Path is storage-relative; name is the original filename.
+  identityDocPath        String?
+  identityDocName        String?
+  identityDocSubmittedAt DateTime?
   status                 String   @default("active")
   createdAt              DateTime @default(now())
 

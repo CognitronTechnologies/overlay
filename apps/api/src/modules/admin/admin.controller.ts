@@ -81,6 +81,12 @@ export class AdminController {
     return this.admin.setTipsterStatus(actor.userId, id, dto.status, dto.note);
   }
 
+  /** Short-lived signed URL for a tipster's uploaded identity document. */
+  @Get('tipsters/:id/identity-document')
+  identityDocument(@Param('id') id: string) {
+    return this.admin.getTipsterIdentityDocument(id);
+  }
+
   @Get('audit-log')
   auditLog(
     @Query('entity') entity?: string,

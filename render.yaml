@@ -70,6 +70,13 @@ services:
       # Supabase Auth (OB-145) — public project URL; API verifies JWTs via JWKS.
       - key: SUPABASE_URL
         value: https://yseftsncbkclepvursfn.supabase.co
+      # Supabase Storage (OB-020) — server-only service role key backs private
+      # identity-document uploads. Set in the Render dashboard (never commit it).
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Private bucket that identity documents are stored in.
+      - key: SUPABASE_STORAGE_BUCKET
+        value: identity-documents
       - key: NOTIFIER_PROVIDER
         value: mock
       # Public URL of the web app — used to build post-checkout redirect URLs.
