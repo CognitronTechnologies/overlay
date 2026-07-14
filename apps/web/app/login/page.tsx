@@ -62,6 +62,11 @@ export default function LoginPage() {
           Create one
         </Link>
       </p>
+      <p style={{ color: '#9aa4b2' }}>
+        <Link href="/forgot-password" style={{ color: '#6ea8fe' }}>
+          Forgot your password?
+        </Link>
+      </p>
     </main>
   );
 }
