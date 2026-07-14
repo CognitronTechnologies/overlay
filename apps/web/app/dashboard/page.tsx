@@ -27,7 +27,39 @@ interface Pick {
   clv: number | null;
 }
 
-const MARKETS = ['1X2', 'moneyline', 'spread', 'totals'];
+/** Market + best prices per selection, for the odds-driven pick form. */
+interface MarketOdds {
+  market: string;
+  prices: Record<string, number>;
+}
+
+const MARKETS = [
+  '1X2',
+  'moneyline',
+  'dnb',
+  'double_chance',
+  'btts',
+  'spreads',
+  'totals',
+  'team_totals',
+  'odd_even',
+  'correct_score',
+];
+
+// Per-market guidance for the selection field so picks match the grader's
+// expected format (see packages/shared/src/grading.ts).
+const SELECTION_HINTS: Record<string, string> = {
+  '1X2': 'home, draw or away',
+  moneyline: 'home or away',
+  dnb: 'home or away (draw no bet)',
+  double_chance: '1X, 12 or X2',
+  btts: 'yes or no (both teams to score)',
+  spreads: 'e.g. home -1.5, away +0.25 (Asian OK)',
+  totals: 'e.g. over 2.5 or under 3',
+  team_totals: 'e.g. home over 1.5',
+  odd_even: 'odd or even',
+  correct_score: 'e.g. 2-1',
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -49,6 +81,17 @@ export default function DashboardPage() {
   });
   const [msg, setMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Pick-form discovery: filters + odds-driven selection.
+  const [filters, setFilters] = useState<{
+    sports: string[];
+    leagues: Record<string, string[]>;
+  }>({ sports: [], leagues: {} });
+  const [fSport, setFSport] = useState('');
+  const [fLeague, setFLeague] = useState('');
+  const [fQuery, setFQuery] = useState('');
+  const [eventOdds, setEventOdds] = useState<MarketOdds[] | null>(null);
+  const [oddsLoading, setOddsLoading] = useState(false);
 
   const loadPicks = useCallback(async (id: string) => {
     const res = await fetch(`${API_URL}/api/picks/tipster/${id}`);
@@ -85,6 +128,95 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadFilters = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/events/filters`);
+      if (res.ok) {
+        setFilters(
+          (await res.json()) as {
+            sports: string[];
+            leagues: Record<string, string[]>;
+          },
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const loadEvents = useCallback(
+    async (sport: string, league: string, q: string) => {
+      const qs = new URLSearchParams();
+      if (sport) qs.set('sport', sport);
+      if (league) qs.set('league', league);
+      if (q.trim()) qs.set('q', q.trim());
+      try {
+        const res = await fetch(`${API_URL}/api/events/upcoming?${qs.toString()}`);
+        setEvents(res.ok ? ((await res.json()) as EventRow[]) : []);
+      } catch {
+        setEvents([]);
+      }
+    },
+    [],
+  );
+
+  /** Load an event's live markets/odds and default the form to the first line. */
+  const loadEventOdds = useCallback(async (eventId: string) => {
+    if (!eventId) {
+      setEventOdds(null);
+      return;
+    }
+    setOddsLoading(true);
+    try {
+      const res = await authFetch(`/api/events/${eventId}/odds`);
+      const odds = res.ok ? ((await res.json()) as MarketOdds[]) : [];
+      setEventOdds(odds);
+      if (odds.length > 0) {
+        const first = odds[0];
+        const [sel, price] = Object.entries(first.prices)[0] ?? ['', 0];
+        setForm((f) => ({
+          ...f,
+          market: first.market,
+          selection: sel,
+          oddsAtPick: price ? String(price) : f.oddsAtPick,
+        }));
+      }
+    } catch {
+      setEventOdds([]);
+    } finally {
+      setOddsLoading(false);
+    }
+  }, []);
+
+  function selectEvent(eventId: string) {
+    setForm((f) => ({ ...f, eventId, selection: '' }));
+    loadEventOdds(eventId);
+  }
+
+  function selectMarket(market: string) {
+    const prices = eventOdds?.find((m) => m.market === market)?.prices;
+    if (prices) {
+      const [sel, price] = Object.entries(prices)[0] ?? ['', 0];
+      setForm((f) => ({
+        ...f,
+        market,
+        selection: sel,
+        oddsAtPick: price ? String(price) : f.oddsAtPick,
+      }));
+    } else {
+      setForm((f) => ({ ...f, market, selection: '' }));
+    }
+  }
+
+  function selectSelection(sel: string) {
+    const price = eventOdds?.find((m) => m.market === form.market)?.prices[sel];
+    setForm((f) => ({
+      ...f,
+      selection: sel,
+      oddsAtPick: price ? String(price) : f.oddsAtPick,
+    }));
+  }
+
   useEffect(() => {
     (async () => {
       const profile = await getProfile();
@@ -97,16 +229,27 @@ export default function DashboardPage() {
         return;
       }
       setTipsterId(profile.tipsterId);
-      fetch(`${API_URL}/api/events/upcoming`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((data) => setEvents(data as EventRow[]))
-        .catch(() => setEvents([]));
+      loadFilters();
+      loadEvents('', '', '');
       loadPicks(profile.tipsterId);
       loadPerformance();
       loadOnboarding();
       loadSubscribers();
     })();
-  }, [router, loadPicks, loadPerformance, loadOnboarding, loadSubscribers]);
+  }, [
+    router,
+    loadPicks,
+    loadPerformance,
+    loadOnboarding,
+    loadSubscribers,
+    loadFilters,
+    loadEvents,
+  ]);
+
+  // Refetch the event list whenever the sport/league/search filter changes.
+  useEffect(() => {
+    if (tipsterId) loadEvents(fSport, fLeague, fQuery);
+  }, [tipsterId, fSport, fLeague, fQuery, loadEvents]);
 
   async function submitPick(e: React.FormEvent) {
     e.preventDefault();
@@ -212,14 +355,58 @@ export default function DashboardPage() {
           onSubmit={submitPick}
           style={{ ...formStyles.form, maxWidth: 520 }}
         >
+        {/* Narrow down: sport → league → search by team. */}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <select
+            aria-label="Filter by sport"
+            style={{ ...formStyles.input, flex: '1 1 140px' }}
+            value={fSport}
+            onChange={(e) => {
+              setFSport(e.target.value);
+              setFLeague('');
+            }}
+          >
+            <option value="">All sports</option>
+            {filters.sports.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filter by league"
+            style={{ ...formStyles.input, flex: '1 1 140px' }}
+            value={fLeague}
+            onChange={(e) => setFLeague(e.target.value)}
+            disabled={!fSport || !(filters.leagues[fSport]?.length)}
+          >
+            <option value="">All leagues</option>
+            {(filters.leagues[fSport] ?? []).map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </div>
+        <input
+          style={formStyles.input}
+          placeholder="Search teams…"
+          value={fQuery}
+          onChange={(e) => setFQuery(e.target.value)}
+        />
+
         <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
           Event
           <select
             style={{ ...formStyles.input, marginTop: '0.35rem' }}
             value={form.eventId}
-            onChange={(e) => setForm({ ...form, eventId: e.target.value })}
+            onChange={(e) => selectEvent(e.target.value)}
           >
-            <option value="">Select an upcoming event…</option>
+            <option value="">
+              {events.length
+                ? 'Select an event…'
+                : 'No matching events'}
+            </option>
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
                 {ev.home} vs {ev.away} — {new Date(ev.startTime).toLocaleString()}
@@ -233,9 +420,12 @@ export default function DashboardPage() {
           <select
             style={{ ...formStyles.input, marginTop: '0.35rem' }}
             value={form.market}
-            onChange={(e) => setForm({ ...form, market: e.target.value })}
+            onChange={(e) => selectMarket(e.target.value)}
           >
-            {MARKETS.map((m) => (
+            {(eventOdds && eventOdds.length > 0
+              ? eventOdds.map((m) => m.market)
+              : MARKETS
+            ).map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
@@ -243,23 +433,62 @@ export default function DashboardPage() {
           </select>
         </label>
 
-        <input
-          style={formStyles.input}
-          placeholder="Selection (e.g. Home, Over 2.5)"
-          value={form.selection}
-          onChange={(e) => setForm({ ...form, selection: e.target.value })}
-          required
-        />
-        <input
-          style={formStyles.input}
-          type="number"
-          step="0.01"
-          min="1.01"
-          placeholder="Odds"
-          value={form.oddsAtPick}
-          onChange={(e) => setForm({ ...form, oddsAtPick: e.target.value })}
-          required
-        />
+        {(() => {
+          const prices = eventOdds?.find((m) => m.market === form.market)?.prices;
+          const hasLiveOdds = !!prices && Object.keys(prices).length > 0;
+          return (
+            <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
+              Selection
+              {oddsLoading ? (
+                <span style={{ marginLeft: '0.5rem' }}>· loading odds…</span>
+              ) : null}
+              {hasLiveOdds ? (
+                <select
+                  style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                  value={form.selection}
+                  onChange={(e) => selectSelection(e.target.value)}
+                  required
+                >
+                  <option value="">Choose a line…</option>
+                  {Object.entries(prices!).map(([sel, price]) => (
+                    <option key={sel} value={sel}>
+                      {sel} @ {price.toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                  placeholder={SELECTION_HINTS[form.market] ?? 'Selection'}
+                  value={form.selection}
+                  onChange={(e) =>
+                    setForm({ ...form, selection: e.target.value })
+                  }
+                  required
+                />
+              )}
+            </label>
+          );
+        })()}
+
+        <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
+          Odds{' '}
+          {eventOdds && eventOdds.length > 0 ? (
+            <span style={{ fontSize: '0.8rem' }}>
+              (auto-filled from the live line — editable)
+            </span>
+          ) : null}
+          <input
+            style={{ ...formStyles.input, marginTop: '0.35rem' }}
+            type="number"
+            step="0.01"
+            min="1.01"
+            placeholder="Odds"
+            value={form.oddsAtPick}
+            onChange={(e) => setForm({ ...form, oddsAtPick: e.target.value })}
+            required
+          />
+        </label>
         <input
           style={formStyles.input}
           type="number"

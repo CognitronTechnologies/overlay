@@ -6,6 +6,7 @@ import { SettlementService } from './workers/settlement.service';
 import { startSettlementQueue } from './workers/settlement.queue';
 import { METRICS_CONTENT_TYPE, metrics } from './common/metrics';
 import { NotificationsService } from './modules/notifications/notifications.service';
+import { EventsService } from './modules/events/events.service';
 
 /**
  * Worker entrypoint (docs/ARCHITECTURE.md §3.3). Runs the settlement pipeline
@@ -67,6 +68,29 @@ async function main() {
 
   await tick();
   setInterval(tick, intervalMs);
+
+  // Scheduled fixture ingestion (OB-045/OB-046): pull the configured sports on
+  // an interval so the events table stays fresh without manual admin action.
+  // Gated on INGEST_SPORTS so dev/mock without config stays quiet.
+  if (process.env.INGEST_SPORTS?.trim()) {
+    const events = app.get(EventsService);
+    const ingestMs = Number(process.env.INGEST_INTERVAL_MS ?? 15 * 60_000);
+    const ingestTick = async () => {
+      try {
+        const summary = await events.ingestConfigured();
+        const total = summary.reduce((n, s) => n + (s.ingested ?? 0), 0);
+        // eslint-disable-next-line no-console
+        console.log(
+          `ingest cycle: ${total} fixture(s) across ${summary.length} sport(s)`,
+        );
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('ingest cycle failed', err);
+      }
+    };
+    await ingestTick();
+    setInterval(ingestTick, ingestMs);
+  }
 
   // Daily digest fan-out (OB-033): batches new picks for daily-cadence users
   // into a single email per cycle. Defaults to every 24h.

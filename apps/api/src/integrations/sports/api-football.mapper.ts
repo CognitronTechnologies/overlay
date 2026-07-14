@@ -6,6 +6,7 @@ import type {
   EventResult,
   ProviderEvent,
 } from './sports-provider.interface';
+import { gradeMarket } from '@overlay/shared';
 
 export interface ApiFootballFixture {
   fixture: {
@@ -44,15 +45,9 @@ export function gradeFixture(
   selection: string,
 ): EventOutcome {
   if (!isFinished(f.fixture.status.short)) return 'void';
-  if (market !== '1X2' && market !== 'moneyline') return 'void';
   const { home, away } = f.goals;
   if (home === null || away === null) return 'void';
-
-  const winner: 'home' | 'draw' | 'away' =
-    home > away ? 'home' : away > home ? 'away' : 'draw';
-
-  if (market === 'moneyline' && winner === 'draw') return 'void';
-  return selection === winner ? 'won' : 'lost';
+  return gradeMarket(market, selection, home, away);
 }
 
 export function toEventResult(f: ApiFootballFixture): EventResult {

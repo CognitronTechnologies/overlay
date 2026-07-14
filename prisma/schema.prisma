@@ -21,6 +21,8 @@ enum PickStatus {
   won
   lost
   void
+  half_won
+  half_lost
 }
 
 enum SubscriptionStatus {

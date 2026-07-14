@@ -97,6 +97,58 @@ test('mapOdds without draw → moneyline', () => {
   assert.equal(m.market, 'moneyline');
 });
 
+test('mapOdds emits spreads + totals keyed by their line', () => {
+  const raw: OddsApiEventOdds = {
+    id: 'e',
+    sport_key: 'soccer_epl',
+    sport_title: 'EPL',
+    home_team: 'Home',
+    away_team: 'Away',
+    commence_time: '2030-01-01T00:00:00Z',
+    bookmakers: [
+      {
+        key: 'bookA',
+        markets: [
+          {
+            key: 'spreads',
+            outcomes: [
+              { name: 'Home', price: 1.9, point: -1.5 },
+              { name: 'Away', price: 1.95, point: 1.5 },
+            ],
+          },
+          {
+            key: 'totals',
+            outcomes: [
+              { name: 'Over', price: 1.87, point: 2.5 },
+              { name: 'Under', price: 1.95, point: 2.5 },
+            ],
+          },
+        ],
+      },
+      {
+        key: 'bookB',
+        markets: [
+          {
+            key: 'spreads',
+            outcomes: [
+              { name: 'Home', price: 2.0, point: -1.5 }, // better home -1.5
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const markets = mapOdds(raw);
+  const spreads = markets.find((m) => m.market === 'spreads');
+  const totals = markets.find((m) => m.market === 'totals');
+  assert.ok(spreads && totals);
+  // Best price for the exact line, keyed with the signed handicap.
+  assert.equal(spreads!.prices['home -1.5'], 2.0);
+  assert.equal(spreads!.prices['away +1.5'], 1.95);
+  assert.equal(totals!.prices['over 2.5'], 1.87);
+  assert.equal(totals!.prices['under 2.5'], 1.95);
+});
+
 const score = (h: number, a: number, completed = true): OddsApiScoreEvent => ({
   id: 'e',
   completed,

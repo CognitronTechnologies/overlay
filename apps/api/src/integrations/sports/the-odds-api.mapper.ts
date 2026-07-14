@@ -7,6 +7,7 @@ import type {
   MarketOdds,
   ProviderEvent,
 } from './sports-provider.interface';
+import { gradeMarket, spreadKey, totalKey } from '@overlay/shared';
 
 export interface OddsApiEvent {
   id: string;
@@ -20,6 +21,8 @@ export interface OddsApiEvent {
 export interface OddsApiOutcome {
   name: string;
   price: number;
+  /** Handicap (spreads) or total (totals) line; absent for h2h. */
+  point?: number;
 }
 export interface OddsApiMarket {
   key: string; // 'h2h' | 'spreads' | 'totals'
@@ -70,35 +73,69 @@ export function selectionForOutcome(
 
 /**
  * Aggregate the best (highest) decimal price per selection across all
- * bookmakers for the h2h market. 3-way (with Draw) → '1X2', else 'moneyline'.
+ * bookmakers, for every supported market:
+ *   - h2h    → '1X2' (3-way, with Draw) or 'moneyline' (2-way)
+ *   - spreads→ 'spreads', keyed '<home|away> <signed line>'
+ *   - totals → 'totals', keyed '<over|under> <line>'
+ * Distinct lines are distinct selections, so a pick matches its exact line.
  */
 export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
-  const best: Record<string, number> = {};
+  const h2h: Record<string, number> = {};
+  const spreads: Record<string, number> = {};
+  const totals: Record<string, number> = {};
   let hasDraw = false;
 
+  const better = (bag: Record<string, number>, key: string, price: number) => {
+    if (bag[key] === undefined || price > bag[key]) bag[key] = price;
+  };
+
   for (const bm of raw.bookmakers ?? []) {
-    const h2h = bm.markets.find((m) => m.key === 'h2h');
-    if (!h2h) continue;
-    for (const o of h2h.outcomes) {
-      const sel = selectionForOutcome(o.name, raw.home_team, raw.away_team);
-      if (!sel) continue;
-      if (sel === 'draw') hasDraw = true;
-      if (best[sel] === undefined || o.price > best[sel]) best[sel] = o.price;
+    for (const mk of bm.markets ?? []) {
+      if (mk.key === 'h2h') {
+        for (const o of mk.outcomes) {
+          const sel = selectionForOutcome(o.name, raw.home_team, raw.away_team);
+          if (!sel) continue;
+          if (sel === 'draw') hasDraw = true;
+          better(h2h, sel, o.price);
+        }
+      } else if (mk.key === 'spreads') {
+        for (const o of mk.outcomes) {
+          if (o.point === undefined) continue;
+          const sel = selectionForOutcome(o.name, raw.home_team, raw.away_team);
+          if (sel !== 'home' && sel !== 'away') continue;
+          better(spreads, spreadKey(sel, o.point), o.price);
+        }
+      } else if (mk.key === 'totals') {
+        for (const o of mk.outcomes) {
+          if (o.point === undefined) continue;
+          const name = o.name.toLowerCase();
+          if (name !== 'over' && name !== 'under') continue;
+          better(totals, totalKey(name, o.point), o.price);
+        }
+      }
     }
   }
 
-  if (Object.keys(best).length === 0) return [];
-  return [{ market: hasDraw ? '1X2' : 'moneyline', prices: best }];
+  const out: MarketOdds[] = [];
+  if (Object.keys(h2h).length > 0) {
+    out.push({ market: hasDraw ? '1X2' : 'moneyline', prices: h2h });
+  }
+  if (Object.keys(spreads).length > 0) {
+    out.push({ market: 'spreads', prices: spreads });
+  }
+  if (Object.keys(totals).length > 0) {
+    out.push({ market: 'totals', prices: totals });
+  }
+  return out;
 }
 
-/** Grade a selection from final scores. */
+/** Grade a selection from final scores (delegates to the shared grader). */
 export function gradeFromScores(
   raw: OddsApiScoreEvent,
   market: string,
   selection: string,
 ): EventOutcome {
   if (!raw.completed || !raw.scores) return 'void';
-  if (market !== '1X2' && market !== 'moneyline') return 'void';
 
   const scoreOf = (team: string): number | null => {
     const s = raw.scores!.find((x) => x.name === team);
@@ -109,13 +146,7 @@ export function gradeFromScores(
   if (home === null || away === null || Number.isNaN(home) || Number.isNaN(away)) {
     return 'void';
   }
-
-  const winner: 'home' | 'draw' | 'away' =
-    home > away ? 'home' : away > home ? 'away' : 'draw';
-
-  // Moneyline is 2-way: a draw voids the bet (push).
-  if (market === 'moneyline' && winner === 'draw') return 'void';
-  return selection === winner ? 'won' : 'lost';
+  return gradeMarket(market, selection, home, away);
 }
 
 /** Build an EventResult (with grade closure) from a score event. */

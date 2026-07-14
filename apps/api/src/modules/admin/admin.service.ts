@@ -241,7 +241,7 @@ export class AdminService {
     const query = normalizeSettlementsQuery(raw);
     const where: Prisma.PickWhereInput = query.status
       ? { status: query.status }
-      : { status: { in: ['won', 'lost', 'void'] } };
+      : { status: { in: ['won', 'lost', 'void', 'half_won', 'half_lost'] } };
 
     const [total, items] = await Promise.all([
       this.prisma.pick.count({ where }),

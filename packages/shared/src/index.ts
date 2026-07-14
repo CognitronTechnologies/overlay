@@ -10,3 +10,4 @@ export * from './consent.ts';
 export * from './subscriptions.ts';
 export * from './countries.ts';
 export * from './currencies.ts';
+export * from './grading.ts';

@@ -5,6 +5,7 @@ import type {
   ProviderEvent,
   SportsDataProvider,
 } from './sports-provider.interface';
+import { fetchJson } from './http';
 import {
   mapFixtures,
   toEventResult,
@@ -30,7 +31,11 @@ export class ApiFootballProvider implements SportsDataProvider {
 
   async getUpcomingEvents(sport: string): Promise<ProviderEvent[]> {
     const url = `${this.base}/fixtures?next=50`;
-    const body = await this.fetchJson<{ response: ApiFootballFixture[] }>(url);
+    const body = await fetchJson<{ response: ApiFootballFixture[] }>(
+      url,
+      { headers: this.headers() },
+      { label: this.name },
+    );
     return mapFixtures(body.response, sport);
   }
 
@@ -41,7 +46,11 @@ export class ApiFootballProvider implements SportsDataProvider {
 
   async getResult(vendorEventId: string): Promise<EventResult | null> {
     const url = `${this.base}/fixtures?id=${vendorEventId}`;
-    const body = await this.fetchJson<{ response: ApiFootballFixture[] }>(url);
+    const body = await fetchJson<{ response: ApiFootballFixture[] }>(
+      url,
+      { headers: this.headers() },
+      { label: this.name },
+    );
     const fixture = body.response[0];
     if (!fixture) return null;
     const result = toEventResult(fixture);
@@ -51,11 +60,5 @@ export class ApiFootballProvider implements SportsDataProvider {
       fixture.fixture.status.short === 'PEN'
       ? result
       : null;
-  }
-
-  private async fetchJson<T>(url: string): Promise<T> {
-    const res = await fetch(url, { headers: this.headers() });
-    if (!res.ok) throw new Error(`api-football ${res.status} for ${url}`);
-    return (await res.json()) as T;
   }
 }
