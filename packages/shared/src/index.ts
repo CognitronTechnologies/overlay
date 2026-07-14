@@ -8,3 +8,4 @@ export * from './password.ts';
 export * from './tipster-profile.ts';
 export * from './consent.ts';
 export * from './subscriptions.ts';
+export * from './countries.ts';

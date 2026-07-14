@@ -10,6 +10,7 @@ import type {
   OnboardingStatus,
   OnboardingStepKey,
 } from '../../lib/api';
+import { COUNTRIES, countryByCode, flagEmoji } from '@overlay/shared/countries';
 import { formStyles } from '../formStyles';
 
 type ContactMethod = 'phone' | 'telegram' | 'whatsapp';
@@ -19,6 +20,8 @@ interface WizardFields {
   country: string;
   contactMethod: ContactMethod;
   contactValue: string;
+  /** Dialling code (e.g. "+44") used only when contactMethod is 'phone'. */
+  phoneDial: string;
   sports: string;
   bio: string;
   billingInterval: 'weekly' | 'monthly';
@@ -33,6 +36,7 @@ const EMPTY_FIELDS: WizardFields = {
   country: '',
   contactMethod: 'phone',
   contactValue: '',
+  phoneDial: '',
   sports: '',
   bio: '',
   billingInterval: 'monthly',
@@ -41,6 +45,16 @@ const EMPTY_FIELDS: WizardFields = {
   socialInstagram: '',
   socialTelegram: '',
 };
+
+/** Split a stored phone contact ("+44 7700 900000") into dial code + number. */
+function splitPhone(value: string): { dial: string; number: string } {
+  const dials = [...new Set(COUNTRIES.map((c) => c.dial))].sort(
+    (a, b) => b.length - a.length,
+  );
+  const match = dials.find((d) => value.startsWith(d));
+  if (match) return { dial: match, number: value.slice(match.length).trim() };
+  return { dial: '', number: value };
+}
 
 const STEP_ORDER: OnboardingStepKey[] = [
   'profile',
@@ -97,11 +111,16 @@ export default function OnboardingPage() {
         const res = await authFetch('/api/tipsters/me/profile');
         if (res.ok) {
           const p = (await res.json()) as EditableTipsterProfile;
+          const method = p.contactMethod ?? 'phone';
+          const phone =
+            method === 'phone' ? splitPhone(p.contactValue ?? '') : null;
           setFields({
             displayName: p.displayName ?? '',
             country: p.country ?? '',
-            contactMethod: p.contactMethod ?? 'phone',
-            contactValue: p.contactValue ?? '',
+            contactMethod: method,
+            contactValue: phone ? phone.number : p.contactValue ?? '',
+            phoneDial:
+              phone?.dial || countryByCode(p.country)?.dial || '',
             sports: p.sports.join(', '),
             bio: p.bio ?? '',
             billingInterval: p.billingInterval ?? 'monthly',
@@ -162,20 +181,26 @@ export default function OnboardingPage() {
     setBusy(true);
     try {
       switch (stepKey) {
-        case 'profile':
+        case 'profile': {
           if (!fields.displayName.trim() || !fields.country.trim()) {
             throw new Error('Add your name and country to continue.');
           }
           if (!fields.contactValue.trim()) {
             throw new Error('Add a contact so subscribers can reach you.');
           }
+          // For phone contacts, prefix the chosen dialling code.
+          const contactValue =
+            fields.contactMethod === 'phone'
+              ? `${fields.phoneDial} ${fields.contactValue.trim()}`.trim()
+              : fields.contactValue.trim();
           await patchProfile({
             displayName: fields.displayName.trim(),
             country: fields.country.trim(),
             contactMethod: fields.contactMethod,
-            contactValue: fields.contactValue.trim(),
+            contactValue,
           });
           break;
+        }
         case 'sports': {
           const sports = fields.sports
             .split(',')
@@ -389,12 +414,28 @@ export default function OnboardingPage() {
             </label>
             <label style={labelStyle}>
               Country
-              <input
+              <select
                 style={{ ...formStyles.input, marginTop: '0.35rem' }}
-                placeholder="e.g. United Kingdom"
                 value={fields.country}
-                onChange={(e) => set('country', e.target.value)}
-              />
+                onChange={(e) => {
+                  const code = e.target.value;
+                  // Default the phone dial code to the chosen country's when
+                  // it hasn't been set yet.
+                  const dial = countryByCode(code)?.dial;
+                  setFields((f) => ({
+                    ...f,
+                    country: code,
+                    phoneDial: f.phoneDial || dial || '',
+                  }));
+                }}
+              >
+                <option value="">Select your country…</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {flagEmoji(c.code)} {c.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label style={labelStyle}>
               Preferred contact
@@ -412,16 +453,37 @@ export default function OnboardingPage() {
                 ))}
               </select>
             </label>
-            <input
-              style={formStyles.input}
-              placeholder={
-                fields.contactMethod === 'phone'
-                  ? '+44 7700 900000'
-                  : `@your-${fields.contactMethod}`
-              }
-              value={fields.contactValue}
-              onChange={(e) => set('contactValue', e.target.value)}
-            />
+            {fields.contactMethod === 'phone' ? (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <select
+                  aria-label="Country dialling code"
+                  style={{ ...formStyles.input, width: 'auto', flex: '0 0 auto' }}
+                  value={fields.phoneDial}
+                  onChange={(e) => set('phoneDial', e.target.value)}
+                >
+                  <option value="">Code</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.dial}>
+                      {flagEmoji(c.code)} {c.dial}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  style={{ ...formStyles.input, flex: 1 }}
+                  placeholder="7700 900000"
+                  inputMode="tel"
+                  value={fields.contactValue}
+                  onChange={(e) => set('contactValue', e.target.value)}
+                />
+              </div>
+            ) : (
+              <input
+                style={formStyles.input}
+                placeholder={`@your-${fields.contactMethod}`}
+                value={fields.contactValue}
+                onChange={(e) => set('contactValue', e.target.value)}
+              />
+            )}
           </div>
         ) : null}
 

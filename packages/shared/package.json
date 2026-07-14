@@ -28,6 +28,10 @@
     "./subscriptions": {
       "types": "./src/subscriptions.ts",
       "default": "./src/subscriptions.ts"
+    },
+    "./countries": {
+      "types": "./src/countries.ts",
+      "default": "./src/countries.ts"
     }
   },
   "scripts": {

@@ -128,11 +128,11 @@ function buildPastEvents() {
 // Dummy tipsters with distinct quality profiles. `count` settled picks each
 // (all >= the leaderboard's min sample of 10 so they appear immediately).
 const DUMMY_TIPSTERS = [
-  { email: 'sharpshooter@overlay.local', name: 'Sharp Shooter', country: 'United Kingdom', bio: 'Data-driven soccer sharp. Long-term CLV over hype.', sports: ['soccer'], priceCents: 2999, interval: 'monthly', count: 24, winRate: 0.6, edge: 0.05 },
-  { email: 'valuehunter@overlay.local', name: 'Value Hunter', country: 'Spain', bio: 'Chasing overlays in midweek European fixtures.', sports: ['soccer'], priceCents: 1999, interval: 'monthly', count: 18, winRate: 0.54, edge: 0.03 },
-  { email: 'hoopsanalyst@overlay.local', name: 'Hoops Analyst', country: 'United States', bio: 'NBA totals and moneyline specialist.', sports: ['basketball'], priceCents: 2499, interval: 'weekly', count: 16, winRate: 0.52, edge: 0.02 },
-  { email: 'steadyeddie@overlay.local', name: 'Steady Eddie', country: 'Ireland', bio: 'Low-variance flat-staking. Consistency first.', sports: ['soccer', 'basketball'], priceCents: 1499, interval: 'monthly', count: 14, winRate: 0.57, edge: 0.04 },
-  { email: 'longshotlarry@overlay.local', name: 'Longshot Larry', country: 'Australia', bio: 'High-odds underdog hunter. Not for the faint-hearted.', sports: ['soccer'], priceCents: 999, interval: 'weekly', count: 20, winRate: 0.4, edge: -0.01 },
+  { email: 'sharpshooter@overlay.local', name: 'Sharp Shooter', country: 'GB', bio: 'Data-driven soccer sharp. Long-term CLV over hype.', sports: ['soccer'], priceCents: 2999, interval: 'monthly', count: 24, winRate: 0.6, edge: 0.05 },
+  { email: 'valuehunter@overlay.local', name: 'Value Hunter', country: 'ES', bio: 'Chasing overlays in midweek European fixtures.', sports: ['soccer'], priceCents: 1999, interval: 'monthly', count: 18, winRate: 0.54, edge: 0.03 },
+  { email: 'hoopsanalyst@overlay.local', name: 'Hoops Analyst', country: 'US', bio: 'NBA totals and moneyline specialist.', sports: ['basketball'], priceCents: 2499, interval: 'weekly', count: 16, winRate: 0.52, edge: 0.02 },
+  { email: 'steadyeddie@overlay.local', name: 'Steady Eddie', country: 'IE', bio: 'Low-variance flat-staking. Consistency first.', sports: ['soccer', 'basketball'], priceCents: 1499, interval: 'monthly', count: 14, winRate: 0.57, edge: 0.04 },
+  { email: 'longshotlarry@overlay.local', name: 'Longshot Larry', country: 'AU', bio: 'High-odds underdog hunter. Not for the faint-hearted.', sports: ['soccer'], priceCents: 999, interval: 'weekly', count: 20, winRate: 0.4, edge: -0.01 },
 ];
 
 /**
