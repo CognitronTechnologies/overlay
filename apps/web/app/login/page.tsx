@@ -19,7 +19,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push('/account');
+      const next =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('next')
+          : null;
+      router.push(next || '/account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
