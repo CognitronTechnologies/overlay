@@ -4,10 +4,11 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard, Roles } from '../../common/roles.guard';
@@ -32,6 +33,13 @@ class SetTipsterStatusDto {
   @IsString()
   @MaxLength(500)
   note?: string;
+}
+
+class VoidPickDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(500)
+  reason!: string;
 }
 
 /** All admin routes require an authenticated admin principal. */
@@ -92,5 +100,28 @@ export class AdminController {
       page,
       pageSize,
     });
+  }
+
+  @Get('settlements')
+  settlements(
+    @Query('status') status?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listRecentSettlements({ status, take, skip });
+  }
+
+  @Post('settlements/rerun')
+  rerunSettlement(@CurrentUser() actor: AuthUser) {
+    return this.admin.rerunSettlement(actor.userId);
+  }
+
+  @Post('settlements/:id/void')
+  voidPick(
+    @Param('id') id: string,
+    @Body() dto: VoidPickDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.admin.voidPick(actor.userId, id, dto.reason);
   }
 }

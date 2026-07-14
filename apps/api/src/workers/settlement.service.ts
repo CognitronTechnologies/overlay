@@ -6,6 +6,10 @@ import {
   SPORTS_PROVIDER,
 } from '../integrations/sports/sports.module';
 import type { SportsDataProvider } from '../integrations/sports/sports-provider.interface';
+import {
+  voidPickWorkflow,
+  type VoidPickResult,
+} from '../modules/admin/settlements';
 import { recordSettlementCycle } from '../common/metrics';
 
 /**
@@ -166,5 +170,39 @@ export class SettlementService {
     for (const tipsterId of tipsterIds) {
       await this.stats.recomputeForTipster(tipsterId);
     }
+  }
+
+  /**
+   * Manually void a pick for an objective data error (OB-029). Voiding is a
+   * settlement-field write, so it lives here — the sanctioned settlement writer
+   * — to preserve the append-only integrity model. The transition, its audit
+   * entry (with a mandatory reason) and the stats recompute are performed
+   * atomically-then-recomputed via {@link voidPickWorkflow}.
+   */
+  async voidPick(
+    actorId: string,
+    pickId: string,
+    reason: unknown,
+  ): Promise<VoidPickResult> {
+    return voidPickWorkflow(
+      {
+        getPick: (id) =>
+          this.prisma.pick.findUnique({
+            where: { id },
+            select: { id: true, tipsterId: true, status: true },
+          }),
+        applyVoid: async ({ pickId: id, audit }) => {
+          await this.prisma.$transaction([
+            this.prisma.pick.update({
+              where: { id },
+              data: { status: 'void', settledAt: new Date() },
+            }),
+            this.prisma.auditLog.create({ data: audit }),
+          ]);
+        },
+        recomputeStats: (tipsterId) => this.recomputeStats(new Set([tipsterId])),
+      },
+      { actorId, pickId, reason },
+    );
   }
 }

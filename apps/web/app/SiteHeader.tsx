@@ -68,6 +68,9 @@ export default function SiteHeader() {
               <Link href="/admin/users" onClick={closeMenu}>
                 Users
               </Link>
+              <Link href="/admin/settlements" onClick={closeMenu}>
+                Settlements
+              </Link>
               <Link href="/admin/audit-log" onClick={closeMenu}>
                 Audit log
               </Link>
