@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { buildClvChart } from '@overlay/shared/tipster-profile';
+import { countryLabel, countryName, flagEmoji } from '@overlay/shared/countries';
 import { getTipster, SITE_URL } from '../../../lib/api';
 import LivePicks from './LivePicks';
 
@@ -153,6 +154,15 @@ export default async function TipsterPage({
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
         {t.displayName ?? t.tipsterId}
+        {flagEmoji(t.country) ? (
+          <span
+            title={countryName(t.country)}
+            aria-label={countryName(t.country)}
+            style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}
+          >
+            {flagEmoji(t.country)}
+          </span>
+        ) : null}
         {t.verified ? (
           <span
             title="Verified identity"
@@ -169,7 +179,7 @@ export default async function TipsterPage({
         ) : null}
       </h1>
       <p style={{ color: 'var(--muted)', margin: '0 0 0.5rem' }}>
-        {t.country ? `${t.country} · ` : ''}
+        {t.country ? `${countryLabel(t.country)} · ` : ''}
         {t.subscriberCount} subscriber{t.subscriberCount === 1 ? '' : 's'}
       </p>
       {t.bio ? <p style={{ color: 'var(--fg)' }}>{t.bio}</p> : null}
