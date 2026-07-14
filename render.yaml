@@ -38,8 +38,9 @@ services:
     dockerContext: .
     healthCheckPath: /api/leaderboard
     # Free tier doesn't support preDeployCommand, so run migrations at startup
-    # (before the server binds its port). Idempotent: applies only pending ones.
-    dockerCommand: sh -c "npm run db:deploy && node apps/api/dist/main.js"
+    # via a script (before the server binds its port). Unquoted command avoids
+    # Render mis-splitting a quoted string (which caused exit 127).
+    dockerCommand: sh apps/api/start-api.sh
     envVars:
       - fromGroup: overlay-shared
       - key: NODE_ENV

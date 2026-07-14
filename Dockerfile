@@ -53,6 +53,7 @@ COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/start-api.sh ./apps/api/start-api.sh
 COPY --from=builder /app/prisma ./prisma
 
 # Run as the built-in non-root user.
