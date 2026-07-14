@@ -5,8 +5,8 @@ import { authFetch, getAccessToken } from '../../../lib/auth';
 import type { LivePick } from '../../../lib/api';
 import SubscribeButton from '../../SubscribeButton';
 
-const MUTED = '#9aa4b2';
-const BORDER = '#1c2430';
+const MUTED = 'var(--muted)';
+const BORDER = 'var(--border)';
 
 type State =
   | { kind: 'loading' }

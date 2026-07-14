@@ -11,7 +11,7 @@ import {
 import { API_URL } from '../../../../lib/api';
 import { authFetch, getProfile } from '../../../../lib/auth';
 
-const MUTED = '#9aa4b2';
+const MUTED = 'var(--muted)';
 
 /**
  * Local mock billing portal (OB-013). The real Stripe billing portal handles
@@ -84,7 +84,7 @@ export default function PortalClient() {
             <li
               key={v.id}
               style={{
-                borderTop: '1px solid #1c2430',
+                borderTop: '1px solid var(--border)',
                 padding: '1rem 0',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -106,8 +106,8 @@ export default function PortalClient() {
                 disabled={busy === v.tipsterId}
                 style={{
                   background: 'transparent',
-                  color: v.isActive ? '#f0a' : '#4ade80',
-                  border: `1px solid ${v.isActive ? '#f0a' : '#4ade80'}`,
+                  color: v.isActive ? 'var(--danger)' : 'var(--success)',
+                  border: `1px solid ${v.isActive ? 'var(--danger)' : 'var(--success)'}`,
                   borderRadius: 8,
                   padding: '0.5rem 1rem',
                   fontWeight: 600,
@@ -123,7 +123,7 @@ export default function PortalClient() {
       )}
 
       <p style={{ marginTop: '2rem' }}>
-        <Link href="/account/subscriptions" style={{ color: '#6ea8fe' }}>
+        <Link href="/account/subscriptions" style={{ color: 'var(--accent)' }}>
           ← Done
         </Link>
       </p>

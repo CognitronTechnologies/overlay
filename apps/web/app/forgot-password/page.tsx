@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   return (
     <main style={formStyles.wrap}>
       <h1>Reset your password</h1>
-      <p style={{ color: '#9aa4b2' }}>
+      <p style={{ color: 'var(--muted)' }}>
         Enter your email and we&apos;ll send a link to set a new password.
       </p>
       <form onSubmit={onSubmit} style={formStyles.form}>
@@ -42,13 +42,13 @@ export default function ForgotPasswordPage() {
           required
         />
         {error ? <p style={formStyles.error}>{error}</p> : null}
-        {msg ? <p style={{ color: '#6ee7b7' }}>{msg}</p> : null}
+        {msg ? <p style={{ color: 'var(--success)' }}>{msg}</p> : null}
         <button style={formStyles.button} disabled={loading}>
           {loading ? 'Sending…' : 'Send reset link'}
         </button>
       </form>
-      <p style={{ color: '#9aa4b2' }}>
-        <Link href="/login" style={{ color: '#6ea8fe' }}>
+      <p style={{ color: 'var(--muted)' }}>
+        <Link href="/login" style={{ color: 'var(--accent)' }}>
           Back to sign in
         </Link>
       </p>

@@ -22,12 +22,12 @@ interface Subscription {
 }
 
 const cardStyle: React.CSSProperties = {
-  border: '1px solid #1c2430',
+  border: '1px solid var(--border)',
   borderRadius: 10,
   padding: '1.25rem 1.4rem',
   marginTop: '1.25rem',
 };
-const labelStyle: React.CSSProperties = { color: '#9aa4b2', fontSize: '0.9rem' };
+const labelStyle: React.CSSProperties = { color: 'var(--muted)', fontSize: '0.9rem' };
 
 export default function AccountPage() {
   const router = useRouter();
@@ -107,7 +107,7 @@ export default function AccountPage() {
   if (!profile) {
     return (
       <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
-        <p style={{ color: '#9aa4b2' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
       </main>
     );
   }
@@ -143,15 +143,15 @@ export default function AccountPage() {
         </div>
         {profile.role === 'tipster' ? (
           <p style={{ marginTop: '1rem' }}>
-            <Link href="/dashboard" style={{ color: '#6ea8fe' }}>
+            <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
               → Go to tipster dashboard
             </Link>
             {' · '}
-            <Link href="/onboarding" style={{ color: '#6ea8fe' }}>
+            <Link href="/onboarding" style={{ color: 'var(--accent)' }}>
               Onboarding
             </Link>
             {' · '}
-            <Link href="/earnings" style={{ color: '#6ea8fe' }}>
+            <Link href="/earnings" style={{ color: 'var(--accent)' }}>
               Earnings
             </Link>
           </p>
@@ -220,7 +220,7 @@ export default function AccountPage() {
       {/* --- Subscriptions --- */}
       {profile.role === 'admin' ? (
         <p>
-          <Link href="/admin/users" style={{ color: '#6ea8fe' }}>
+          <Link href="/admin/users" style={{ color: 'var(--accent)' }}>
             → Manage users
           </Link>
         </p>
@@ -228,16 +228,16 @@ export default function AccountPage() {
 
       <h2 style={{ marginTop: '2rem' }}>Your subscriptions</h2>
       <p>
-        <Link href="/account/subscriptions" style={{ color: '#6ea8fe' }}>
+        <Link href="/account/subscriptions" style={{ color: 'var(--accent)' }}>
           → Manage subscriptions
         </Link>
       </p>
       {subs === null ? (
-        <p style={{ color: '#9aa4b2' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
       ) : subs.length === 0 ? (
-        <p style={{ color: '#9aa4b2' }}>
+        <p style={{ color: 'var(--muted)' }}>
           No active subscriptions.{' '}
-          <Link href="/" style={{ color: '#6ea8fe' }}>
+          <Link href="/" style={{ color: 'var(--accent)' }}>
             Browse the leaderboard
           </Link>{' '}
           to find a tipster.
@@ -248,16 +248,19 @@ export default function AccountPage() {
             <li
               key={s.id}
               style={{
-                borderTop: '1px solid #1c2430',
+                borderTop: '1px solid var(--border)',
                 padding: '0.85rem 0',
                 display: 'flex',
                 justifyContent: 'space-between',
               }}
             >
-              <Link href={`/tipsters/${s.tipsterId}`} style={{ color: '#6ea8fe' }}>
+              <Link
+                href={`/tipsters/${s.tipsterId}`}
+                style={{ color: 'var(--accent)' }}
+              >
                 {s.tipsterId}
               </Link>
-              <span style={{ color: '#9aa4b2' }}>{s.status}</span>
+              <span style={{ color: 'var(--muted)' }}>{s.status}</span>
             </li>
           ))}
         </ul>
@@ -268,8 +271,8 @@ export default function AccountPage() {
         style={{
           marginTop: '2rem',
           background: 'transparent',
-          color: '#9aa4b2',
-          border: '1px solid #1c2430',
+          color: 'var(--muted)',
+          border: '1px solid var(--border)',
           borderRadius: 8,
           padding: '0.6rem 1.2rem',
           cursor: 'pointer',
@@ -284,7 +287,7 @@ export default function AccountPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: '#9aa4b2' }}>{label}</span>
+      <span style={{ color: 'var(--muted)' }}>{label}</span>
       <span>{value}</span>
     </div>
   );
