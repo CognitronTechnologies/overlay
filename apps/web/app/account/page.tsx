@@ -122,17 +122,6 @@ export default function AccountPage() {
         </Link>
       </p>
 
-      {role === 'tipster' ? (
-        <p>
-          <Link href="/dashboard" style={{ color: '#6ea8fe' }}>
-            → Go to tipster dashboard
-          </Link>
-          {' · '}
-          <Link href="/onboarding" style={{ color: '#6ea8fe' }}>
-            Onboarding
-          </Link>
-        </p>
-      ) : null}
       {/* --- Profile summary --- */}
       <div style={cardStyle}>
         <div style={{ display: 'grid', gap: '0.5rem' }}>
