@@ -47,28 +47,6 @@ export default function SiteHeader() {
           <Link href="/marketplace" onClick={closeMenu}>
             Marketplace
           </Link>
-        ) : null}
-        {role === 'admin' ? (
-          <>
-            <Link href="/admin" style={{ color: '#9aa4b2' }}>
-              Admin
-            </Link>
-            <Link href="/admin/users" style={{ color: '#9aa4b2' }}>
-              Users
-            </Link>
-            <Link href="/admin/settlements" style={{ color: '#9aa4b2' }}>
-              Settlements
-            </Link>
-            <Link href="/admin/audit-log" style={{ color: '#9aa4b2' }}>
-              Audit log
-            </Link>
-          </>
-        ) : null}
-      </nav>
-      {ready ? (
-        role ? (
-          <Link href="/account" style={{ color: '#6ea8fe' }}>
-            Account
           <Link href="/blog" onClick={closeMenu}>
             Blog
           </Link>
@@ -89,6 +67,9 @@ export default function SiteHeader() {
               </Link>
               <Link href="/admin/users" onClick={closeMenu}>
                 Users
+              </Link>
+              <Link href="/admin/settlements" onClick={closeMenu}>
+                Settlements
               </Link>
               <Link href="/admin/audit-log" onClick={closeMenu}>
                 Audit log
