@@ -49,6 +49,8 @@ export default function SiteHeader() {
           </Link>
           <Link href="/tips" onClick={closeMenu}>
             Free tips
+          <Link href="/about" onClick={closeMenu}>
+            About
           </Link>
           <Link href="/blog" onClick={closeMenu}>
             Blog
