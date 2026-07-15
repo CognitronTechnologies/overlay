@@ -21,6 +21,10 @@
       "types": "./src/consent.ts",
       "default": "./src/consent.ts"
     },
+    "./daily-tips": {
+      "types": "./src/daily-tips.ts",
+      "default": "./src/daily-tips.ts"
+    },
     "./markdown": {
       "types": "./src/markdown.ts",
       "default": "./src/markdown.ts"
@@ -36,6 +40,10 @@
     "./currencies": {
       "types": "./src/currencies.ts",
       "default": "./src/currencies.ts"
+    },
+    "./odds": {
+      "types": "./src/odds.ts",
+      "default": "./src/odds.ts"
     }
   },
   "scripts": {

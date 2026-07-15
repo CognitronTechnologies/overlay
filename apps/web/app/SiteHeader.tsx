@@ -47,8 +47,17 @@ export default function SiteHeader() {
           <Link href="/marketplace" onClick={closeMenu}>
             Marketplace
           </Link>
+          <Link href="/tips" onClick={closeMenu}>
+            Free tips
+          </Link>
+          <Link href="/about" onClick={closeMenu}>
+            About
+          </Link>
           <Link href="/blog" onClick={closeMenu}>
             Blog
+          </Link>
+          <Link href="/tools/odds-calculator" onClick={closeMenu}>
+            Calculator
           </Link>
           {role ? (
             <Link href="/feed" onClick={closeMenu}>
@@ -69,6 +78,9 @@ export default function SiteHeader() {
             <>
               <Link href="/admin" onClick={closeMenu}>
                 Admin
+              </Link>
+              <Link href="/admin/tips" onClick={closeMenu}>
+                Free tips
               </Link>
               <Link href="/admin/users" onClick={closeMenu}>
                 Users

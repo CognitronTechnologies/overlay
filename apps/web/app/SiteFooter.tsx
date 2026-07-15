@@ -13,10 +13,12 @@ export default function SiteFooter() {
           </p>
         </div>
         <nav aria-label="Footer">
+          <Link href="/about">About</Link>
           <Link href="/marketplace">Marketplace</Link>
           <Link href="/blog">Blog</Link>
           <Link href="/legal/terms">Terms of Service</Link>
           <Link href="/legal/privacy">Privacy Policy</Link>
+          <Link href="/legal/responsible-gambling">Responsible Gambling</Link>
         </nav>
         <p className="site-footer__legal">
           Information only — Overlay Bets is a sports-information and analytics
