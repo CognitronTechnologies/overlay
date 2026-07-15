@@ -200,14 +200,7 @@ export default async function FreeTipsPage({
         <strong>Information only.</strong> These free tips are provided for
         informational purposes and are not betting advice or a guarantee of any
         outcome. They are separate from tipsters’ paid live picks. 18+. Please
-        gamble responsibly —{' '}
-        <Link
-          href="/legal/responsible-gambling"
-          style={{ color: 'var(--accent)' }}
-        >
-          responsible gambling resources
-        </Link>
-        .
+        gamble responsibly.
       </p>
     </main>
   );
