@@ -4,10 +4,10 @@ import type { CSSProperties } from 'react';
 import type { PerformanceDashboard, PerformancePoint } from '../lib/api';
 
 const MUTED = 'var(--muted)';
-const ACCENT = '#6ea8fe';
-const BORDER = '#1c2430';
+const ACCENT = 'var(--accent)';
+const BORDER = 'var(--border)';
 const PANEL = 'var(--surface)';
-const WIN = '#3fb950';
+const WIN = 'var(--success)';
 const LOSS = '#ff6b8a';
 const VOID = '#8b98a8';
 const PENDING = '#d29922';

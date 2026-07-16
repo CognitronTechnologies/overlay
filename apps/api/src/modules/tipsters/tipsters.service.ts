@@ -60,7 +60,12 @@ export class TipstersService {
       where: { tipster: { status: 'active' } },
       include: {
         tipster: {
-          select: { bio: true, sports: true, subscriptionPriceCents: true },
+          select: {
+            bio: true,
+            sports: true,
+            subscriptionPriceCents: true,
+            country: true,
+          },
         },
       },
     });
@@ -74,6 +79,7 @@ export class TipstersService {
       sports: s.tipster.sports,
       subscriptionPriceCents: s.tipster.subscriptionPriceCents,
       bio: s.tipster.bio,
+      country: s.tipster.country,
     }));
 
     return filterAndRankTipsters(rows, query);

@@ -158,7 +158,7 @@ export default function AdminReportsPage() {
               </div>
 
               {r.details ? (
-                <p style={{ margin: '0.6rem 0 0', color: '#c9d1d9', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0.6rem 0 0', color: 'var(--fg)', fontSize: '0.9rem' }}>
                   {r.details}
                 </p>
               ) : null}

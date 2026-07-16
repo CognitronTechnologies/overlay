@@ -66,7 +66,7 @@ function ClvChart({ points }: { points: number[] }) {
           x2={w}
           y1={zeroY}
           y2={zeroY}
-          stroke="#1c2430"
+          stroke="var(--border)"
           strokeWidth={0.5}
         />
       ) : null}

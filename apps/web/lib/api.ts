@@ -258,6 +258,7 @@ export interface MarketplaceTipster {
   sports: string[];
   subscriptionPriceCents: number;
   bio: string | null;
+  country: string | null;
 }
 
 export interface MarketplacePage {

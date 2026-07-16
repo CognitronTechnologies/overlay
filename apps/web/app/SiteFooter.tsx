@@ -13,10 +13,6 @@ export default function SiteFooter() {
           </p>
         </div>
         <nav aria-label="Footer">
-          <Link href="/tipsters">Tipsters</Link>
-          <Link href="/tips">Free tips</Link>
-          <Link href="/blog">Blog</Link>
-          <Link href="/tools/odds-calculator">Odds calculator</Link>
           <Link href="/about">About</Link>
           <Link href="/legal/terms">Terms of Service</Link>
           <Link href="/legal/privacy">Privacy Policy</Link>

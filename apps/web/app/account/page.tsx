@@ -389,8 +389,8 @@ export default function AccountPage() {
               ...formStyles.button,
               width: 'auto',
               background: 'transparent',
-              color: '#f85149',
-              border: '1px solid #f85149',
+              color: 'var(--danger)',
+              border: '1px solid var(--danger)',
             }}
           >
             {deleting ? 'Deleting…' : 'Delete account'}

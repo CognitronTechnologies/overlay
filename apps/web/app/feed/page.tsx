@@ -10,10 +10,10 @@ import type { FeedPick } from '../../lib/api';
 const POLL_MS = 30_000;
 
 function statusColor(status: string): string {
-  if (status === 'won' || status === 'half_won') return '#3fb950';
-  if (status === 'lost' || status === 'half_lost') return '#f85149';
-  if (status === 'void') return '#9aa4b2';
-  return '#6ea8fe'; // pending / live
+  if (status === 'won' || status === 'half_won') return 'var(--success)';
+  if (status === 'lost' || status === 'half_lost') return 'var(--danger)';
+  if (status === 'void') return 'var(--muted)';
+  return 'var(--accent)'; // pending / live
 }
 
 function statusLabel(status: string): string {
@@ -124,21 +124,21 @@ export default function FeedPage() {
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>My feed</h1>
-      <p style={{ color: '#9aa4b2' }}>
+      <p style={{ color: 'var(--muted)' }}>
         Live and settled picks from every tipster you subscribe to, newest
         first. Updates automatically.
       </p>
 
       {error ? (
-        <p style={{ color: '#f85149', margin: '0 0 1rem' }}>{error}</p>
+        <p style={{ color: 'var(--danger)', margin: '0 0 1rem' }}>{error}</p>
       ) : null}
 
       {picks === null ? (
-        <p style={{ color: '#9aa4b2' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
       ) : list.length === 0 ? (
-        <p style={{ color: '#9aa4b2' }}>
+        <p style={{ color: 'var(--muted)' }}>
           No picks yet.{' '}
-          <Link href="/tipsters" style={{ color: '#6ea8fe' }}>
+          <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
             Find a tipster to subscribe to
           </Link>{' '}
           and their live picks will show up here.
@@ -203,7 +203,7 @@ export default function FeedPage() {
           </div>
 
           {filtered.length === 0 ? (
-            <p style={{ color: '#9aa4b2', marginTop: '1rem' }}>
+            <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
               No picks match these filters.
             </p>
           ) : (
@@ -212,11 +212,11 @@ export default function FeedPage() {
             <li
               key={p.id}
               style={{
-                border: '1px solid #1c2430',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '0.9rem 1.1rem',
                 marginBottom: '0.75rem',
-                background: '#111826',
+                background: 'var(--surface)',
               }}
             >
               <div
@@ -229,7 +229,7 @@ export default function FeedPage() {
               >
                 <Link
                   href={`/tipsters/${p.tipsterId}`}
-                  style={{ color: '#6ea8fe', fontWeight: 600 }}
+                  style={{ color: 'var(--accent)', fontWeight: 600 }}
                 >
                   {p.tipsterId}
                 </Link>
@@ -240,13 +240,13 @@ export default function FeedPage() {
 
               <div style={{ margin: '0.4rem 0 0.2rem' }}>
                 <strong>{p.selection}</strong>{' '}
-                <span style={{ color: '#9aa4b2' }}>
+                <span style={{ color: 'var(--muted)' }}>
                   ({p.market} @ {p.oddsAtPick.toFixed(2)} · {p.stakeUnits}u)
                 </span>
               </div>
 
               {p.event ? (
-                <div style={{ color: '#9aa4b2', fontSize: '0.9rem' }}>
+                <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
                   {p.event.home} vs {p.event.away} · {p.event.sport}
                 </div>
               ) : null}
@@ -255,10 +255,10 @@ export default function FeedPage() {
                 <p
                   style={{
                     margin: '0.5rem 0 0',
-                    color: '#c9d1d9',
+                    color: 'var(--fg)',
                     fontSize: '0.9rem',
                     fontStyle: 'italic',
-                    borderLeft: '2px solid #30363d',
+                    borderLeft: '2px solid var(--border)',
                     paddingLeft: '0.6rem',
                   }}
                 >
@@ -268,7 +268,7 @@ export default function FeedPage() {
 
               <div
                 style={{
-                  color: '#6b7280',
+                  color: 'var(--muted)',
                   fontSize: '0.82rem',
                   marginTop: '0.35rem',
                 }}
