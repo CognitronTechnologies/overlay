@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { MockPaymentProvider } from './mock.provider';
 import { StripePaymentProvider } from './stripe.provider';
 import { CryptoPaymentProvider } from './crypto.provider';
@@ -20,13 +20,23 @@ function defaultProviderName(): string {
       ? explicit
       : 'mock';
   // The mock provider grants entitlement without taking real money. Refuse to
-  // boot with it as the default in production so a misconfiguration can never
+  // boot with it as the default in production so a *misconfiguration* can never
   // hand out free subscriptions or trigger payouts against uncollected funds.
+  // A staging/demo environment can opt in deliberately with ALLOW_MOCK_PAYMENTS.
   if (name === 'mock' && process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'Refusing to start: PAYMENTS_PROVIDER must be a real provider ' +
-        '(stripe | crypto | mobile_money) in production, not the mock.',
-    );
+    if (process.env.ALLOW_MOCK_PAYMENTS === 'true') {
+      new Logger('PaymentsModule').warn(
+        'Running MOCK payments in production (ALLOW_MOCK_PAYMENTS=true). ' +
+          'Subscriptions activate WITHOUT real money — staging/demo only.',
+      );
+    } else {
+      throw new Error(
+        'Refusing to start: PAYMENTS_PROVIDER must be a real provider ' +
+          '(stripe | crypto | mobile_money) in production, not the mock. ' +
+          'Set ALLOW_MOCK_PAYMENTS=true to run mock payments deliberately ' +
+          '(staging/demo only).',
+      );
+    }
   }
   return name;
 }

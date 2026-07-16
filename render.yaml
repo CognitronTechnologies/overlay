@@ -65,6 +65,13 @@ services:
           property: connectionString
       - key: PAYMENTS_PROVIDER
         value: mock
+      # Deliberate staging/demo choice: run mock payments even though NODE_ENV is
+      # production (no real Stripe/crypto/mobile-money keys wired yet). The API
+      # refuses to boot on mock payments in production UNLESS this is explicitly
+      # set — so real prod stays safe by default. Remove this and set
+      # PAYMENTS_PROVIDER to a real provider (+ its keys) before taking money.
+      - key: ALLOW_MOCK_PAYMENTS
+        value: "true"
       # Sports data (OB-045). Provider + key + ingested leagues are set in the
       # dashboard (sync:false) so the blueprint doesn't reset them to mock.
       # The embedded worker (EMBED_WORKER=true) ingests these on a schedule.
