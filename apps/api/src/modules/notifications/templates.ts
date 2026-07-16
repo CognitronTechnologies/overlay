@@ -9,31 +9,6 @@ export type EmailTemplate = Omit<EmailMessage, 'to'>;
 
 const APP_NAME = 'Overlay Bets';
 
-/** Email-address verification link sent on sign-up. */
-export function verificationEmail(params: { verifyUrl: string }): EmailTemplate {
-  return {
-    subject: `Verify your ${APP_NAME} email`,
-    body:
-      `Welcome to ${APP_NAME}! Confirm your email address to activate your account:\n\n` +
-      `${params.verifyUrl}\n\n` +
-      `If you didn't create this account, you can safely ignore this message.`,
-  };
-}
-
-/** Password-reset link sent from the "forgot password" flow. */
-export function passwordResetEmail(params: {
-  resetUrl: string;
-}): EmailTemplate {
-  return {
-    subject: `Reset your ${APP_NAME} password`,
-    body:
-      `We received a request to reset your ${APP_NAME} password. ` +
-      `Use the link below to choose a new one:\n\n` +
-      `${params.resetUrl}\n\n` +
-      `If you didn't request this, you can safely ignore this email.`,
-  };
-}
-
 /** Payment receipt sent after a successful subscription charge. */
 export function receiptEmail(params: {
   tipsterName: string;

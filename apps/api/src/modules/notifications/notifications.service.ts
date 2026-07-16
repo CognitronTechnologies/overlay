@@ -13,9 +13,7 @@ import {
 } from './preferences';
 import {
   newPickDigestEmail,
-  passwordResetEmail,
   receiptEmail,
-  verificationEmail,
   type NewPickNotification,
 } from './templates';
 
@@ -220,16 +218,6 @@ export class NotificationsService {
 
     const digests = groupDigestByRecipient(events);
     return dispatchDailyDigests(this.notifier, digests, this.baseUrl());
-  }
-
-  /** Send an email-verification link to a newly registered user. */
-  async sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
-    await this.notifier.sendEmail({ to, ...verificationEmail({ verifyUrl }) });
-  }
-
-  /** Send a password-reset link. */
-  async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
-    await this.notifier.sendEmail({ to, ...passwordResetEmail({ resetUrl }) });
   }
 
   /** Send a payment receipt after a successful subscription charge. */
