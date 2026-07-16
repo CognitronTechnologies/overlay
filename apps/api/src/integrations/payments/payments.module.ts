@@ -14,7 +14,21 @@ export const PAYMENT_REGISTRY = Symbol('PAYMENT_REGISTRY');
 
 /** Resolve the default provider name from env (defaults to the mock). */
 function defaultProviderName(): string {
-  return process.env.PAYMENTS_PROVIDER === 'stripe' ? 'stripe' : 'mock';
+  const explicit = process.env.PAYMENTS_PROVIDER?.toLowerCase();
+  const name =
+    explicit === 'stripe' || explicit === 'crypto' || explicit === 'mobile_money'
+      ? explicit
+      : 'mock';
+  // The mock provider grants entitlement without taking real money. Refuse to
+  // boot with it as the default in production so a misconfiguration can never
+  // hand out free subscriptions or trigger payouts against uncollected funds.
+  if (name === 'mock' && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Refusing to start: PAYMENTS_PROVIDER must be a real provider ' +
+        '(stripe | crypto | mobile_money) in production, not the mock.',
+    );
+  }
+  return name;
 }
 
 @Module({

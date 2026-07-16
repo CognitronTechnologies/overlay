@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computePayout, summarizeEarnings } from './payouts.math.ts';
+import {
+  computePayout,
+  computeNetFromGross,
+  summarizeEarnings,
+} from './payouts.math.ts';
 
 test('computePayout: standard 25% fee', () => {
   const b = computePayout(100, 1000, 0.25); // 100 subs * $10
@@ -25,6 +29,22 @@ test('computePayout: clamps fee rate and floors inputs', () => {
   assert.equal(computePayout(10, 500, 1.5).netCents, 0); // rate clamped to 1
   assert.equal(computePayout(10, 500, -1).feeCents, 0); // rate clamped to 0
   assert.equal(computePayout(2.9, 500.9, 0).grossCents, 1000); // floored
+});
+
+test('computeNetFromGross: splits collected revenue by fee rate', () => {
+  const b = computeNetFromGross(100_000, 0.25);
+  assert.deepEqual(b, { grossCents: 100_000, feeCents: 25_000, netCents: 75_000 });
+});
+
+test('computeNetFromGross: rounds fee and clamps/floors inputs', () => {
+  assert.equal(computeNetFromGross(2997, 0.25).feeCents, 749); // 749.25 → 749
+  assert.deepEqual(computeNetFromGross(-500, 0.25), {
+    grossCents: 0,
+    feeCents: 0,
+    netCents: 0,
+  }); // negative gross clamped
+  assert.equal(computeNetFromGross(1000, 1.5).netCents, 0); // rate clamped to 1
+  assert.equal(computeNetFromGross(1000.9, 0).grossCents, 1000); // floored, no fee
 });
 
 test('summarizeEarnings: projected earnings reflect active subscribers and fee rate', () => {

@@ -70,6 +70,31 @@ export function subscriptionStatusLabel(status: SubscriptionStatus): string {
 }
 
 /**
+ * Decide whether a subscription currently grants access (entitlement), pure so
+ * the API gate and tests share one rule. Handles billing edge cases:
+ *   - `active`            → entitled.
+ *   - `past_due`          → grace access until `currentPeriodEnd` (retry window).
+ *   - `canceled`          → entitled until `currentPeriodEnd` (cancel-at-period-end);
+ *                           a hard cancel/refund sets the period end in the past → not entitled.
+ * A missing/undefined `currentPeriodEnd` means no grace window.
+ */
+export function isSubscriptionEntitled(
+  status: SubscriptionStatus,
+  currentPeriodEnd: Date | string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (status === 'active') return true;
+  if (!currentPeriodEnd) return false;
+  const end =
+    currentPeriodEnd instanceof Date
+      ? currentPeriodEnd
+      : new Date(currentPeriodEnd);
+  if (Number.isNaN(end.getTime())) return false;
+  // past_due (grace) and cancel-at-period-end both keep access until the period ends.
+  return end.getTime() > now.getTime();
+}
+
+/**
  * Format an ISO date string as a locale date (e.g. "Jan 1, 2026"). Returns null
  * when the input is missing or not a valid date, so callers can hide the field.
  */

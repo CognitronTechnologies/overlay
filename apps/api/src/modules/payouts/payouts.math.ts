@@ -29,6 +29,22 @@ export function computePayout(
   return { grossCents, feeCents, netCents };
 }
 
+/**
+ * Split an actually-collected gross amount into platform fee + tipster net.
+ * Used for real payouts, where gross comes from the funds ledger (collected
+ * revenue) rather than an estimated subscriber count. feeRate clamps to [0, 1];
+ * gross clamps to >= 0. Fee rounds to the nearest cent.
+ */
+export function computeNetFromGross(
+  grossCents: number,
+  feeRate: number,
+): PayoutBreakdown {
+  const gross = Math.max(0, Math.floor(grossCents));
+  const rate = Math.min(1, Math.max(0, feeRate));
+  const feeCents = Math.round(gross * rate);
+  return { grossCents: gross, feeCents, netCents: gross - feeCents };
+}
+
 /** A single historical payout row surfaced in the earnings UI. */
 export interface PayoutRecord {
   amountCents: number;

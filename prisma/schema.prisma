@@ -212,6 +212,28 @@ model Payout {
   createdAt        DateTime     @default(now())
 }
 
+/// Funds ledger (OB-06x): one row per *collected* payment (or refund reversal).
+/// Payouts are computed from summed collected revenue here — never from the raw
+/// active-subscriber count — so the platform can only pay out money it actually
+/// received. Written only from verified provider webhooks.
+///   amountCents  — USD minor units (platform accounting currency); negative for refunds.
+///   reference    — unique provider-side id (charge/session/invoice/event) for idempotent inserts.
+///   period       — YYYY-MM the payment is attributed to (drives the monthly payout).
+model Payment {
+  id          String   @id @default(cuid())
+  userId      String
+  tipsterId   String
+  provider    String
+  reference   String   @unique
+  amountCents Int
+  currency    String   @default("USD")
+  period      String
+  createdAt   DateTime @default(now())
+
+  @@index([tipsterId, period])
+  @@index([userId, tipsterId])
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   actor     String

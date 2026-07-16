@@ -8,6 +8,7 @@ import type {
   SubscriptionEvent,
   TransferResult,
 } from './payment-provider.interface';
+import { parseStripeWebhook } from './stripe-webhook';
 
 /**
  * Stripe adapter (Connect). v1 skeleton — the Stripe SDK is loaded lazily so
@@ -67,6 +68,11 @@ export class StripePaymentProvider implements PaymentProvider {
         },
       ],
       client_reference_id: `${params.userId}:${params.tipsterId}`,
+      // Propagate the identity onto the subscription so later lifecycle events
+      // (updated/deleted/invoice.paid) can be mapped back to user + tipster.
+      subscription_data: {
+        metadata: { userId: params.userId, tipsterId: params.tipsterId },
+      },
       success_url: `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/subscribe/success`,
       cancel_url: `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/subscribe/cancel`,
     });
@@ -74,12 +80,16 @@ export class StripePaymentProvider implements PaymentProvider {
   }
 
   parseWebhook(rawBody: string, headers: Record<string, string>): SubscriptionEvent | null {
-    // TODO: verify with stripe.webhooks.constructEvent(rawBody, signature, secret)
-    // and map checkout.session.completed / customer.subscription.* events.
-    this.log.warn('Stripe webhook parsing not yet implemented');
-    void rawBody;
-    void headers;
-    return null;
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!secret) {
+      this.log.warn('STRIPE_WEBHOOK_SECRET not set — rejecting webhook');
+      return null;
+    }
+    const event = parseStripeWebhook(rawBody, headers, secret);
+    if (!event) {
+      this.log.warn('Stripe webhook rejected (bad signature or unhandled type)');
+    }
+    return event;
   }
 
   async createBillingPortalSession(params: {

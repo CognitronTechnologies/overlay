@@ -62,13 +62,28 @@ export type PayoutDestination =
 
 /** A normalized subscription lifecycle event from a provider webhook. */
 export interface SubscriptionEvent {
-  type: 'activated' | 'canceled' | 'past_due';
+  type: 'activated' | 'canceled' | 'past_due' | 'refunded';
   userId: string;
   tipsterId: string;
   /** Name of the provider that produced this event. */
   provider: string;
   providerSubscriptionId: string;
   currentPeriodEnd?: Date;
+  /**
+   * Collected amount in USD minor units for a money-moving event (`activated`
+   * grants revenue; `refunded` reverses it). Omitted when the provider webhook
+   * doesn't carry an amount — the funds ledger then falls back to the tipster's
+   * stored subscription price.
+   */
+  amountCents?: number;
+  /**
+   * Unique provider-side reference (charge / session / invoice / event id) used
+   * to record the payment in the funds ledger idempotently. Falls back to
+   * {@link providerSubscriptionId} when absent.
+   */
+  reference?: string;
+  /** When the payment occurred (drives the payout period). Defaults to now. */
+  occurredAt?: Date;
 }
 
 export interface PaymentProvider {

@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { PAYMENT_REGISTRY } from '../../integrations/payments/payments.module';
-import { subscriptionStatusFromEvent } from '@overlay/shared';
+import {
+  isSubscriptionEntitled,
+  subscriptionStatusFromEvent,
+} from '@overlay/shared';
 import { currencyForCountry, formatMinorUnits } from '@overlay/shared';
 import { webhookEventsTotal } from '../../common/metrics';
 import { CurrencyService } from '../../integrations/fx/currency.service';
@@ -16,6 +19,14 @@ import type {
   PaymentMethodId,
   SubscriptionEvent,
 } from '../../integrations/payments/payment-provider.interface';
+import {
+  periodOf,
+  recordPayment,
+  grossCollectedForPeriod,
+} from './ledger';
+
+// Re-exported for backwards compatibility with existing importers.
+export { periodOf };
 
 @Injectable()
 export class SubscriptionsService {
@@ -144,9 +155,11 @@ export class SubscriptionsService {
     return { handled: true };
   }
 
-  private upsertFromEvent(evt: SubscriptionEvent) {
-    const status = subscriptionStatusFromEvent(evt.type);
-    return this.prisma.subscription.upsert({
+  private async upsertFromEvent(evt: SubscriptionEvent) {
+    // 'refunded' has no distinct subscription status — it revokes access.
+    const statusType = evt.type === 'refunded' ? 'canceled' : evt.type;
+    const status = subscriptionStatusFromEvent(statusType);
+    await this.prisma.subscription.upsert({
       where: { userId_tipsterId: { userId: evt.userId, tipsterId: evt.tipsterId } },
       create: {
         userId: evt.userId,
@@ -158,14 +171,67 @@ export class SubscriptionsService {
       },
       update: { provider: evt.provider, status, currentPeriodEnd: evt.currentPeriodEnd },
     });
+
+    // Money-moving events are mirrored into the funds ledger so payouts are
+    // computed from actually-collected revenue (never the subscriber count).
+    if (evt.type === 'activated') {
+      await recordPayment(this.prisma, evt, 1);
+    } else if (evt.type === 'refunded') {
+      await recordPayment(this.prisma, evt, -1);
+    }
   }
 
-  /** Does this user have an active subscription to this tipster? */
+  /**
+   * Idempotently record a collected payment (or refund reversal) in the funds
+   * ledger. `sign` is +1 for a payment, -1 for a refund. Delegates to the pure
+   * ledger module (unit/integration-tested against a real DB).
+   */
+  private recordPayment(evt: SubscriptionEvent, sign: 1 | -1) {
+    return recordPayment(this.prisma, evt, sign);
+  }
+
+  /**
+   * Dev-only self-confirmation for local/staging where no real processor posts
+   * a webhook (mock / unconfigured provider). It confirms ONLY the calling
+   * user's own subscription and is hard-disabled in production, so it can never
+   * be used to grant a paid entitlement without real money.
+   */
+  async confirmDev(userId: string, tipsterId: string) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Dev confirmation is disabled in production');
+    }
+    const provider = this.registry.default;
+    if (provider.name !== 'mock') {
+      // A real default provider must confirm via its verified webhook.
+      throw new ForbiddenException(
+        'Dev confirmation requires the mock payment provider',
+      );
+    }
+    const tipster = await this.prisma.tipster.findUnique({
+      where: { userId: tipsterId },
+      select: { subscriptionPriceCents: true },
+    });
+    if (!tipster) throw new NotFoundException('Tipster not found');
+
+    await this.upsertFromEvent({
+      type: 'activated',
+      userId,
+      tipsterId,
+      provider: provider.name,
+      providerSubscriptionId: `mock_sub_${userId}_${tipsterId}`,
+      amountCents: tipster.subscriptionPriceCents,
+      reference: `mock:${userId}:${tipsterId}:${periodOf(new Date())}`,
+    });
+    return { activated: true };
+  }
+
+  /** Does this user currently have entitlement to this tipster's live picks? */
   async isEntitled(userId: string, tipsterId: string): Promise<boolean> {
     const sub = await this.prisma.subscription.findUnique({
       where: { userId_tipsterId: { userId, tipsterId } },
     });
-    return sub?.status === 'active';
+    if (!sub) return false;
+    return isSubscriptionEntitled(sub.status, sub.currentPeriodEnd);
   }
 
   listForUser(userId: string) {
@@ -188,5 +254,17 @@ export class SubscriptionsService {
     return this.prisma.subscription.count({
       where: { tipsterId, status: 'active' },
     });
+  }
+
+  /**
+   * Gross revenue actually collected for a tipster in a period (USD cents),
+   * summed from the funds ledger (payments minus refunds). Payouts are computed
+   * from this — the platform can only pay out money it truly received.
+   */
+  async grossCollectedForPeriod(
+    tipsterId: string,
+    period: string,
+  ): Promise<number> {
+    return grossCollectedForPeriod(this.prisma, tipsterId, period);
   }
 }

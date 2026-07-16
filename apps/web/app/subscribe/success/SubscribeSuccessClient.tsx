@@ -3,52 +3,45 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { API_URL } from '../../../lib/api';
+import { authFetch } from '../../../lib/auth';
 
 /**
- * Post-checkout return logic. With a real payment provider the subscription is
- * activated asynchronously via webhook. For dev providers (mock / crypto /
- * mobile money without keys) we trigger that same webhook here so the flow
- * completes end-to-end without a real processor.
+ * Post-checkout return screen. With a real payment provider the subscription is
+ * activated asynchronously by the provider's *verified* webhook — the browser
+ * never grants its own entitlement. For local/staging with the mock provider
+ * (no real processor to call back), we self-confirm via an authenticated,
+ * self-scoped dev endpoint that is hard-disabled in production.
  *
- * Preferred params: provider=<name>&u=<userId>&t=<tipsterId>.
- * Legacy fallback: ref=mock_sub_<userId>_<tipsterId>.
+ * Preferred param: t=<tipsterId>. Legacy fallback: ref=mock_sub_<userId>_<tipsterId>.
  */
 export default function SubscribeSuccessClient() {
   const params = useSearchParams();
   const [state, setState] = useState<'working' | 'done' | 'pending'>('working');
 
   useEffect(() => {
-    // Preferred explicit params.
-    let provider = params.get('provider');
-    let userId = params.get('u');
     let tipsterId = params.get('t');
 
     // Legacy ref fallback: mock_sub_<userId>_<tipsterId>.
-    if (!userId || !tipsterId) {
+    if (!tipsterId) {
       const ref = params.get('ref');
       const parts = ref?.split('_') ?? [];
       if (parts[0] === 'mock' && parts[1] === 'sub') {
-        provider = provider ?? 'mock';
-        userId = parts[2];
-        tipsterId = parts[3];
+        tipsterId = parts[3] ?? null;
       }
     }
 
-    if (!userId || !tipsterId) {
+    // No tipster context (e.g. a real provider redirect) → the signed webhook
+    // activates the subscription; just show a pending confirmation.
+    if (!tipsterId) {
       setState('pending');
       return;
     }
 
-    // Route to the specific provider's webhook when known, else the default.
-    const path = provider
-      ? `/api/subscriptions/webhook/${encodeURIComponent(provider)}`
-      : '/api/subscriptions/webhook';
-
-    fetch(`${API_URL}${path}`, {
+    // Dev-only self-confirmation. The user id comes from the auth token, never
+    // the URL; production returns 403 and we fall back to the pending message.
+    authFetch('/api/subscriptions/dev-confirm', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ type: 'activated', userId, tipsterId }),
+      body: JSON.stringify({ tipsterId }),
     })
       .then((r) => setState(r.ok ? 'done' : 'pending'))
       .catch(() => setState('pending'));
