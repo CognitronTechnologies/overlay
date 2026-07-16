@@ -13,6 +13,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "test:shared": "node --experimental-strip-types --test \"packages/shared/src/*.test.ts\"",
     "test:unit": "node --experimental-strip-types --test \"packages/shared/src/*.test.ts\" \"apps/api/src/**/*.test.ts\"",
+    "test:integration": "node --experimental-strip-types --test \"apps/api/src/**/*.itest.ts\"",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",

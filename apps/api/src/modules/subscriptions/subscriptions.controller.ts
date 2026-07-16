@@ -39,6 +39,10 @@ class CheckoutDto {
   @IsOptional() @IsString() @MaxLength(3) currency?: string;
 }
 
+class DevConfirmDto {
+  @IsString() tipsterId!: string;
+}
+
 @Controller('subscriptions')
 export class SubscriptionsController {
   constructor(private readonly subs: SubscriptionsService) {}
@@ -70,6 +74,20 @@ export class SubscriptionsController {
       dto.country,
       dto.currency,
     );
+  }
+
+  // Dev/staging only: confirms the CALLER'S OWN subscription when no real
+  // processor posts a webhook (mock provider). Authenticated + self-scoped, and
+  // the service hard-rejects it in production, so it can't grant paid access
+  // without real money. Real providers activate only via their signed webhook.
+  @Post('dev-confirm')
+  @Throttle(writeThrottle())
+  @UseGuards(JwtAuthGuard)
+  devConfirm(
+    @Body() dto: DevConfirmDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.subs.confirmDev(user.userId, dto.tipsterId);
   }
 
   // Public endpoint; authenticity is verified via the provider signature over

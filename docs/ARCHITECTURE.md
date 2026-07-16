@@ -165,6 +165,9 @@ tipster_stats(tipster_id PK/FK, roi, yield, clv_avg, win_rate,
 
 payouts(id PK, tipster_id FK, amount_cents, period, status, stripe_transfer_id)
 
+payments(id PK, user_id, tipster_id, provider, reference UNIQUE,
+         amount_cents, currency, period, created_at)  -- funds ledger; payouts computed from collected revenue
+
 notification_preferences(user_id PK/FK, channel, frequency, updated_at)
 
 free_tips(id PK, sport, event, market, selection, tip_date, published_at)  -- free Daily Tips hub

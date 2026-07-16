@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   subscriptionStatusFromEvent,
   subscriptionStatusLabel,
+  isSubscriptionEntitled,
   formatBillingDate,
   periodEndLabel,
   toSubscriptionView,
@@ -14,6 +15,25 @@ test('subscriptionStatusFromEvent maps webhook event types to statuses', () => {
   assert.equal(subscriptionStatusFromEvent('activated'), 'active');
   assert.equal(subscriptionStatusFromEvent('past_due'), 'past_due');
   assert.equal(subscriptionStatusFromEvent('canceled'), 'canceled');
+});
+
+test('isSubscriptionEntitled handles active, grace and cancel-at-period-end', () => {
+  const now = new Date('2026-07-16T00:00:00.000Z');
+  const future = new Date('2026-08-01T00:00:00.000Z');
+  const past = new Date('2026-07-01T00:00:00.000Z');
+  // Active is always entitled, regardless of period end.
+  assert.equal(isSubscriptionEntitled('active', null, now), true);
+  assert.equal(isSubscriptionEntitled('active', past, now), true);
+  // past_due keeps grace access until the period ends.
+  assert.equal(isSubscriptionEntitled('past_due', future, now), true);
+  assert.equal(isSubscriptionEntitled('past_due', past, now), false);
+  // cancel-at-period-end retains access until the period ends; hard cancel does not.
+  assert.equal(isSubscriptionEntitled('canceled', future, now), true);
+  assert.equal(isSubscriptionEntitled('canceled', past, now), false);
+  assert.equal(isSubscriptionEntitled('canceled', null, now), false);
+  // Bad/none period end means no grace.
+  assert.equal(isSubscriptionEntitled('past_due', 'not-a-date', now), false);
+  assert.equal(isSubscriptionEntitled('past_due', future.toISOString(), now), true);
 });
 
 test('subscriptionStatusLabel returns human-readable labels', () => {

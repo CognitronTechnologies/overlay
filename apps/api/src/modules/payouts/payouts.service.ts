@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { PAYMENT_REGISTRY } from '../../integrations/payments/payments.module';
 import type { PaymentProviderRegistry } from '../../integrations/payments/payment-provider.registry';
-import { computePayout, summarizeEarnings } from './payouts.math';
+import { computeNetFromGross, summarizeEarnings } from './payouts.math';
 import { resolvePayoutTarget } from './payout-destination';
 
 @Injectable()
@@ -60,8 +60,10 @@ export class PayoutsService {
 
   /**
    * Run payouts for a period (e.g. '2026-07'). Idempotent per (tipster, period):
-   * skips any tipster already paid for that period. Called by the monthly
-   * run-payouts worker or an admin endpoint.
+   * skips any tipster already paid for that period. Amounts are derived from the
+   * **funds ledger** — the revenue actually collected in the period — never from
+   * the subscriber count, so we can only ever pay out money we truly received.
+   * Called by the monthly run-payouts worker or an admin endpoint.
    */
   async runForPeriod(period: string): Promise<{ processed: number }> {
     const tipsters = await this.prisma.tipster.findMany({
@@ -75,15 +77,17 @@ export class PayoutsService {
       });
       if (already) continue;
 
-      const activeSubs = await this.subs.countActiveSubscribers(
+      // Confirm the collected balance for this period before paying anything.
+      const grossCents = await this.subs.grossCollectedForPeriod(
         tipster.userId,
+        period,
       );
-      const { netCents } = computePayout(
-        activeSubs,
-        tipster.subscriptionPriceCents,
-        this.feeRate,
-      );
+      if (grossCents <= 0) continue;
+
+      const { netCents } = computeNetFromGross(grossCents, this.feeRate);
       if (netCents <= 0) continue;
+      // Never transfer more than was actually collected (net ≤ gross by design).
+      if (netCents > grossCents) continue;
 
       const payout = await this.prisma.payout.create({
         data: {
