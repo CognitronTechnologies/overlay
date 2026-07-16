@@ -41,57 +41,34 @@ export default function SiteHeader() {
           aria-label="Primary"
           className={menuOpen ? 'site-nav is-open' : 'site-nav'}
         >
-          <Link href="/" onClick={closeMenu}>
-            Leaderboard
-          </Link>
-          <Link href="/marketplace" onClick={closeMenu}>
-            Marketplace
+          <Link href="/tipsters" onClick={closeMenu}>
+            Tipsters
           </Link>
           <Link href="/tips" onClick={closeMenu}>
             Free tips
           </Link>
-          <Link href="/about" onClick={closeMenu}>
-            About
-          </Link>
           <Link href="/blog" onClick={closeMenu}>
             Blog
           </Link>
-          <Link href="/tools/odds-calculator" onClick={closeMenu}>
-            Calculator
-          </Link>
-          {role ? (
+          {role === 'user' ? (
             <Link href="/feed" onClick={closeMenu}>
               My feed
             </Link>
           ) : null}
           {role === 'tipster' ? (
-            <Link href="/dashboard" onClick={closeMenu}>
-              Dashboard
-            </Link>
-          ) : null}
-          {role === 'tipster' ? (
-            <Link href="/earnings" onClick={closeMenu}>
-              Earnings
-            </Link>
-          ) : null}
-          {role === 'admin' ? (
             <>
-              <Link href="/admin" onClick={closeMenu}>
-                Admin
+              <Link href="/dashboard" onClick={closeMenu}>
+                Dashboard
               </Link>
-              <Link href="/admin/tips" onClick={closeMenu}>
-                Free tips
-              </Link>
-              <Link href="/admin/users" onClick={closeMenu}>
-                Users
-              </Link>
-              <Link href="/admin/settlements" onClick={closeMenu}>
-                Settlements
-              </Link>
-              <Link href="/admin/audit-log" onClick={closeMenu}>
-                Audit log
+              <Link href="/earnings" onClick={closeMenu}>
+                Earnings
               </Link>
             </>
+          ) : null}
+          {role === 'admin' ? (
+            <Link href="/admin" onClick={closeMenu}>
+              Admin
+            </Link>
           ) : null}
         </nav>
 
@@ -99,15 +76,27 @@ export default function SiteHeader() {
           <ThemeToggle />
           {ready ? (
             role ? (
-              <Link href="/account" className="is-primary" onClick={closeMenu}>
+              <Link
+                href="/account"
+                className="btn btn--secondary btn--sm"
+                onClick={closeMenu}
+              >
                 Account
               </Link>
             ) : (
               <>
-                <Link href="/login" onClick={closeMenu}>
+                <Link
+                  href="/login"
+                  className="btn btn--ghost btn--sm"
+                  onClick={closeMenu}
+                >
                   Sign in
                 </Link>
-                <Link href="/signup" className="is-primary" onClick={closeMenu}>
+                <Link
+                  href="/signup"
+                  className="btn btn--primary btn--sm"
+                  onClick={closeMenu}
+                >
                   Get started
                 </Link>
               </>

@@ -1,84 +1,76 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+export const metadata: Metadata = {
+  title: 'Overlay Bets — Verified tipsters, ranked by real edge',
+  description:
+    'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — every pick cryptographically locked before kickoff.',
+};
 
-interface LeaderboardRow {
-  tipsterId: string;
-  yield: number;
-  clvAvg: number;
-  winRate: number;
-  sampleSize: number;
-}
+const FEATURES: { title: string; body: string }[] = [
+  {
+    title: 'Locked before kickoff',
+    body: 'Every pick is hashed and timestamped the moment it is posted — it can never be edited, deleted or backdated.',
+  },
+  {
+    title: 'Verified, not screenshots',
+    body: 'Records are settled automatically from results data. What you see is the real track record, closing line value included.',
+  },
+  {
+    title: 'Ranked by real edge',
+    body: 'Tipsters are ordered by verified yield and CLV, not follower counts or cherry-picked wins.',
+  },
+];
 
-async function getLeaderboard(): Promise<LeaderboardRow[]> {
-  try {
-    const res = await fetch(`${API_URL}/api/leaderboard`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return [];
-    return (await res.json()) as LeaderboardRow[];
-  } catch {
-    return [];
-  }
-}
-
-export default async function Home() {
-  const rows = await getLeaderboard();
-
+export default function Home() {
   return (
-    <main style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ fontSize: '2.4rem', marginBottom: '0.25rem' }}>Overlay Bets</h1>
-      <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Find the overlay. Beat the close. Verified edge, not screenshots.
-      </p>
-      <p style={{ marginTop: '0.5rem' }}>
-        <Link href="/marketplace" style={{ color: 'var(--accent)' }}>
-          Browse the tipster marketplace →
-        </Link>
-      </p>
-      <p style={{ marginTop: '0.5rem' }}>
-        <Link href="/blog" style={{ color: 'var(--accent)' }}>
-          Read the strategy blog →
-        </Link>
-      </p>
-
-      <h2 style={{ marginTop: '2.5rem' }}>Leaderboard</h2>
-      {rows.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>
-          No verified tipsters yet. Once tipsters reach 50+ settled picks they
-          appear here, ranked by verified yield and closing line value.
+    <main style={{ maxWidth: 980, margin: '0 auto', padding: '4rem 1.5rem' }}>
+      <section style={{ maxWidth: 680 }}>
+        <h1 style={{ fontSize: '2.8rem', lineHeight: 1.1, margin: '0 0 0.75rem' }}>
+          Find the overlay. Beat the close.
+        </h1>
+        <p style={{ color: 'var(--muted)', fontSize: '1.15rem', margin: '0 0 1.75rem' }}>
+          Sports tipsters ranked by{' '}
+          <strong style={{ color: 'var(--fg)' }}>verified</strong> ROI and
+          closing line value — every pick cryptographically locked before
+          kickoff. Real edge, not screenshots.
         </p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', color: 'var(--muted)' }}>
-              <th style={{ padding: '0.5rem 0' }}>Tipster</th>
-              <th>Yield</th>
-              <th>CLV</th>
-              <th>Win %</th>
-              <th>Picks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.tipsterId} style={{ borderTop: '1px solid var(--border)' }}>
-                <td style={{ padding: '0.5rem 0' }}>
-                  <Link
-                    href={`/tipsters/${r.tipsterId}`}
-                    style={{ color: 'var(--accent)' }}
-                  >
-                    {r.tipsterId}
-                  </Link>
-                </td>
-                <td>{r.yield.toFixed(1)}%</td>
-                <td>{(r.clvAvg * 100).toFixed(2)}%</td>
-                <td>{(r.winRate * 100).toFixed(0)}%</td>
-                <td>{r.sampleSize}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <Link href="/tipsters" className="btn btn--primary btn--lg">
+            Browse tipsters
+          </Link>
+          <Link href="/tips" className="btn btn--secondary btn--lg">
+            Today’s free tips
+          </Link>
+        </div>
+      </section>
+
+      <section
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1.25rem',
+          marginTop: '3.5rem',
+        }}
+      >
+        {FEATURES.map((f) => (
+          <div key={f.title} className="panel">
+            <h2 style={{ fontSize: '1.1rem', margin: '0 0 0.5rem' }}>{f.title}</h2>
+            <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.95rem' }}>
+              {f.body}
+            </p>
+          </div>
+        ))}
+      </section>
+
+      <section style={{ marginTop: '3rem' }}>
+        <p style={{ color: 'var(--muted)' }}>
+          Are you a tipster with a real record?{' '}
+          <Link href="/signup" style={{ color: 'var(--accent)' }}>
+            Get verified and start earning →
+          </Link>
+        </p>
+      </section>
     </main>
   );
 }
