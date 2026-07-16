@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { authFetch, getProfile } from '../../lib/auth';
+import { authFetch, getProfile, requestPayout } from '../../lib/auth';
 import { API_URL } from '../../lib/api';
+import { SUPPORTED_MARKETS } from '@overlay/shared/grading';
 import type {
   FeedPick,
   OnboardingStatus,
@@ -12,6 +13,7 @@ import type {
 } from '../../lib/api';
 import { formStyles } from '../formStyles';
 import PerformanceDashboardView from '../PerformanceDashboard';
+import UserDashboard from './UserDashboard';
 
 interface EventRow {
   id: string;
@@ -31,18 +33,23 @@ interface MarketOdds {
   prices: Record<string, number>;
 }
 
-const MARKETS = [
-  '1X2',
-  'moneyline',
-  'dnb',
-  'double_chance',
-  'btts',
-  'spreads',
-  'totals',
-  'team_totals',
-  'odd_even',
-  'correct_score',
-];
+/** Compact earnings summary shown inline on the dashboard. */
+interface Earnings {
+  activeSubscribers: number;
+  feeRate: number;
+  projected: { grossCents: number; feeCents: number; netCents: number };
+  paidCents: number;
+  pendingCents: number;
+  availableCents: number;
+  awaitingApproval: boolean;
+}
+
+function money(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+// Single source of truth (shared with the server DTO + grader).
+const MARKETS = SUPPORTED_MARKETS;
 
 // Per-market guidance for the selection field so picks match the grader's
 // expected format (see packages/shared/src/grading.ts).
@@ -61,6 +68,7 @@ const SELECTION_HINTS: Record<string, string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [viewRole, setViewRole] = useState<'user' | 'tipster' | null>(null);
   const [tipsterId, setTipsterId] = useState<string | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [myTips, setMyTips] = useState<FeedPick[]>([]);
@@ -71,6 +79,9 @@ export default function DashboardPage() {
   );
   const [onboarding, setOnboarding] = useState<OnboardingStatus | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<number | null>(null);
+  const [earnings, setEarnings] = useState<Earnings | null>(null);
+  const [payoutMsg, setPayoutMsg] = useState<string | null>(null);
+  const [payoutBusy, setPayoutBusy] = useState(false);
   const [form, setForm] = useState({
     eventId: '',
     market: '1X2',
@@ -129,6 +140,15 @@ export default function DashboardPage() {
       }
     } catch {
       setSubscriberCount(null);
+    }
+  }, []);
+
+  const loadEarnings = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/payouts/me');
+      if (res.ok) setEarnings((await res.json()) as Earnings);
+    } catch {
+      setEarnings(null);
     }
   }, []);
 
@@ -228,22 +248,30 @@ export default function DashboardPage() {
         router.replace('/login');
         return;
       }
-      if (profile.role !== 'tipster' || !profile.tipsterId) {
-        router.replace('/account');
+      if (profile.role === 'admin') {
+        router.replace('/admin');
         return;
       }
+      if (profile.role === 'user' || !profile.tipsterId) {
+        // Bettors get their own user dashboard (rendered below).
+        setViewRole('user');
+        return;
+      }
+      setViewRole('tipster');
       setTipsterId(profile.tipsterId);
       loadFilters();
       loadEvents('', '', '');
       loadPerformance();
       loadOnboarding();
       loadSubscribers();
+      loadEarnings();
     })();
   }, [
     router,
     loadPerformance,
     loadOnboarding,
     loadSubscribers,
+    loadEarnings,
     loadFilters,
     loadEvents,
   ]);
@@ -295,6 +323,25 @@ export default function DashboardPage() {
     }
   }
 
+  async function requestOnDemandPayout() {
+    setPayoutBusy(true);
+    setPayoutMsg(null);
+    try {
+      const { amountCents } = await requestPayout();
+      setPayoutMsg(
+        `Requested $${(amountCents / 100).toFixed(2)} — awaiting admin approval.`,
+      );
+      await loadEarnings();
+    } catch (e) {
+      setPayoutMsg(e instanceof Error ? e.message : 'Could not request payout.');
+    } finally {
+      setPayoutBusy(false);
+    }
+  }
+
+  if (viewRole === 'user') return <UserDashboard />;
+  if (viewRole !== 'tipster') return null;
+
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1 style={{ marginBottom: '0.25rem' }}>Tipster dashboard</h1>
@@ -333,9 +380,12 @@ export default function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-          <Link href="/earnings" className="btn btn--secondary btn--sm">
+          <a href="#my-tips" className="btn btn--primary btn--sm">
+            My tips
+          </a>
+          <a href="#earnings" className="btn btn--secondary btn--sm">
             Earnings &amp; payouts
-          </Link>
+          </a>
           <Link href="/dashboard/profile" className="btn btn--secondary btn--sm">
             Edit public profile
           </Link>
@@ -528,6 +578,92 @@ export default function DashboardPage() {
 
       <PerformanceDashboardView data={performance} />
 
+      <section id="earnings" style={{ marginTop: '2.5rem', scrollMarginTop: '1rem' }}>
+        <h2 style={{ margin: '0 0 0.75rem' }}>Earnings &amp; payouts</h2>
+        {earnings ? (
+          <>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: '0.75rem',
+              }}
+            >
+              {[
+                {
+                  label: 'Available now',
+                  value: money(earnings.availableCents),
+                  hint: 'ready to withdraw',
+                },
+                {
+                  label: 'Projected this cycle',
+                  value: money(earnings.projected.netCents),
+                  hint: `after ${Math.round(earnings.feeRate * 100)}% platform fee`,
+                },
+                { label: 'Paid out', value: money(earnings.paidCents) },
+                { label: 'Pending', value: money(earnings.pendingCents) },
+              ].map((c) => (
+                <div
+                  key={c.label}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 12,
+                    padding: '0.9rem 1rem',
+                    background: 'var(--surface)',
+                  }}
+                >
+                  <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                    {c.label}
+                  </div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 700, marginTop: '0.2rem' }}>
+                    {c.value}
+                  </div>
+                  {c.hint ? (
+                    <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                      {c.hint}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.9rem' }}>
+              Payouts are processed <strong>every Tuesday</strong>. Need funds
+              sooner? Request an off-schedule payout below — it’s released once an
+              admin approves it.{' '}
+              <Link href="/earnings" style={{ color: 'var(--accent)' }}>
+                Full payout history →
+              </Link>
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginTop: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                disabled={
+                  payoutBusy ||
+                  earnings.awaitingApproval ||
+                  earnings.availableCents <= 0
+                }
+                onClick={requestOnDemandPayout}
+              >
+                {payoutBusy ? 'Requesting…' : 'Request payout now'}
+              </button>
+              {earnings.awaitingApproval ? (
+                <span style={{ color: 'var(--warning)', fontSize: '0.85rem' }}>
+                  A payout request is awaiting admin approval.
+                </span>
+              ) : null}
+              {payoutMsg ? (
+                <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>
+                  {payoutMsg}
+                </span>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <p style={{ color: 'var(--muted)' }}>Loading earnings…</p>
+        )}
+      </section>
+
       {(() => {
         const openCount = myTips.filter((p) => p.status === 'pending').length;
         const settledList = myTips.filter((p) => p.status !== 'pending');
@@ -568,6 +704,7 @@ export default function DashboardPage() {
         return (
           <>
             <div
+              id="my-tips"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -575,6 +712,7 @@ export default function DashboardPage() {
                 marginTop: '2.5rem',
                 flexWrap: 'wrap',
                 gap: '0.5rem',
+                scrollMarginTop: '1rem',
               }}
             >
               <h2 style={{ margin: 0 }}>My tips</h2>

@@ -172,15 +172,51 @@ export default function AccountPage() {
       <h1 style={{ marginBottom: '0.25rem' }}>
         Welcome, {profile.username ?? 'there'}
       </h1>
-      <p style={{ color: 'var(--muted)', marginTop: 0 }}>Your account</p>
+      <p style={{ color: 'var(--muted)', marginTop: 0 }}>
+        Manage your account and activity.
+      </p>
 
-      {profile.role === 'user' ? (
-        <p>
-          <Link href="/feed" style={{ color: 'var(--accent)' }}>
-            → My feed (live picks)
+      {/* Key actions up top so they're reachable without scrolling. */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.6rem',
+          margin: '1.25rem 0 0.5rem',
+        }}
+      >
+        {profile.role === 'user' ? (
+          <>
+            <Link href="/feed" className="btn btn--primary btn--sm">
+              My feed
+            </Link>
+            <Link
+              href="/account/subscriptions"
+              className="btn btn--secondary btn--sm"
+            >
+              My subscriptions
+            </Link>
+          </>
+        ) : null}
+        {profile.role === 'tipster' ? (
+          <>
+            <Link href="/dashboard" className="btn btn--primary btn--sm">
+              Tipster dashboard
+            </Link>
+            <Link
+              href="/account/subscriptions"
+              className="btn btn--secondary btn--sm"
+            >
+              My subscriptions
+            </Link>
+          </>
+        ) : null}
+        {profile.role === 'admin' ? (
+          <Link href="/admin" className="btn btn--primary btn--sm">
+            Admin dashboard
           </Link>
-        </p>
-      ) : null}
+        ) : null}
+      </div>
 
       {/* --- Profile summary --- */}
       <div style={cardStyle}>

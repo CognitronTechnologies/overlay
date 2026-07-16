@@ -40,6 +40,10 @@
     "./odds": {
       "types": "./src/odds.ts",
       "default": "./src/odds.ts"
+    },
+    "./grading": {
+      "types": "./src/grading.ts",
+      "default": "./src/grading.ts"
     }
   },
   "scripts": {

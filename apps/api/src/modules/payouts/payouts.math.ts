@@ -45,6 +45,31 @@ export function computeNetFromGross(
   return { grossCents: gross, feeCents, netCents: gross - feeCents };
 }
 
+/**
+ * ISO-8601 week key (`YYYY-Www`) for the regular weekly payout schedule. The
+ * week is identified by its Thursday (ISO rule), computed in UTC so a given
+ * instant maps to the same week everywhere.
+ */
+export function isoWeekKey(date: Date): string {
+  const d = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  // Shift to the Thursday of the current ISO week (Mon=0 … Sun=6).
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const isoYear = d.getUTCFullYear();
+  // Thursday of ISO week 1 is the one containing Jan 4th.
+  const firstThursday = new Date(Date.UTC(isoYear, 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  const week =
+    1 +
+    Math.round(
+      (d.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000),
+    );
+  return `${isoYear}-W${String(week).padStart(2, '0')}`;
+}
+
 /** A single historical payout row surfaced in the earnings UI. */
 export interface PayoutRecord {
   amountCents: number;

@@ -337,6 +337,17 @@
 **Tests:**
 - [ ] Unit: grading matrix per market with edge cases (push, OT, postponement).
 
+### OB-160 — Odds-mapper coverage for all supported markets (closing odds / CLV)
+**Category:** Sports Data · **Priority:** P1 · **Depends on:** OB-045, OB-049
+**Description:** `SUPPORTED_MARKETS` (in `packages/shared/src/grading.ts`) now lists ten markets that tipsters can post and the settlement engine grades: `1X2`, `moneyline`, `dnb`, `double_chance`, `btts`, `odd_even`, `correct_score`, `spreads`, `totals`, `team_totals`. The vendor odds mappers (`apps/api/src/integrations/sports/the-odds-api.mapper.ts`, `api-football.mapper.ts`) only emit **four** (`1X2`/`moneyline` from h2h, `spreads`, `totals`). The other six grade correctly from the final score but have **no closing-odds capture**, so picks on them get **no CLV** — the core trust metric. Extend the mappers (and vendor market requests) to produce closing odds for every supported market where the vendor offers them, and define a clear policy (e.g. hide CLV, don't offer the market, or mark "CLV n/a") for markets no vendor prices.
+**Acceptance criteria:**
+- [ ] Each `SUPPORTED_MARKETS` entry either has closing-odds capture via at least one vendor mapper, or is explicitly documented as "no CLV" with consistent UI/handling.
+- [ ] Vendor market requests fetch the extra markets within credit/cost limits (documented).
+- [ ] `captureClosingOdds` → `computeClv` produces CLV for a pick on each covered market end-to-end.
+**Tests:**
+- [ ] Unit: mapper emits the expected `{ market, prices }` for recorded vendor payloads incl. the newly covered markets.
+- [ ] Integration: a pick on a newly covered market captures closing odds and computes CLV.
+
 ---
 
 ## 7. Stats & Leaderboard

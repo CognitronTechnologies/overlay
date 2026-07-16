@@ -35,6 +35,16 @@ enum PayoutStatus {
   pending
   paid
   failed
+  awaiting_approval
+  rejected
+}
+
+/// Lifecycle of a user-submitted report about a tipster (OB-161).
+enum ReportStatus {
+  open
+  reviewing
+  resolved
+  dismissed
 }
 
 enum ArticleStatus {
@@ -72,6 +82,7 @@ model User {
   subscriptions Subscription[]
   articles      Article[]
   notificationPreference NotificationPreference?
+  reportsMade   TipsterReport[] @relation("ReportsMade")
 }
 
 model Tipster {
@@ -121,6 +132,7 @@ model Tipster {
   subscriptions Subscription[]
   stats         TipsterStats?
   payouts       Payout[]
+  reports       TipsterReport[]
 }
 
 model Event {
@@ -206,10 +218,20 @@ model Payout {
   tipsterId        String
   tipster          Tipster      @relation(fields: [tipsterId], references: [userId])
   amountCents      Int
+  // Gross collected revenue this payout covers, and the platform fee taken.
+  // Balance accounting reserves grossCents so it can't be paid out twice.
+  grossCents       Int          @default(0)
+  feeCents         Int          @default(0)
+  // 'scheduled' (regular weekly run, auto) or 'on_demand' (tipster-requested,
+  // needs admin approval when off the regular schedule).
+  kind             String       @default("scheduled")
   period           String
   status           PayoutStatus @default(pending)
   stripeTransferId String?
   createdAt        DateTime     @default(now())
+
+  @@index([status])
+  @@index([tipsterId])
 }
 
 /// Funds ledger (OB-06x): one row per *collected* payment (or refund reversal).
@@ -244,6 +266,28 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([entity, entityId])
+}
+
+/// A report a subscriber raises about a tipster they subscribe to (OB-161):
+/// e.g. a faked record, scam, or impersonation. Surfaced on the admin dashboard
+/// for review. A report requires an existing subscription to that tipster.
+model TipsterReport {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation("ReportsMade", fields: [reporterId], references: [id])
+  tipsterId  String
+  tipster    Tipster      @relation(fields: [tipsterId], references: [userId])
+  /// One of: fake_record | scam | impersonation | spam | other.
+  reason     String
+  details    String?
+  status     ReportStatus @default(open)
+  reviewNote String?
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([status])
+  @@index([tipsterId])
+  @@index([reporterId])
 }
 
 /// SEO content surface (blog / strategy guides). Drives organic traffic.

@@ -6,13 +6,14 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { SUPPORTED_MARKETS } from '@overlay/shared';
 
 export class CreatePickDto {
   @IsString()
   eventId!: string;
 
   @IsString()
-  @IsIn(['1X2', 'moneyline', 'spread', 'totals'])
+  @IsIn([...SUPPORTED_MARKETS])
   market!: string;
 
   @IsString()

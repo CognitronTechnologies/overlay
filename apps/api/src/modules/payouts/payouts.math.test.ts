@@ -4,6 +4,7 @@ import {
   computePayout,
   computeNetFromGross,
   summarizeEarnings,
+  isoWeekKey,
 } from './payouts.math.ts';
 
 test('computePayout: standard 25% fee', () => {
@@ -45,6 +46,15 @@ test('computeNetFromGross: rounds fee and clamps/floors inputs', () => {
   }); // negative gross clamped
   assert.equal(computeNetFromGross(1000, 1.5).netCents, 0); // rate clamped to 1
   assert.equal(computeNetFromGross(1000.9, 0).grossCents, 1000); // floored, no fee
+});
+
+test('isoWeekKey returns the ISO YYYY-Www for the payout week', () => {
+  // 2026-01-01 is a Thursday → ISO week 1.
+  assert.equal(isoWeekKey(new Date('2026-01-01T00:00:00Z')), '2026-W01');
+  // 2026-07-16 is a Thursday → ISO week 29.
+  assert.equal(isoWeekKey(new Date('2026-07-16T12:00:00Z')), '2026-W29');
+  // Same week, different day (Tuesday) → same key.
+  assert.equal(isoWeekKey(new Date('2026-07-14T00:00:00Z')), '2026-W29');
 });
 
 test('summarizeEarnings: projected earnings reflect active subscribers and fee rate', () => {

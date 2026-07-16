@@ -225,3 +225,118 @@ export async function deleteMyAccount(): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete your account');
   await signOut();
 }
+
+/** Reasons a subscriber can report a tipster (mirrors the API). */
+export type ReportReason =
+  | 'fake_record'
+  | 'scam'
+  | 'impersonation'
+  | 'spam'
+  | 'other';
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  fake_record: 'Faked or misleading track record',
+  scam: 'Scam / fraud',
+  impersonation: 'Impersonation',
+  spam: 'Spam',
+  other: 'Something else',
+};
+
+/** Raise a report about a tipster you subscribe to. */
+export async function reportTipster(
+  tipsterId: string,
+  reason: ReportReason,
+  details?: string,
+): Promise<void> {
+  const res = await authFetch('/api/reports', {
+    method: 'POST',
+    body: JSON.stringify({ tipsterId, reason, details }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
+    throw new Error(msg || `Failed to submit report (${res.status})`);
+  }
+}
+
+/** A report row for the admin review dashboard. */
+export interface AdminReport {
+  id: string;
+  reason: string;
+  details: string | null;
+  status: 'open' | 'reviewing' | 'resolved' | 'dismissed';
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  reporter: { id: string; username: string | null; email: string };
+  tipsterId: string;
+  tipsterName: string | null;
+}
+
+export async function adminListReports(status?: string): Promise<AdminReport[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await authFetch(`/api/admin/reports${qs}`);
+  if (!res.ok) return [];
+  return (await res.json()) as AdminReport[];
+}
+
+export async function adminReviewReport(
+  id: string,
+  status: string,
+  note?: string,
+): Promise<void> {
+  const res = await authFetch(`/api/admin/reports/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, note }),
+  });
+  if (!res.ok) throw new Error(`Failed to update report (${res.status})`);
+}
+
+/** Tipster requests an off-schedule payout (created awaiting admin approval). */
+export async function requestPayout(): Promise<{ amountCents: number }> {
+  const res = await authFetch('/api/payouts/request', { method: 'POST' });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
+    throw new Error(msg || `Could not request payout (${res.status})`);
+  }
+  return (await res.json()) as { amountCents: number };
+}
+
+/** A payout awaiting admin approval. */
+export interface AwaitingPayout {
+  id: string;
+  tipsterId: string;
+  tipsterName: string | null;
+  amountCents: number;
+  grossCents: number;
+  feeCents: number;
+  kind: string;
+  createdAt: string;
+}
+
+export async function adminListAwaitingPayouts(): Promise<AwaitingPayout[]> {
+  const res = await authFetch('/api/admin/payouts');
+  if (!res.ok) return [];
+  return (await res.json()) as AwaitingPayout[];
+}
+
+export async function adminApprovePayout(id: string): Promise<void> {
+  const res = await authFetch(
+    `/api/admin/payouts/${encodeURIComponent(id)}/approve`,
+    { method: 'POST' },
+  );
+  if (!res.ok) throw new Error(`Failed to approve payout (${res.status})`);
+}
+
+export async function adminRejectPayout(id: string): Promise<void> {
+  const res = await authFetch(
+    `/api/admin/payouts/${encodeURIComponent(id)}/reject`,
+    { method: 'POST' },
+  );
+  if (!res.ok) throw new Error(`Failed to reject payout (${res.status})`);
+}

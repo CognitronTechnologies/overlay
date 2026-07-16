@@ -33,10 +33,46 @@ function timeAgo(ms: number): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type StatusFilter = 'live' | 'settled' | 'all';
+type OutcomeFilter = 'all' | 'won' | 'lost' | 'void';
+
+/** Bucket a raw pick status into won/lost/void (half-results roll up). */
+function outcomeBucket(status: string): OutcomeFilter | 'live' {
+  if (status === 'pending') return 'live';
+  if (status === 'won' || status === 'half_won') return 'won';
+  if (status === 'lost' || status === 'half_lost') return 'lost';
+  return 'void';
+}
+
+function pillStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '0.35rem 0.7rem',
+    borderRadius: 999,
+    border: '1px solid var(--border)',
+    background: active ? 'var(--accent)' : 'transparent',
+    color: active ? 'var(--on-accent)' : 'var(--muted)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+  };
+}
+
+const selectStyle: React.CSSProperties = {
+  padding: '0.4rem 0.6rem',
+  borderRadius: 8,
+  border: '1px solid var(--border)',
+  background: 'var(--surface)',
+  color: 'var(--fg)',
+  fontSize: '0.9rem',
+};
+
 export default function FeedPage() {
   const router = useRouter();
   const [picks, setPicks] = useState<FeedPick[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tipsterFilter, setTipsterFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('all');
   const active = useRef(true);
 
   const loadFeed = useCallback(async () => {
@@ -72,6 +108,19 @@ export default function FeedPage() {
     };
   }, [router, loadFeed]);
 
+  const list = picks ?? [];
+  const tipsters = [...new Set(list.map((p) => p.tipsterId))].sort();
+  const filtered = list.filter((p) => {
+    if (tipsterFilter && p.tipsterId !== tipsterFilter) return false;
+    const bucket = outcomeBucket(p.status);
+    if (statusFilter === 'live' && bucket !== 'live') return false;
+    if (statusFilter === 'settled') {
+      if (bucket === 'live') return false;
+      if (outcomeFilter !== 'all' && bucket !== outcomeFilter) return false;
+    }
+    return true;
+  });
+
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>My feed</h1>
@@ -86,7 +135,7 @@ export default function FeedPage() {
 
       {picks === null ? (
         <p style={{ color: '#9aa4b2' }}>Loading…</p>
-      ) : picks.length === 0 ? (
+      ) : list.length === 0 ? (
         <p style={{ color: '#9aa4b2' }}>
           No picks yet.{' '}
           <Link href="/tipsters" style={{ color: '#6ea8fe' }}>
@@ -95,8 +144,71 @@ export default function FeedPage() {
           and their live picks will show up here.
         </p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0 0' }}>
-          {picks.map((p) => (
+        <>
+          {/* Filters: by tipster (for multiple subscriptions) + by status. */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              alignItems: 'center',
+              margin: '1.5rem 0 0.5rem',
+            }}
+          >
+            {tipsters.length > 1 ? (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                Tipster
+                <select
+                  value={tipsterFilter}
+                  onChange={(e) => setTipsterFilter(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">All tipsters</option>
+                  {tipsters.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {(['live', 'settled', 'all'] as StatusFilter[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatusFilter(s)}
+                  style={pillStyle(statusFilter === s)}
+                >
+                  {s === 'live' ? 'Live' : s === 'settled' ? 'Settled' : 'All'}
+                </button>
+              ))}
+            </div>
+
+            {statusFilter === 'settled' ? (
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {(['all', 'won', 'lost', 'void'] as OutcomeFilter[]).map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => setOutcomeFilter(o)}
+                    style={pillStyle(outcomeFilter === o)}
+                  >
+                    {o === 'all' ? 'All' : o[0].toUpperCase() + o.slice(1)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          {filtered.length === 0 ? (
+            <p style={{ color: '#9aa4b2', marginTop: '1rem' }}>
+              No picks match these filters.
+            </p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0 0' }}>
+              {filtered.map((p) => (
             <li
               key={p.id}
               style={{
@@ -167,7 +279,9 @@ export default function FeedPage() {
               </div>
             </li>
           ))}
-        </ul>
+            </ul>
+          )}
+        </>
       )}
     </main>
   );

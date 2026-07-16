@@ -57,19 +57,19 @@ export default function SiteHeader() {
             About
           </Link>
           {role === 'user' ? (
-            <Link href="/feed" onClick={closeMenu}>
-              My feed
-            </Link>
-          ) : null}
-          {role === 'tipster' ? (
             <>
               <Link href="/dashboard" onClick={closeMenu}>
                 Dashboard
               </Link>
-              <Link href="/earnings" onClick={closeMenu}>
-                Earnings
+              <Link href="/feed" onClick={closeMenu}>
+                My feed
               </Link>
             </>
+          ) : null}
+          {role === 'tipster' ? (
+            <Link href="/dashboard" onClick={closeMenu}>
+              Dashboard
+            </Link>
           ) : null}
           {role === 'admin' ? (
             <Link href="/admin" onClick={closeMenu}>
@@ -83,7 +83,7 @@ export default function SiteHeader() {
           {ready ? (
             role ? (
               <Link href="/account" onClick={closeMenu}>
-                Account
+                My Account
               </Link>
             ) : (
               <Link href="/login" onClick={closeMenu}>

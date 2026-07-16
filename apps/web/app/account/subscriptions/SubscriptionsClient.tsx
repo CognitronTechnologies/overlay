@@ -10,7 +10,7 @@ import {
   hoursUntilPeriodEnd,
   type SubscriptionRecord,
 } from '@overlay/shared/subscriptions';
-import { authFetch, getProfile } from '../../../lib/auth';
+import { authFetch, getProfile, reportTipster, REPORT_REASON_LABELS, type ReportReason } from '../../../lib/auth';
 
 const MUTED = 'var(--muted)';
 
@@ -24,6 +24,13 @@ export default function SubscriptionsClient() {
   const [subs, setSubs] = useState<SubscriptionRecord[] | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Report-a-tipster flow (only for tipsters the user is subscribed to).
+  const [reportFor, setReportFor] = useState<string | null>(null);
+  const [reason, setReason] = useState<ReportReason>('fake_record');
+  const [details, setDetails] = useState('');
+  const [reportMsg, setReportMsg] = useState<string | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -67,6 +74,27 @@ export default function SubscriptionsClient() {
   const views = subs
     ? sortSubscriptions(subs).map((s) => toSubscriptionView(s))
     : [];
+
+  function openReport(tipsterId: string) {
+    setReportFor(tipsterId);
+    setReason('fake_record');
+    setDetails('');
+    setReportMsg(null);
+  }
+
+  async function submitReport(tipsterId: string) {
+    setReportBusy(true);
+    setReportMsg(null);
+    try {
+      await reportTipster(tipsterId, reason, details.trim() || undefined);
+      setReportFor(null);
+      setReportMsg('Report submitted — our team will review it. Thank you.');
+    } catch (e) {
+      setReportMsg(e instanceof Error ? e.message : 'Could not submit report.');
+    } finally {
+      setReportBusy(false);
+    }
+  }
 
   // In-app notice (no email): subscriptions still active but ending within 36h.
   const expiring = (subs ?? []).filter((s) =>
@@ -141,38 +169,131 @@ export default function SubscriptionsClient() {
               style={{
                 borderTop: '1px solid var(--border)',
                 padding: '1rem 0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '1rem',
               }}
             >
-              <div>
-                <Link
-                  href={`/tipsters/${v.tipsterId}`}
-                  style={{ color: 'var(--accent)', fontWeight: 600 }}
-                >
-                  {v.tipsterId}
-                </Link>
-                {v.periodEndLabel ? (
-                  <div style={{ color: MUTED, marginTop: '0.25rem' }}>
-                    {v.periodEndLabel}
-                  </div>
-                ) : null}
-              </div>
-              <span
+              <div
                 style={{
-                  color: v.isActive ? 'var(--success)' : MUTED,
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
                 }}
               >
-                {v.statusLabel}
-              </span>
+                <div>
+                  <Link
+                    href={`/tipsters/${v.tipsterId}`}
+                    style={{ color: 'var(--accent)', fontWeight: 600 }}
+                  >
+                    {v.tipsterId}
+                  </Link>
+                  {v.periodEndLabel ? (
+                    <div style={{ color: MUTED, marginTop: '0.25rem' }}>
+                      {v.periodEndLabel}
+                    </div>
+                  ) : null}
+                </div>
+                <span
+                  style={{
+                    color: v.isActive ? 'var(--success)' : MUTED,
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {v.statusLabel}
+                </span>
+              </div>
+
+              {reportFor === v.tipsterId ? (
+                <div
+                  className="panel"
+                  style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}
+                >
+                  <strong style={{ fontSize: '0.95rem' }}>
+                    Report this tipster
+                  </strong>
+                  <label style={{ color: MUTED, fontSize: '0.85rem' }}>
+                    Reason
+                    <select
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value as ReportReason)}
+                      style={{
+                        display: 'block',
+                        marginTop: '0.3rem',
+                        padding: '0.5rem 0.6rem',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface)',
+                        color: 'var(--fg)',
+                        minWidth: 240,
+                      }}
+                    >
+                      {(Object.keys(REPORT_REASON_LABELS) as ReportReason[]).map(
+                        (r) => (
+                          <option key={r} value={r}>
+                            {REPORT_REASON_LABELS[r]}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                  <textarea
+                    placeholder="Add any details that will help us review (optional)"
+                    value={details}
+                    maxLength={1000}
+                    onChange={(e) => setDetails(e.target.value)}
+                    style={{
+                      minHeight: 80,
+                      resize: 'vertical',
+                      padding: '0.6rem 0.7rem',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface)',
+                      color: 'var(--fg)',
+                      fontFamily: 'inherit',
+                      fontSize: '0.9rem',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn--primary btn--sm"
+                      disabled={reportBusy}
+                      onClick={() => submitReport(v.tipsterId)}
+                    >
+                      {reportBusy ? 'Submitting…' : 'Submit report'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--sm"
+                      onClick={() => setReportFor(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  style={{ marginTop: '0.5rem', color: 'var(--muted)' }}
+                  onClick={() => openReport(v.tipsterId)}
+                >
+                  Report tipster
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
+
+      {reportMsg ? (
+        <p
+          role="status"
+          style={{ color: 'var(--accent)', marginTop: '1rem' }}
+        >
+          {reportMsg}
+        </p>
+      ) : null}
 
       {subs && views.length > 0 ? (
         <button

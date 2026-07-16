@@ -1,0 +1,151 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { authFetch, getFullProfile } from '../../lib/auth';
+import type { FeedPick } from '../../lib/api';
+
+interface Sub {
+  id: string;
+  tipsterId: string;
+  status: string;
+  currentPeriodEnd: string | null;
+}
+
+function statusLabel(status: string): string {
+  if (status === 'pending') return 'Live';
+  if (status === 'half_won') return '½ won';
+  if (status === 'half_lost') return '½ lost';
+  return status;
+}
+
+/**
+ * The bettor's home. Everything centered on the user: their subscriptions, a
+ * peek at their live feed, and the actions they actually use. Shown at
+ * /dashboard for `user` accounts (tipsters get the tipster dashboard there).
+ */
+export default function UserDashboard() {
+  const [username, setUsername] = useState<string | null>(null);
+  const [subs, setSubs] = useState<Sub[] | null>(null);
+  const [picks, setPicks] = useState<FeedPick[] | null>(null);
+
+  useEffect(() => {
+    getFullProfile().then((p) => setUsername(p?.username ?? null));
+    authFetch('/api/subscriptions/me')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setSubs(d as Sub[]))
+      .catch(() => setSubs([]));
+    authFetch('/api/picks/me/feed')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setPicks(d as FeedPick[]))
+      .catch(() => setPicks([]));
+  }, []);
+
+  const activeCount = (subs ?? []).filter((s) => s.status === 'active').length;
+  const recent = (picks ?? []).slice(0, 3);
+
+  const cardStyle: React.CSSProperties = {
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: '1.1rem 1.2rem',
+    background: 'var(--surface)',
+  };
+
+  return (
+    <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <h1 style={{ marginBottom: '0.25rem' }}>
+        Welcome{username ? `, ${username}` : ''}
+      </h1>
+      <p style={{ color: 'var(--muted)', marginTop: 0 }}>
+        Your subscriptions and live picks, all in one place.
+      </p>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', margin: '1.25rem 0' }}>
+        <Link href="/feed" className="btn btn--primary btn--sm">
+          My feed
+        </Link>
+        <Link href="/account/subscriptions" className="btn btn--secondary btn--sm">
+          My subscriptions
+        </Link>
+        <Link href="/tipsters" className="btn btn--secondary btn--sm">
+          Browse tipsters
+        </Link>
+        <Link href="/account" className="btn btn--secondary btn--sm">
+          My account
+        </Link>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: '0.75rem',
+        }}
+      >
+        <div style={cardStyle}>
+          <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+            Active subscriptions
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
+            {subs === null ? '—' : activeCount}
+          </div>
+        </div>
+        <div style={cardStyle}>
+          <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+            Live picks right now
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
+            {picks === null
+              ? '—'
+              : picks.filter((p) => p.status === 'pending').length}
+          </div>
+        </div>
+      </div>
+
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>Latest from your feed</h2>
+      {picks === null ? (
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+      ) : recent.length === 0 ? (
+        <p style={{ color: 'var(--muted)' }}>
+          No picks yet.{' '}
+          <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
+            Find a tipster to subscribe to
+          </Link>
+          .
+        </p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0 0' }}>
+          {recent.map((p) => (
+            <li
+              key={p.id}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '0.75rem 1rem',
+                marginBottom: '0.6rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+                <Link href={`/tipsters/${p.tipsterId}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                  {p.tipsterId}
+                </Link>
+                <span style={{ color: 'var(--muted)' }}>{statusLabel(p.status)}</span>
+              </div>
+              <div style={{ marginTop: '0.3rem' }}>
+                <strong>{p.selection}</strong>{' '}
+                <span style={{ color: 'var(--muted)' }}>
+                  ({p.market} @ {p.oddsAtPick.toFixed(2)})
+                </span>
+              </div>
+            </li>
+          ))}
+          <li style={{ marginTop: '0.25rem' }}>
+            <Link href="/feed" style={{ color: 'var(--accent)' }}>
+              View all in My feed →
+            </Link>
+          </li>
+        </ul>
+      )}
+    </main>
+  );
+}

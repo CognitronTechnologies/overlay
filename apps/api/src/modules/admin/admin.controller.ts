@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { AdminService } from './admin.service';
+import { ReportsService } from '../reports/reports.service';
+import { PayoutsService } from '../payouts/payouts.service';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard, Roles } from '../../common/roles.guard';
 import { CurrentUser } from '../../common/current-user.decorator';
@@ -42,12 +44,26 @@ class VoidPickDto {
   reason!: string;
 }
 
+class ReviewReportDto {
+  @IsIn(['open', 'reviewing', 'resolved', 'dismissed'])
+  status!: 'open' | 'reviewing' | 'resolved' | 'dismissed';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+}
+
 /** All admin routes require an authenticated admin principal. */
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly reports: ReportsService,
+    private readonly payouts: PayoutsService,
+  ) {}
 
   @Get('dashboard')
   dashboard() {
@@ -129,5 +145,32 @@ export class AdminController {
     @CurrentUser() actor: AuthUser,
   ) {
     return this.admin.voidPick(actor.userId, id, dto.reason);
+  }
+
+  /** Reports raised by subscribers about tipsters (OB-161). */
+  @Get('reports')
+  reportsList(@Query('status') status?: string) {
+    return this.reports.listForAdmin(status);
+  }
+
+  @Patch('reports/:id')
+  reviewReport(@Param('id') id: string, @Body() dto: ReviewReportDto) {
+    return this.reports.updateStatus(id, dto.status, dto.note);
+  }
+
+  /** On-demand payout requests awaiting approval (OB-04x). */
+  @Get('payouts')
+  payoutsAwaiting() {
+    return this.payouts.listAwaitingApproval();
+  }
+
+  @Post('payouts/:id/approve')
+  approvePayout(@Param('id') id: string) {
+    return this.payouts.approve(id);
+  }
+
+  @Post('payouts/:id/reject')
+  rejectPayout(@Param('id') id: string) {
+    return this.payouts.reject(id);
   }
 }
