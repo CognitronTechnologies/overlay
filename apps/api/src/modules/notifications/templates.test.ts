@@ -2,22 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   newPickDigestEmail,
-  passwordResetEmail,
   receiptEmail,
-  verificationEmail,
 } from './templates.ts';
-
-test('verificationEmail: subject and body include the verify URL', () => {
-  const t = verificationEmail({ verifyUrl: 'https://overlay.bet/verify?t=abc' });
-  assert.match(t.subject, /verify/i);
-  assert.ok(t.body.includes('https://overlay.bet/verify?t=abc'));
-});
-
-test('passwordResetEmail: subject and body include the reset URL', () => {
-  const t = passwordResetEmail({ resetUrl: 'https://overlay.bet/reset?t=xyz' });
-  assert.match(t.subject, /reset/i);
-  assert.ok(t.body.includes('https://overlay.bet/reset?t=xyz'));
-});
 
 test('receiptEmail: renders amount, tipster and optional period', () => {
   const t = receiptEmail({

@@ -7,11 +7,14 @@
 > **Legend** — Priority: `P0` (blocks launch) · `P1` (needed for a credible launch) · `P2` (fast-follow).
 > IDs are stable (`OB-###`); reference them in `Depends on`.
 >
-> **Current baseline (already done):** auth (register/login/JWT/roles), pick submit+lock+audit,
+> **Current baseline (already done):** Supabase Auth (JWKS-verified, roles), pick submit+lock+audit,
 > settlement worker (capture closing odds → grade → CLV → recompute stats), stats engine + leaderboard,
-> tipster profiles, mock payments + Stripe skeleton, mock notifier, admin **API** (no UI), blog/articles,
-> events ingest, seed with dummy tipsters. Web pages: home, blog, login, signup, account, tipster dashboard,
-> subscribe, tipster profile.
+> tipster profiles + onboarding, subscriptions + entitlement gating, payment providers (Stripe + Coinbase
+> Commerce crypto + Flutterwave mobile money, behind a registry), multi-currency FX pricing, payouts + fee
+> accounting, Resend email + notification preferences/digests, free **Daily Tips** hub, blog/articles,
+> events ingest (The Odds API / API-Football adapters), GDPR export/erasure, Prometheus metrics + health
+> probes, admin **API** (UI in progress), Dockerfile + `render.yaml` deploy blueprint, seed data. Web pages:
+> home, blog, tips, marketplace, login/signup, account, tipster dashboard/earnings, subscribe, tipster profile.
 
 ---
 

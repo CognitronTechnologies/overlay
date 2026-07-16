@@ -1,8 +1,8 @@
-# Verified Tipster Marketplace — MVP Spec & Path to Production
+# Verified Tipster Marketplace — Product Spec & Path to Production
 
-> **Working name:** ProofPicks (placeholder)
-> **Status:** Draft v1
-> **Last updated:** 2026-07-12
+> **Working name:** Overlay Bets
+> **Status:** Walking skeleton implemented end-to-end; hardening for production (see `PROD-READINESS-BACKLOG.md`).
+> **Last updated:** 2026-07-16
 
 ---
 
@@ -15,6 +15,8 @@ The entire moat is **trust**. Every design decision serves one principle:
 > **You cannot fake, edit, or delete a losing pick.**
 
 We sell **data, tools, and picks** — we do **not** take bets. This deliberately sidesteps most gambling licensing in v1.
+
+> **Status note (2026-07):** the core loop is built — pick lock, automated settlement, CLV/stats, leaderboard, subscriptions + entitlement gating, payouts, notifications, a free Daily Tips hub, and GDPR export/erasure. The platform now targets a **global** audience with multi-currency pricing and card / crypto-stablecoin / mobile-money payment rails. Remaining work is production hardening tracked in `PROD-READINESS-BACKLOG.md` (`OB-###`).
 
 ---
 
@@ -40,9 +42,11 @@ We sell **data, tools, and picks** — we do **not** take bets. This deliberatel
 
 ### 3.2 Out of scope for MVP
 - No bet placement / no wagering (keeps us out of gambling licensing).
-- No in-app wallet / crypto (v1 is fiat via Stripe).
+- No in-app wallet / custodial balances (payments are pass-through: cards via Stripe, crypto stablecoin via Coinbase Commerce, mobile money via Flutterwave).
 - No social feed, comments, or DMs.
 - No native mobile app (responsive web first).
+
+> Update: alternative payment rails (crypto stablecoin, mobile money) were added post-v1 to reach non-card markets. We still hold **no** custodial balances — every rail is pass-through checkout.
 
 ---
 
@@ -94,16 +98,18 @@ payouts          (id, tipster_id, amount, period, status)
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Frontend | Next.js + Tailwind | Responsive web |
-| Backend | Node/TypeScript (NestJS or Fastify) | Or Python/FastAPI |
+| Frontend | Next.js + Tailwind | Responsive web (Vercel) |
+| Backend | NestJS (TypeScript) | Modular monolith |
 | Database | PostgreSQL | Redis for fan-out/queues |
-| Jobs | BullMQ (or Celery) + cron | Settlement engine |
-| Payments | Stripe + Stripe Connect | Tipster payouts |
-| Sports data | The Odds API / SportMonks / API-Football | **Critical: must provide closing odds for CLV** |
-| Auth | Clerk / Auth0 / Supabase Auth | |
-| Notifications | Resend/Postmark (email) + web push | |
-| Hosting | Vercel (web) + Railway/Fly/AWS (API+DB) | |
-| Observability | Sentry + structured logs + uptime monitor | |
+| Jobs | BullMQ + cron (embeddable in API on constrained hosts) | Settlement engine |
+| Payments | Stripe + Connect (cards) · Coinbase Commerce (crypto) · Flutterwave (mobile money) | Provider-agnostic registry |
+| Pricing | USD-denominated + in-house FX conversion | Charge in subscriber's local currency |
+| Sports data | The Odds API / API-Football adapters | **Critical: must provide closing odds for CLV** |
+| Auth | Supabase Auth | API verifies JWTs via JWKS |
+| Notifications | Resend (email) + preferences/digests; web push planned | |
+| Storage | Supabase Storage | Avatars, article images |
+| Hosting | Vercel (web) + Render (API + worker + DB + Redis) | |
+| Observability | Prometheus/Grafana + structured logs + health probes; Sentry planned | |
 
 ---
 
@@ -178,10 +184,10 @@ payouts          (id, tipster_id, amount, period, status)
 
 ## 12. Open questions
 
-1. Which sports data vendor gives reliable **closing odds** at acceptable cost?
-2. Single-source vs. dual-source settlement for trust?
+1. Which sports data vendor gives reliable **closing odds** at acceptable cost? (Adapters built for The Odds API + API-Football; production key + validation pending — OB-045.)
+2. Single-source vs. dual-source settlement for trust? (Deferred — OB-047.)
 3. Which sports to launch with? (Soft, high-liquidity markets favor CLV signal.)
-4. Public-chain anchoring in v1, or defer to v2?
-5. Target launch jurisdictions and their rules on paid tipping.
+4. Public-chain anchoring in v1, or defer to v2? (Deferred — OB-037.)
+5. Target launch jurisdictions and their rules on paid tipping (incl. crypto/mobile-money markets).
 
 ---

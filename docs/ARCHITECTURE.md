@@ -1,8 +1,31 @@
-# Overlay Bets — System Architecture (v1)
+# Overlay Bets — System Architecture
 
-> **Status:** Draft v1
-> **Scope:** MVP architecture for the verified tipster marketplace. Fiat-only, no wagering, no crypto.
-> **Companion docs:** `SPEC.md` (product), `ROADMAP.md` (delivery), `VENDOR-SPIKE.md` (data vendor), `PRIVACY.md` (GDPR/retention).
+> **Status:** Live — walking skeleton implemented end-to-end; hardening for production (see `PROD-READINESS-BACKLOG.md`).
+> **Scope:** Verified tipster marketplace + free daily-tips hub. No bet placement, no wagering. Global reach via multi-currency pricing and card / crypto-stablecoin / mobile-money rails.
+> **Companion docs:** `SPEC.md` (product), `ROADMAP.md` (delivery), `PROD-READINESS-BACKLOG.md` (issue-ready backlog), `VENDOR-SPIKE.md` (data vendor), `PRIVACY.md` (GDPR/retention), `OBSERVABILITY.md` (metrics/alerts).
+
+---
+
+## 0. Implementation status (snapshot)
+
+| Area | Status |
+|---|---|
+| Auth (Supabase Auth, JWKS-verified) | **Built** |
+| Pick submit + hash-lock + audit log | **Built** |
+| Settlement worker (closing odds → grade → CLV → stats) | **Built** |
+| Stats engine + leaderboard + tipster profiles | **Built** |
+| Subscriptions + entitlement gating | **Built** (Stripe live; crypto/mobile-money hosted-checkout) |
+| Payouts + platform fee accounting | **Built** (transfers being hardened) |
+| Notifications (Resend email + preferences/digests) | **Built**; web push pending |
+| Free "Daily Tips" hub | **Built** |
+| Articles/blog + SEO | **Built** |
+| Admin API + moderation | **Built** (admin UI in progress) |
+| Privacy/GDPR export + erasure | **Built** |
+| Multi-currency (FX conversion) | **Built** |
+| Observability (Prometheus metrics, health) | **Built**; Sentry pending |
+| DB-level pick immutability trigger | **Pending** (app-layer today) |
+
+> The backlog (`PROD-READINESS-BACKLOG.md`) tracks the remaining production-hardening work with stable `OB-###` IDs.
 
 ---
 
@@ -70,17 +93,24 @@ Single deployable, internally split into modules with clear boundaries:
 | **tipsters** | Profiles, pricing, onboarding |
 | **picks** | Submit + lock (hash/timestamp), read/fan-out; append-only |
 | **stats** | Serve materialized tipster stats; leaderboard queries |
-| **subscriptions** | Stripe checkout, entitlement checks, gating |
-| **payouts** | Stripe Connect transfers, platform fee accounting |
-| **notifications** | Email + web push dispatch |
+| **subscriptions** | Provider-agnostic checkout (Stripe / crypto / mobile-money), entitlement checks, gating |
+| **payouts** | Payout transfers + platform fee accounting; per-tipster payout destination |
+| **notifications** | Email dispatch (Resend) + per-user preferences/digests; web push planned |
 | **articles** | SEO content (blog/strategy guides): public read + admin authoring |
+| **free-tips** | Free "Daily Tips" hub: per-date public tips (cold-start / SEO) |
 | **admin** | Moderation, tipster suspension, role management, audit-log, dashboard metrics |
 | **events** | Fixture ingestion from sports-data vendors |
+| **users** | Account profile, username, settings |
+| **privacy** | GDPR data-subject export + erasure (PII anonymised, pick integrity preserved) |
+| **health** | Liveness/readiness probes for the host/orchestrator |
+| **metrics** | Prometheus metrics endpoint (settlement latency, queue depth, errors) |
+
+**Cross-cutting integrations** (under `integrations/`): `payments` (Stripe / Coinbase Commerce / Flutterwave / mock, behind a provider registry), `sports` (The Odds API / API-Football / mock adapters + mappers), `fx` (currency conversion), `storage` (Supabase Storage for avatars/article images).
 
 > Modular monolith (not microservices) for MVP: simpler ops, easy transactions, refactor to services later along module seams if needed.
 
 ### 3.3 Workers (background jobs)
-Separate process, same codebase, driven by **BullMQ** (Redis-backed):
+Separate process, same codebase, driven by **BullMQ** (Redis-backed). On constrained hosting (e.g. Render free tier) the settlement loop can run **embedded** in the API in interval mode (`EMBED_WORKER=true`, `WORKER_MODE=interval`) instead of a dedicated worker + Redis — flip to the standalone worker on a paid plan (OB-143):
 
 | Job | Trigger | Function |
 |---|---|---|
@@ -90,27 +120,33 @@ Separate process, same codebase, driven by **BullMQ** (Redis-backed):
 | `compute-clv` | after closing-odds + settle | Compute CLV per pick |
 | `recompute-stats` | after settlement batch | Materialize `tipster_stats` |
 | `dispatch-notifications` | on new pick / settlement | Email + push fan-out |
-| `run-payouts` | scheduled (monthly) | Stripe Connect transfers |
+| `run-payouts` | scheduled (monthly) | Provider payout transfers (Stripe Connect / crypto / mobile-money) |
 
 ### 3.4 Data stores
 - **PostgreSQL** — single source of truth. Append-only `picks`; materialized `tipster_stats`.
 - **Redis** — cache (leaderboard, hot profiles), pub/sub for live pick fan-out, BullMQ backend.
 
 ### 3.5 External services
-- **Sports Data API** — fixtures, odds, **closing odds**, results (see `VENDOR-SPIKE.md`).
-- **Stripe** (+ Connect) — subscriptions + tipster payouts.
-- **Resend/Postmark** — transactional email.
-- **Web Push (VAPID)** — browser notifications.
+- **Sports Data API** — fixtures, odds, **closing odds**, results via **The Odds API** / **API-Football** adapters (see `VENDOR-SPIKE.md`).
+- **Stripe** (+ Connect) — card subscriptions + tipster payouts.
+- **Coinbase Commerce** — crypto stablecoin (USDC/USDT) hosted checkout, pay-per-period.
+- **Flutterwave** — mobile money for African markets (M-Pesa, MTN MoMo, Airtel Money), pay-per-period.
+- **Supabase** — Auth (JWT via JWKS) + Storage (avatars, article images).
+- **Resend** — transactional email.
+- **Web Push (VAPID)** — browser notifications (planned).
+
+> Payment providers sit behind a common `PaymentProvider` interface + registry, so subscriptions/payouts are provider-agnostic. Prices are stored in USD minor units and converted to the subscriber's local currency by the FX layer at checkout.
 
 ---
 
 ## 4. Core data model (v1)
 
 ```
-users(id, role, email, password_hash, created_at)
+users(id, role, email, supabase_user_id, username, created_at)
+    -- password_hash retained but legacy; auth is Supabase (JWKS)
 
 tipsters(user_id PK/FK, bio, sports[], subscription_price_cents,
-         stripe_account_id, status, created_at)
+         stripe_account_id, payout_destination, status, created_at)
 
 events(id PK, vendor_event_id, sport, league, home, away,
        start_time, status, closing_captured_at)
@@ -128,6 +164,10 @@ tipster_stats(tipster_id PK/FK, roi, yield, clv_avg, win_rate,
               sample_size, max_drawdown, current_streak, updated_at)  -- materialized
 
 payouts(id PK, tipster_id FK, amount_cents, period, status, stripe_transfer_id)
+
+notification_preferences(user_id PK/FK, channel, frequency, updated_at)
+
+free_tips(id PK, sport, event, market, selection, tip_date, published_at)  -- free Daily Tips hub
 
 audit_log(id PK, actor, action, entity, entity_id, payload_json, created_at)
 ```
@@ -193,10 +233,12 @@ monthly cron → worker(run-payouts):
 | ORM/DB | **Prisma + PostgreSQL** | Type-safe, migrations, good DX |
 | Cache/Queue | **Redis + BullMQ** | Pub/sub fan-out + reliable jobs |
 | Auth | **Supabase Auth** | Free (~50k MAU), Postgres-native; API verifies JWTs via JWKS (OB-145) |
-| Payments | **Stripe + Connect** | Subscriptions + marketplace payouts |
+| Payments | **Stripe + Connect** (cards) · **Coinbase Commerce** (crypto) · **Flutterwave** (mobile money) | Provider-agnostic registry; global reach |
+| FX | **In-house FX layer** | Store USD minor units; convert to local currency at checkout |
 | Email | **Resend** | Simple transactional email |
-| Hosting | **Vercel** (web) · **Fly.io/Railway** (API+workers+DB) | Managed, fast to prod |
-| Observability | **Sentry** + structured logs + uptime monitor | Error + perf visibility |
+| Storage | **Supabase Storage** | Avatars, article cover images |
+| Hosting | **Vercel** (web) · **Render** (API + worker + Postgres + Redis via `render.yaml`) | Managed, fast to prod |
+| Observability | **Prometheus/Grafana** + structured logs + health probes; Sentry planned | Error + perf visibility (see `OBSERVABILITY.md`) |
 | CI/CD | **GitHub Actions** | Lint, test, migrate, deploy |
 
 > **Decision:** NestJS over Fastify-bare — its module system enforces the boundaries this architecture depends on. Revisit only if startup complexity becomes a problem.
@@ -206,17 +248,17 @@ monthly cron → worker(run-payouts):
 ## 7. Repository topology (target for scaffolding)
 
 ```
-overlay-bets/
+overlay/
 ├── apps/
-│   ├── web/                 # Next.js
-│   └── api/                 # NestJS (HTTP + worker entrypoints)
+│   ├── web/                 # Next.js (self-contained; NEXT_PUBLIC_* envs)
+│   └── api/                 # NestJS — modules/, integrations/, workers/ (HTTP + worker entrypoints)
 ├── packages/
-│   ├── shared/              # types, DTOs, stats math (CLV/ROI) — unit-tested
-│   └── config/              # shared tsconfig/eslint
+│   └── shared/              # types, DTOs, stats math (CLV/ROI), FX, daily-tips — unit-tested
 ├── prisma/                  # schema + migrations
-├── infra/                   # IaC, docker-compose (local pg+redis)
-├── docs/                    # SPEC, ROADMAP, ARCHITECTURE, VENDOR-SPIKE, NAMING
-└── package.json           # npm workspace root (pnpm blocked in this env)
+├── infra/                   # docker-compose (local pg+redis), monitoring (Prometheus/Grafana/Alertmanager)
+├── docs/                    # SPEC, ROADMAP, ARCHITECTURE, PROD-READINESS-BACKLOG, VENDOR-SPIKE, PRIVACY, OBSERVABILITY, NAMING
+├── render.yaml              # Render blueprint (API + worker + Postgres + Redis)
+└── package.json             # npm workspace root (pnpm blocked in this env)
 ```
 
 The **stats math lives in `packages/shared`** so it's independently unit-testable and reused by API + workers — correctness here is non-negotiable.
@@ -247,8 +289,11 @@ The **stats math lives in `packages/shared`** so it's independently unit-testabl
 ## 10. Open architectural decisions
 
 1. **Auth:** ✅ Decided — **Supabase Auth** (OB-145). Identity lives in Supabase; roles + domain data (Tipster, Subscriptions, Picks) in Postgres, linked by `supabaseUserId`. The API verifies Supabase access tokens via JWKS and provisions the local `User` on first request.
-2. **Data vendor + closing-odds source** (book close vs Betfair exchange price). → `VENDOR-SPIKE.md`.
-3. **Single vs dual-source settlement** for trust vs cost.
-4. **Public-chain anchoring in v1** or defer to v2.
-5. **Hosting:** Fly.io vs Railway vs AWS ECS for API+workers.
+2. **Payments:** ✅ Decided — multi-rail behind a provider registry: **Stripe** (cards + Connect), **Coinbase Commerce** (crypto stablecoin), **Flutterwave** (mobile money). Crypto/mobile-money are pay-per-period (no card-on-file).
+3. **Global pricing:** ✅ Decided — store prices in USD minor units; convert to local currency at checkout via the FX layer.
+4. **Hosting:** ✅ Decided — **Render** (API + worker + Postgres + Redis via `render.yaml`) + **Vercel** (web).
+5. **Data vendor + closing-odds source** (book close vs Betfair exchange price). → `VENDOR-SPIKE.md`. Adapters exist for The Odds API + API-Football; production key + validation pending (OB-045).
+6. **Single vs dual-source settlement** for trust vs cost (OB-047, stretch).
+7. **DB-level pick immutability trigger** — pending (OB-035); app-layer guard in place today.
+8. **Public-chain anchoring** — deferred to post-MVP (OB-037, stretch).
 ```
