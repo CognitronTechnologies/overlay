@@ -4,15 +4,13 @@ const fs = require("fs");
 
 class VitiBetScraper {
     constructor() {
-        this.url =
-            "https://www.vitibet.com/index.php?clanek=tipoftheday&sekce=fotbal&lang=en";
+        this.url = "https://www.vitibet.com/index.php?clanek=tipoftheday&sekce=fotbal&lang=en";
         this.baseUrl = "https://www.vitibet.com/";
         this.headers = {
-            "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36",
             Accept:
                 "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Language": "en-US,en;q=0.9",
         };
     }
 
@@ -118,9 +116,7 @@ class VitiBetScraper {
         try {
             console.log("Fetching Vitibet...");
 
-            const response = await axios.get(this.url, {
-                headers: this.headers,
-            });
+            const response = await axios.get(this.url, { headers: this.headers, });
 
             const { data } = response;
             fs.writeFileSync("vitibet.html", data);
@@ -128,28 +124,17 @@ class VitiBetScraper {
             const $ = cheerio.load(data);
             const root = $("#tipoftheday");
 
-            if (!root.length) {
-                throw new Error("Unable to find #tipoftheday on the Vitibet page");
-            }
+            if (!root.length) throw new Error("Unable to find #tipoftheday on the Vitibet page");
 
             const results = [];
             const sections = root.find(".viti-v6-sport-section").toArray();
 
             for (const section of sections) {
-                const sport = $(section)
-                    .find(".viti-v6-sport-title")
-                    .first()
-                    .text()
-                    .trim();
-
+                const sport = $(section).find(".viti-v6-sport-title").first().text().trim();
                 const items = $(section).find(".viti-v6-item-wrap").toArray();
 
                 for (const item of items) {
-                    const league = $(item)
-                        .find(".viti-v6-match-league")
-                        .first()
-                        .text()
-                        .trim();
+                    const league = $(item).find(".viti-v6-match-league").first().text().trim();
 
                     const card = $(item).find("a.viti-v6-card").first();
                     if (!card.length) continue;
@@ -162,11 +147,7 @@ class VitiBetScraper {
                     const time = card.find(".viti-v6-m-time").text().trim();
                     const score = card.find(".viti-v6-m-score").text().trim();
                     const prediction = card.find(".viti-v6-badge").text().trim();
-                    const indexText = card
-                        .find(".viti-v6-m-index")
-                        .text()
-                        .replace(/INDEX:\s*/i, "")
-                        .trim();
+                    const indexText = card.find(".viti-v6-m-index").text().replace(/INDEX:\s*/i, "").trim();
 
                     const detail = await this.fetchDetailPage(url);
 

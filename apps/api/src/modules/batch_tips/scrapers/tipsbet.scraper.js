@@ -12,8 +12,7 @@ class TipsBetScraper {
 
       const { data } = await axios.get(this.url, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36",
         },
       });
 
@@ -22,11 +21,8 @@ class TipsBetScraper {
       // Today's heading
       const today = new Date();
       const todayString =
-        String(today.getDate()).padStart(2, "0") +
-        "." +
-        String(today.getMonth() + 1).padStart(2, "0") +
-        "." +
-        today.getFullYear();
+        String(today.getDate()).padStart(2, "0") + "." +
+        String(today.getMonth() + 1).padStart(2, "0") + "." + today.getFullYear();
 
       let todayTable = null;
 
@@ -35,10 +31,7 @@ class TipsBetScraper {
       $("h1,h2,h3,h4,h5,strong").each((_, el) => {
         const text = $(el).text().trim();
 
-        if (
-          text.includes("Free Betting Tips") &&
-          text.includes(todayString)
-        ) {
+        if (text.includes("Free Betting Tips") && text.includes(todayString)) {
           todayTable = $(el).nextAll("table").first();
           return false;
         }
@@ -53,10 +46,8 @@ class TipsBetScraper {
           const firstRow = $(table).find("tr").eq(1).text();
 
           if (
-            firstRow.includes("World") ||
-            firstRow.includes("Club Friendly") ||
-            firstRow.includes("NBA") ||
-            firstRow.includes("M-ATP")
+            firstRow.includes("World") || firstRow.includes("Club Friendly") ||
+            firstRow.includes("NBA") || firstRow.includes("M-ATP")
           ) {
             todayTable = $(table);
             return false;
@@ -69,9 +60,7 @@ class TipsBetScraper {
         return [];
       }
 
-      console.log(
-        `Found table with ${todayTable.find("tr").length} rows.`
-      );
+      console.log(`Found table with ${todayTable.find("tr").length} rows.`);
 
       const tips = [];
 
@@ -91,10 +80,8 @@ class TipsBetScraper {
         const odds = parseFloat($(cells[7]).text().trim());
         const result = $(cells[8]).text().trim();
 
-        const [homeTeam = "", awayTeam = ""] = teams
-          .split("–")
-          .map((t) => t.trim());
-
+        const [homeTeam = "", awayTeam = ""] = teams.split("–").map((t) => t.trim());
+        
         tips.push({
           kickoff,
           country,
