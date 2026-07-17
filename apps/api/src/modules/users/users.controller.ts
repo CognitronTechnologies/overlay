@@ -68,6 +68,15 @@ export class UsersController {
     return this.users.clearAvatar(user.userId);
   }
 
+  /** Choose a generated ("preset") avatar by its DiceBear URL. */
+  @Post('me/avatar-preset')
+  selectPresetAvatar(
+    @CurrentUser() user: AuthUser,
+    @Body('url') url: string,
+  ) {
+    return this.users.setPresetAvatar(user.userId, url);
+  }
+
   /** Live availability check while the user types a handle. */
   @Get('username-available')
   available(@CurrentUser() user: AuthUser, @Query('u') username: string) {

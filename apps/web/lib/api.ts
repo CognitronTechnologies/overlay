@@ -86,6 +86,7 @@ export interface ArticleCard {
   excerpt: string;
   coverImage: string | null;
   tags: string[];
+  category: 'content' | 'news';
   readingMinutes: number;
   publishedAt: string | null;
 }
@@ -109,14 +110,67 @@ async function getJson<T>(path: string, revalidate = 300): Promise<T | null> {
   }
 }
 
-export async function listArticles(tag?: string): Promise<ArticleCard[]> {
-  const qs = tag ? `?tag=${encodeURIComponent(tag)}` : '';
-  return (await getJson<ArticleCard[]>(`/api/articles${qs}`)) ?? [];
+export async function listArticles(params?: {
+  tag?: string;
+  category?: 'content' | 'news';
+}): Promise<ArticleCard[]> {
+  const qs = new URLSearchParams();
+  if (params?.tag) qs.set('tag', params.tag);
+  if (params?.category) qs.set('category', params.category);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return (await getJson<ArticleCard[]>(`/api/articles${suffix}`)) ?? [];
 }
 
 export async function getArticle(slug: string): Promise<Article | null> {
   return getJson<Article>(`/api/articles/${encodeURIComponent(slug)}`);
 }
+
+// --- Global search ----------------------------------------------------------
+
+export interface SearchTipster {
+  tipsterId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  country: string | null;
+  yield: number | null;
+  clvAvg: number | null;
+  sampleSize: number | null;
+  subscriptionPriceCents: number;
+}
+
+export interface SearchArticle {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: 'content' | 'news';
+  readingMinutes: number;
+  publishedAt: string | null;
+}
+
+export interface SearchResults {
+  query: string;
+  tipsters: SearchTipster[];
+  articles: SearchArticle[];
+}
+
+const EMPTY_SEARCH: SearchResults = { query: '', tipsters: [], articles: [] };
+
+/** Global search across tipsters and articles. */
+export async function search(q: string): Promise<SearchResults> {
+  const query = q.trim();
+  if (query.length < 2) return { ...EMPTY_SEARCH, query };
+  try {
+    const res = await fetch(
+      `${API_URL}/api/search?q=${encodeURIComponent(query)}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return { ...EMPTY_SEARCH, query };
+    return (await res.json()) as SearchResults;
+  } catch {
+    return { ...EMPTY_SEARCH, query };
+  }
+}
+
 
 export async function listArticleSlugs(): Promise<
   { slug: string; updatedAt: string; publishedAt: string | null }[]

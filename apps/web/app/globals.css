@@ -233,6 +233,22 @@ a {
   color: var(--accent);
 }
 
+.header-search-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+}
+
+.header-search-link:hover,
+.header-search-link:focus-visible {
+  color: var(--fg);
+  background: var(--surface);
+}
+
 .nav-toggle {
   display: none;
   background: transparent;
@@ -448,11 +464,34 @@ a {
     order: 2;
   }
 
-  /* In the collapsed mobile menu, dropdowns flow inline rather than overlay. */
+  /* Full-width nav items so links and dropdown sections align cleanly. */
+  .site-nav > a,
+  .nav-dropdown {
+    width: 100%;
+  }
+
+  /* In the collapsed mobile menu, don't use expand-on-tap overlays (they jump
+     the header height and read as a hover artefact on touch). Instead flatten
+     each dropdown: its trigger becomes a small section heading and its links
+     are always shown inline underneath. */
+  .nav-dropdown__trigger {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .nav-dropdown__trigger span[aria-hidden] {
+    display: none;
+  }
+
   .nav-dropdown__menu {
+    display: flex;
     position: static;
     margin-top: 0.35rem;
-    padding: 0.25rem 0 0.25rem 0.75rem;
+    padding: 0.1rem 0 0.35rem 0.75rem;
     min-width: 0;
     background: transparent;
     border: none;
