@@ -2,7 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { buildClvChart } from '@overlay/shared/tipster-profile';
-import { countryLabel, countryName, flagEmoji } from '@overlay/shared/countries';
+import { countryLabel } from '@overlay/shared/countries';
+import Flag from '../../Flag';
 import { getTipster, SITE_URL } from '../../../lib/api';
 import TipsterTips from './TipsterTips';
 
@@ -15,7 +16,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const t = await getTipster(params.id);
   if (!t) return { title: 'Tipster not found — Overlay Bets' };
-  const name = t.displayName ?? t.tipsterId;
+  const name = t.displayName ?? t.username ?? t.tipsterId;
   const y = t.stats ? `${t.stats.yield.toFixed(1)}% yield` : 'verified picks';
   return {
     title: `${name} — ${y} · Overlay Bets`,
@@ -153,15 +154,9 @@ export default async function TipsterPage({
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
-        {t.displayName ?? t.tipsterId}
-        {flagEmoji(t.country) ? (
-          <span
-            title={countryName(t.country)}
-            aria-label={countryName(t.country)}
-            style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}
-          >
-            {flagEmoji(t.country)}
-          </span>
+        {t.displayName ?? t.username ?? t.tipsterId}
+        {t.country ? (
+          <Flag code={t.country} style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }} />
         ) : null}
         {t.verified ? (
           <span
@@ -196,7 +191,7 @@ export default async function TipsterPage({
       <section
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
           gap: '1rem',
           margin: '1.5rem 0',
           padding: '1.25rem',

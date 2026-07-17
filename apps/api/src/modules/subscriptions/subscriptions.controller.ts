@@ -122,7 +122,7 @@ export class SubscriptionsController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   mine(@CurrentUser() user: AuthUser) {
-    return this.subs.listForUser(user.userId);
+    return this.subs.listForUserView(user.userId);
   }
 
   // Returns a billing-portal URL where the subscriber cancels/resumes their

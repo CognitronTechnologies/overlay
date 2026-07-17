@@ -110,6 +110,10 @@ export default function FeedPage() {
 
   const list = picks ?? [];
   const tipsters = [...new Set(list.map((p) => p.tipsterId))].sort();
+  // Map each tipster id to a display name (fallback to id) for the filter.
+  const tipsterNames = new Map(
+    list.map((p) => [p.tipsterId, p.tipsterName ?? p.tipsterId]),
+  );
   const filtered = list.filter((p) => {
     if (tipsterFilter && p.tipsterId !== tipsterFilter) return false;
     const bucket = outcomeBucket(p.status);
@@ -166,7 +170,7 @@ export default function FeedPage() {
                   <option value="">All tipsters</option>
                   {tipsters.map((t) => (
                     <option key={t} value={t}>
-                      {t}
+                      {tipsterNames.get(t) ?? t}
                     </option>
                   ))}
                 </select>
@@ -231,7 +235,7 @@ export default function FeedPage() {
                   href={`/tipsters/${p.tipsterId}`}
                   style={{ color: 'var(--accent)', fontWeight: 600 }}
                 >
-                  {p.tipsterId}
+                  {p.tipsterName ?? p.tipsterId}
                 </Link>
                 <span style={{ color: statusColor(p.status), fontWeight: 600 }}>
                   {statusLabel(p.status)}

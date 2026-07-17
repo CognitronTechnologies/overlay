@@ -172,6 +172,7 @@ export interface TipsterStats {
 export interface TipsterProfile {
   tipsterId: string;
   displayName: string | null;
+  username: string | null;
   country: string | null;
   bio: string | null;
   sports: string[];
@@ -259,6 +260,7 @@ export interface MarketplaceTipster {
   subscriptionPriceCents: number;
   bio: string | null;
   country: string | null;
+  name: string | null;
 }
 
 export interface MarketplacePage {
@@ -359,6 +361,7 @@ export interface OnboardingStatus {
 export interface FeedPick {
   id: string;
   tipsterId: string;
+  tipsterName: string | null;
   market: string;
   selection: string;
   oddsAtPick: number;

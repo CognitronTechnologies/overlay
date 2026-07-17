@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { flagEmoji } from '@overlay/shared/countries';
+import Flag from './Flag';
 import { API_URL } from '../lib/api';
 
 export const metadata: Metadata = {
@@ -18,6 +18,7 @@ interface LeaderboardRow {
   winRate: number;
   sampleSize: number;
   country: string | null;
+  name: string | null;
 }
 
 async function getLeaderboard(): Promise<LeaderboardRow[]> {
@@ -109,11 +110,9 @@ export default async function Home() {
                   href={`/tipsters/${r.tipsterId}`}
                   style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}
                 >
-                  {r.tipsterId}
-                  {flagEmoji(r.country) ? (
-                    <span aria-hidden style={{ marginLeft: '0.4rem' }}>
-                      {flagEmoji(r.country)}
-                    </span>
+                  {r.name ?? r.tipsterId}
+                  {r.country ? (
+                    <Flag code={r.country} style={{ marginLeft: '0.4rem', verticalAlign: 'middle' }} />
                   ) : null}
                 </Link>
                 <span style={{ color: 'var(--muted)', fontSize: '0.85rem', width: 90, textAlign: 'right' }}>

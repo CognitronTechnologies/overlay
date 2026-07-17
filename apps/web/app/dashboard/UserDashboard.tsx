@@ -127,7 +127,7 @@ export default function UserDashboard() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
                 <Link href={`/tipsters/${p.tipsterId}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                  {p.tipsterId}
+                  {p.tipsterName ?? p.tipsterId}
                 </Link>
                 <span style={{ color: 'var(--muted)' }}>{statusLabel(p.status)}</span>
               </div>

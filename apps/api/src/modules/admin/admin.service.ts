@@ -107,6 +107,7 @@ export class AdminService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         createdAt: true,
         tipster: {
@@ -124,6 +125,7 @@ export class AdminService {
       items: items.map((u) => ({
         id: u.id,
         email: u.email,
+        username: u.username,
         role: u.role,
         createdAt: u.createdAt,
         tipster: u.tipster
@@ -261,7 +263,12 @@ export class AdminService {
           closingOdds: true,
           clv: true,
           settledAt: true,
-          tipster: { select: { user: { select: { email: true } } } },
+          tipster: {
+            select: {
+              displayName: true,
+              user: { select: { username: true, email: true } },
+            },
+          },
           event: {
             select: {
               sport: true,
