@@ -20,7 +20,6 @@ export default function SiteFooter() {
           <h3>Product</h3>
           <Link href="/tipsters">Tipsters</Link>
           <Link href="/tips">Free tips</Link>
-          <Link href="/blog">Blog</Link>
           <Link href="/tools/odds-calculator">Betting Calculator</Link>
         </nav>
 
