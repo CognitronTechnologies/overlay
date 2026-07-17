@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { ExportsModule } from './modules/exports/exports.module';
+import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { FollowModule } from './modules/follows/follow.module';
 import { SearchModule } from './modules/search/search.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
@@ -51,6 +52,7 @@ import { SettlementModule } from './workers/settlement.module';
     ReportsModule,
     FeedbackModule,
     ExportsModule,
+    NewsletterModule,
     FollowModule,
     SearchModule,
     PrivacyModule,
