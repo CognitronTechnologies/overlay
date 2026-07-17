@@ -16,6 +16,8 @@ export interface FeedSubscription {
 export interface FeedPick {
   id: string;
   tipsterId: string;
+  /** Public display name of the tipster (null falls back to id in the UI). */
+  tipsterName: string | null;
   market: string;
   selection: string;
   oddsAtPick: number;
@@ -57,6 +59,10 @@ export interface PickRecord {
     away: string;
     startTime: Date;
   } | null;
+  tipster?: {
+    displayName: string | null;
+    user: { username: string | null } | null;
+  } | null;
 }
 
 /** Map a Prisma pick (with event) to the wire {@link FeedPick} shape. */
@@ -64,6 +70,9 @@ export function toPickRow(p: PickRecord): FeedPick {
   return {
     id: p.id,
     tipsterId: p.tipsterId,
+    tipsterName: p.tipster
+      ? (p.tipster.displayName ?? p.tipster.user?.username ?? null)
+      : null,
     market: p.market,
     selection: p.selection,
     oddsAtPick: p.oddsAtPick,

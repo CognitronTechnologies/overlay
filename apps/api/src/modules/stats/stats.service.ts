@@ -47,11 +47,21 @@ export class StatsService {
       },
       orderBy: [{ yield: 'desc' }, { clvAvg: 'desc' }],
       take: limit,
-      include: { tipster: { select: { country: true } } },
+      include: {
+        tipster: {
+          select: {
+            country: true,
+            displayName: true,
+            user: { select: { username: true } },
+          },
+        },
+      },
     });
     return rows.map(({ tipster, ...s }) => ({
       ...s,
       country: tipster?.country ?? null,
+      // Public display label — never the raw id (that's for internal logic).
+      name: tipster?.displayName ?? tipster?.user?.username ?? null,
     }));
   }
 }

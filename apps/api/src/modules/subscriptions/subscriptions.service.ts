@@ -252,6 +252,28 @@ export class SubscriptionsService {
   }
 
   /**
+   * Subscriptions for the account page, with the tipster's public display name
+   * resolved (displayName → username) so the UI never shows a raw id.
+   */
+  async listForUserView(userId: string) {
+    const subs = await this.prisma.subscription.findMany({
+      where: { userId },
+      include: {
+        tipster: {
+          select: { displayName: true, user: { select: { username: true } } },
+        },
+      },
+    });
+    return subs.map((s) => ({
+      id: s.id,
+      tipsterId: s.tipsterId,
+      tipsterName: s.tipster?.displayName ?? s.tipster?.user?.username ?? null,
+      status: s.status,
+      currentPeriodEnd: s.currentPeriodEnd,
+    }));
+  }
+
+  /**
    * Create a billing-portal link where the subscriber can cancel/resume their
    * subscriptions. `returnUrl` is where the provider sends them back afterwards.
    */

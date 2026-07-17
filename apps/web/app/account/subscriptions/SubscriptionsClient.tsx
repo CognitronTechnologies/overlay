@@ -168,7 +168,7 @@ export default function SubscriptionsClient() {
                     href={`/tipsters/${s.tipsterId}`}
                     style={{ color: 'var(--accent)' }}
                   >
-                    {s.tipsterId}
+                    {s.tipsterName ?? s.tipsterId}
                   </Link>{' '}
                   — ends in {hrs <= 0 ? 'under an hour' : `~${hrs}h`}. Renew to
                   keep getting their picks.
@@ -212,7 +212,7 @@ export default function SubscriptionsClient() {
                     href={`/tipsters/${v.tipsterId}`}
                     style={{ color: 'var(--accent)', fontWeight: 600 }}
                   >
-                    {v.tipsterId}
+                    {v.tipsterName ?? v.tipsterId}
                   </Link>
                   {v.periodEndLabel ? (
                     <div style={{ color: MUTED, marginTop: '0.25rem' }}>

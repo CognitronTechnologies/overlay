@@ -65,6 +65,8 @@ export class TipstersService {
             sports: true,
             subscriptionPriceCents: true,
             country: true,
+            displayName: true,
+            user: { select: { username: true } },
           },
         },
       },
@@ -80,6 +82,7 @@ export class TipstersService {
       subscriptionPriceCents: s.tipster.subscriptionPriceCents,
       bio: s.tipster.bio,
       country: s.tipster.country,
+      name: s.tipster.displayName ?? s.tipster.user?.username ?? null,
     }));
 
     return filterAndRankTipsters(rows, query);

@@ -33,6 +33,7 @@ interface LeaderboardRow {
   winRate: number;
   sampleSize: number;
   country: string | null;
+  name: string | null;
 }
 
 async function getLeaderboard(): Promise<LeaderboardRow[]> {
@@ -199,7 +200,7 @@ export default async function TipstersPage({
                           href={`/tipsters/${r.tipsterId}`}
                           style={{ color: 'var(--accent)' }}
                         >
-                          {r.tipsterId}
+                          {r.name ?? r.tipsterId}
                         </Link>
                         {flagEmoji(r.country) ? (
                           <span aria-hidden style={{ marginLeft: '0.4rem' }}>
@@ -292,7 +293,7 @@ export default async function TipstersPage({
                       href={`/tipsters/${r.tipsterId}`}
                       style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
-                      {r.tipsterId}
+                      {r.name ?? r.tipsterId}
                     </Link>
                     {flagEmoji(r.country) ? (
                       <span aria-hidden>{flagEmoji(r.country)}</span>

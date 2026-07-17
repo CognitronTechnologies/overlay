@@ -18,6 +18,7 @@ interface LeaderboardRow {
   winRate: number;
   sampleSize: number;
   country: string | null;
+  name: string | null;
 }
 
 async function getLeaderboard(): Promise<LeaderboardRow[]> {
@@ -109,7 +110,7 @@ export default async function Home() {
                   href={`/tipsters/${r.tipsterId}`}
                   style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}
                 >
-                  {r.tipsterId}
+                  {r.name ?? r.tipsterId}
                   {flagEmoji(r.country) ? (
                     <span aria-hidden style={{ marginLeft: '0.4rem' }}>
                       {flagEmoji(r.country)}

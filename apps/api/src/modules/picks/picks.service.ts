@@ -115,6 +115,9 @@ export class PicksService {
         event: {
           select: { sport: true, home: true, away: true, startTime: true },
         },
+        tipster: {
+          select: { displayName: true, user: { select: { username: true } } },
+        },
       },
     });
     return picks.map((p) => toPickRow(p));
@@ -138,6 +141,9 @@ export class PicksService {
       include: {
         event: {
           select: { sport: true, home: true, away: true, startTime: true },
+        },
+        tipster: {
+          select: { displayName: true, user: { select: { username: true } } },
         },
       },
     });
@@ -164,6 +170,9 @@ export class PicksService {
         event: {
           select: { sport: true, home: true, away: true, startTime: true },
         },
+        tipster: {
+          select: { displayName: true, user: { select: { username: true } } },
+        },
       },
     });
     return picks.map((p) => toPickRow(p));
@@ -189,31 +198,13 @@ export class PicksService {
         event: {
           select: { sport: true, home: true, away: true, startTime: true },
         },
+        tipster: {
+          select: { displayName: true, user: { select: { username: true } } },
+        },
       },
     });
 
-    const rows: FeedPick[] = picks.map((p) => ({
-      id: p.id,
-      tipsterId: p.tipsterId,
-      market: p.market,
-      selection: p.selection,
-      oddsAtPick: p.oddsAtPick,
-      stakeUnits: p.stakeUnits,
-      note: p.note,
-      status: p.status,
-      clv: p.clv,
-      result: p.result,
-      lockedAt: p.lockedAt.getTime(),
-      settledAt: p.settledAt ? p.settledAt.getTime() : null,
-      event: p.event
-        ? {
-            sport: p.event.sport,
-            home: p.event.home,
-            away: p.event.away,
-            startTime: p.event.startTime.getTime(),
-          }
-        : null,
-    }));
+    const rows: FeedPick[] = picks.map((p) => toPickRow(p));
 
     // Defense-in-depth: re-apply the entitlement gate and deterministic ordering.
     return buildSubscriberFeed(rows, subscriptions);
