@@ -21,77 +21,170 @@ export default function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <Link href="/" className="site-header__brand" onClick={closeMenu}>
+
+        {/* Brand */}
+        <Link
+          href="/"
+          className="site-header__brand"
+          onClick={closeMenu}
+        >
           Overlay Bets
         </Link>
 
+
+        {/* Mobile menu button */}
         <button
           type="button"
           className="nav-toggle"
           aria-expanded={menuOpen}
           aria-controls="primary-navigation"
-          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-label={
+            menuOpen
+              ? 'Close navigation menu'
+              : 'Open navigation menu'
+          }
           onClick={() => setMenuOpen((open) => !open)}
         >
-          <span aria-hidden="true">{menuOpen ? '\u2715' : '\u2630'}</span>
+          <span aria-hidden="true">
+            {menuOpen ? '\u2715' : '\u2630'}
+          </span>
         </button>
 
+
+        {/* Main navigation */}
         <nav
           id="primary-navigation"
           aria-label="Primary"
           className={menuOpen ? 'site-nav is-open' : 'site-nav'}
         >
-          <Link href="/tipsters" onClick={closeMenu}>
+
+          {/* Marketplace */}
+          <Link
+            href="/tipsters"
+            onClick={closeMenu}
+          >
             Tipsters
           </Link>
-          <Link href="/tips" onClick={closeMenu}>
+
+
+          {/* Acquisition funnel */}
+          <Link
+            href="/tips"
+            onClick={closeMenu}
+          >
             Free tips
           </Link>
-          <Link href="/blog" onClick={closeMenu}>
+
+
+          {/* Trust explanation */}
+          <Link
+            href="/how-it-works"
+            onClick={closeMenu}
+          >
+            How it works
+          </Link>
+
+
+          {/* Resources */}
+          <Link
+            href="/blog"
+            onClick={closeMenu}
+          >
             Blog
           </Link>
-          <Link href="/tools/odds-calculator" onClick={closeMenu}>
+
+
+          <Link
+            href="/tools/odds-calculator"
+            onClick={closeMenu}
+          >
             Odds calculator
           </Link>
-          <Link href="/about" onClick={closeMenu}>
-            About
-          </Link>
+
+
+          {/* Logged-in user */}
           {role === 'user' ? (
-            <Link href="/feed" onClick={closeMenu}>
+            <Link
+              href="/feed"
+              onClick={closeMenu}
+            >
               My feed
             </Link>
           ) : null}
+
+
+          {/* Tipster workspace */}
           {role === 'tipster' ? (
             <>
-              <Link href="/dashboard" onClick={closeMenu}>
+              <Link
+                href="/dashboard"
+                onClick={closeMenu}
+              >
                 Dashboard
               </Link>
-              <Link href="/earnings" onClick={closeMenu}>
+
+              <Link
+                href="/earnings"
+                onClick={closeMenu}
+              >
                 Earnings
               </Link>
             </>
           ) : null}
+
+
+          {/* Admin */}
           {role === 'admin' ? (
-            <Link href="/admin" onClick={closeMenu}>
+            <Link
+              href="/admin"
+              onClick={closeMenu}
+            >
               Admin
             </Link>
           ) : null}
+
         </nav>
 
+
+        {/* Actions */}
         <div className="site-header__actions">
+
           <ThemeToggle />
+
           {ready ? (
             role ? (
-              <Link href="/account" onClick={closeMenu}>
+
+              <Link
+                href="/account"
+                onClick={closeMenu}
+              >
                 Account
               </Link>
+
             ) : (
-              <Link href="/login" onClick={closeMenu}>
-                Sign in
-              </Link>
+
+              <>
+                <Link
+                  href="/login"
+                  onClick={closeMenu}
+                >
+                  Sign in
+                </Link>
+
+                <Link
+                  href="/signup"
+                  className="btn btn--primary"
+                  onClick={closeMenu}
+                >
+                  Get started
+                </Link>
+              </>
+
             )
           ) : null}
+
         </div>
+
       </div>
     </header>
   );
