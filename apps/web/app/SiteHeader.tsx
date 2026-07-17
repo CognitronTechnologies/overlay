@@ -51,7 +51,7 @@ export default function SiteHeader() {
             Blog
           </Link>
           <Link href="/tools/odds-calculator" onClick={closeMenu}>
-            Odds calculator
+            Betting Calculator
           </Link>
           <div className="nav-dropdown">
             <button
@@ -62,14 +62,11 @@ export default function SiteHeader() {
               About <span aria-hidden="true">▾</span>
             </button>
             <div className="nav-dropdown__menu" role="menu">
-              <Link href="/how-it-works" onClick={closeMenu} role="menuitem">
+              <Link href="/about" onClick={closeMenu} role="menuitem">
                 How it works
               </Link>
               <Link href="/support" onClick={closeMenu} role="menuitem">
                 Support Center
-              </Link>
-              <Link href="/about" onClick={closeMenu} role="menuitem">
-                About Us
               </Link>
             </div>
           </div>

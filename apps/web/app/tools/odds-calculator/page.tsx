@@ -19,7 +19,7 @@ export default function OddsCalculatorPage() {
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
-        Odds &amp; bet calculator
+        Betting Calculator
       </h1>
       <p style={{ color: 'var(--muted)', marginTop: 0, maxWidth: 640 }}>
         Convert odds between every common format and calculate your potential

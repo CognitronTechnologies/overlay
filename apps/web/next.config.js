@@ -10,6 +10,8 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/marketplace', destination: '/tipsters', permanent: true },
+      // How-it-works content was merged into the About page.
+      { source: '/how-it-works', destination: '/about', permanent: true },
     ];
   },
 };

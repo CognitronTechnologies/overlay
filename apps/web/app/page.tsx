@@ -58,8 +58,8 @@ export default async function Home() {
           <Link href="/tipsters" className="btn btn--primary btn--lg">
             Browse tipsters
           </Link>
-          <Link href="/signup" className="btn btn--secondary btn--lg">
-            Become a tipster
+          <Link href="/tips" className="btn btn--secondary btn--lg">
+            Today’s free tips
           </Link>
         </div>
       </section>
