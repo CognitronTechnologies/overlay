@@ -417,6 +417,7 @@ export default function BlogAuthoringPage() {
                   <div>
                     <strong>{a.title}</strong>
                     <div style={{ color: MUTED, fontSize: '0.85rem' }}>
+                      {a.category === 'news' ? 'News' : 'Content'} ·{' '}
                       {STATUS_LABELS[a.status]} · /{a.slug}
                     </div>
                   </div>
