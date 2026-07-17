@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { flagEmoji } from '@overlay/shared/countries';
 import {
   listMarketplace,
   SITE_URL,
@@ -31,6 +32,7 @@ interface LeaderboardRow {
   clvAvg: number;
   winRate: number;
   sampleSize: number;
+  country: string | null;
 }
 
 async function getLeaderboard(): Promise<LeaderboardRow[]> {
@@ -199,6 +201,11 @@ export default async function TipstersPage({
                         >
                           {r.tipsterId}
                         </Link>
+                        {flagEmoji(r.country) ? (
+                          <span aria-hidden style={{ marginLeft: '0.4rem' }}>
+                            {flagEmoji(r.country)}
+                          </span>
+                        ) : null}
                       </td>
                       <td style={{ color: 'var(--muted)' }}>
                         {r.sports.length ? r.sports.join(', ') : '—'}
@@ -287,6 +294,9 @@ export default async function TipstersPage({
                     >
                       {r.tipsterId}
                     </Link>
+                    {flagEmoji(r.country) ? (
+                      <span aria-hidden>{flagEmoji(r.country)}</span>
+                    ) : null}
                     <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 600 }}>
                       {r.yield.toFixed(1)}%
                     </span>

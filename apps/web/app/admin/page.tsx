@@ -162,6 +162,9 @@ export default function AdminPage() {
         {[
           { href: '/admin/users', label: 'Users & roles' },
           { href: '/admin/settlements', label: 'Settlements' },
+          { href: '/admin/reports', label: 'Tipster feedback' },
+          { href: '/admin/feedback', label: 'Support & feedback' },
+          { href: '/admin/payouts', label: 'Payout approvals' },
           { href: '/admin/audit-log', label: 'Audit log' },
           { href: '/admin/blog', label: 'Blog authoring' },
         ].map((item) => (
@@ -169,11 +172,11 @@ export default function AdminPage() {
             key={item.href}
             href={item.href}
             style={{
-              background: '#111826',
-              border: '1px solid #1c2430',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
               borderRadius: 10,
               padding: '0.55rem 0.95rem',
-              color: '#6ea8fe',
+              color: 'var(--accent)',
               textDecoration: 'none',
               fontSize: '0.95rem',
             }}
@@ -230,8 +233,8 @@ export default function AdminPage() {
       <section
         style={{
           marginTop: '2.5rem',
-          background: '#111826',
-          border: '1px solid #1c2430',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
           borderRadius: 12,
           padding: '1.5rem',
         }}
@@ -259,7 +262,7 @@ export default function AdminPage() {
               pattern="\d{4}-\d{2}"
               style={{
                 background: '#0d1117',
-                border: '1px solid #1c2430',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '0.5rem 0.7rem',
                 color: 'inherit',
@@ -294,7 +297,7 @@ export default function AdminPage() {
               placeholder="soccer_epl"
               style={{
                 background: '#0d1117',
-                border: '1px solid #1c2430',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '0.5rem 0.7rem',
                 color: 'inherit',

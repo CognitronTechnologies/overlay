@@ -46,10 +46,10 @@ function statusLabel(status: string): string {
 }
 
 function statusColor(status: string): string {
-  if (status === 'won' || status === 'half_won') return '#3fb950';
-  if (status === 'lost' || status === 'half_lost') return '#f85149';
+  if (status === 'won' || status === 'half_won') return 'var(--success)';
+  if (status === 'lost' || status === 'half_lost') return 'var(--danger)';
   if (status === 'void') return MUTED;
-  return '#6ea8fe'; // pending / open
+  return 'var(--accent)'; // pending / open
 }
 
 /**

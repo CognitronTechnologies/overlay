@@ -35,6 +35,23 @@ enum PayoutStatus {
   pending
   paid
   failed
+  awaiting_approval
+  rejected
+}
+
+/// Lifecycle of a user-submitted report about a tipster (OB-161).
+enum ReportStatus {
+  open
+  reviewing
+  resolved
+  dismissed
+}
+
+/// Lifecycle of a support / feedback submission (OB-162).
+enum FeedbackStatus {
+  new
+  reviewed
+  archived
 }
 
 enum ArticleStatus {
@@ -72,6 +89,7 @@ model User {
   subscriptions Subscription[]
   articles      Article[]
   notificationPreference NotificationPreference?
+  reportsMade   TipsterReport[] @relation("ReportsMade")
 }
 
 model Tipster {
@@ -121,6 +139,7 @@ model Tipster {
   subscriptions Subscription[]
   stats         TipsterStats?
   payouts       Payout[]
+  reports       TipsterReport[]
 }
 
 model Event {
@@ -206,10 +225,20 @@ model Payout {
   tipsterId        String
   tipster          Tipster      @relation(fields: [tipsterId], references: [userId])
   amountCents      Int
+  // Gross collected revenue this payout covers, and the platform fee taken.
+  // Balance accounting reserves grossCents so it can't be paid out twice.
+  grossCents       Int          @default(0)
+  feeCents         Int          @default(0)
+  // 'scheduled' (regular weekly run, auto) or 'on_demand' (tipster-requested,
+  // needs admin approval when off the regular schedule).
+  kind             String       @default("scheduled")
   period           String
   status           PayoutStatus @default(pending)
   stripeTransferId String?
   createdAt        DateTime     @default(now())
+
+  @@index([status])
+  @@index([tipsterId])
 }
 
 /// Funds ledger (OB-06x): one row per *collected* payment (or refund reversal).
@@ -244,6 +273,47 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([entity, entityId])
+}
+
+/// Feedback a subscriber leaves about a tipster they subscribe to (OB-161):
+/// either praise (positive) or a complaint/report (negative, e.g. a faked
+/// record or scam). Surfaced on the admin dashboard. Requires a subscription.
+model TipsterReport {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation("ReportsMade", fields: [reporterId], references: [id])
+  tipsterId  String
+  tipster    Tipster      @relation(fields: [tipsterId], references: [userId])
+  /// 'positive' (praise) or 'negative' (complaint/report).
+  sentiment  String       @default("negative")
+  /// Positive: accurate | communication | value | recommend | other.
+  /// Negative: fake_record | scam | impersonation | spam | other.
+  reason     String
+  details    String?
+  status     ReportStatus @default(open)
+  reviewNote String?
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([status])
+  @@index([tipsterId])
+  @@index([reporterId])
+}
+
+/// Support-center feedback: questions, product suggestions, bug reports, fee
+/// queries etc. (OB-162). May be submitted by a signed-in user or anonymously;
+/// reviewed on the admin dashboard. `email` is optional so we can follow up.
+model Feedback {
+  id        String         @id @default(cuid())
+  userId    String?
+  email     String?
+  /// One of: suggestion | bug | question | fees | complaint | other.
+  category  String
+  message   String
+  status    FeedbackStatus @default(new)
+  createdAt DateTime       @default(now())
+
+  @@index([status])
 }
 
 /// SEO content surface (blog / strategy guides). Drives organic traffic.

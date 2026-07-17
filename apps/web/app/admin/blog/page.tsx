@@ -59,7 +59,7 @@ const EMPTY_DRAFT: Draft = {
   canonicalUrl: '',
 };
 
-const MUTED = '#9aa4b2';
+const MUTED = 'var(--muted)';
 
 function toDraft(a: ManagedArticle): Draft {
   return {
@@ -204,7 +204,7 @@ export default function BlogAuthoringPage() {
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/blog" style={{ color: '#6ea8fe' }}>
+        <Link href="/blog" style={{ color: 'var(--accent)' }}>
           ← Blog
         </Link>
       </p>
@@ -265,7 +265,7 @@ export default function BlogAuthoringPage() {
                   style={{
                     maxWidth: '100%',
                     borderRadius: 8,
-                    border: '1px solid #1c2430',
+                    border: '1px solid var(--border)',
                   }}
                 />
               ) : null}
@@ -343,8 +343,8 @@ export default function BlogAuthoringPage() {
                 <button
                   style={{
                     ...formStyles.button,
-                    background: '#1c2430',
-                    color: '#e6e6e6',
+                    background: 'var(--border)',
+                    color: 'var(--fg)',
                   }}
                   onClick={() => setDraft(null)}
                   disabled={saving}
@@ -359,7 +359,7 @@ export default function BlogAuthoringPage() {
               <article
                 style={{
                   background: '#0f1420',
-                  border: '1px solid #1c2430',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   padding: '1.25rem',
                   lineHeight: 1.7,
@@ -388,7 +388,7 @@ export default function BlogAuthoringPage() {
                 <li
                   key={a.id}
                   style={{
-                    borderTop: '1px solid #1c2430',
+                    borderTop: '1px solid var(--border)',
                     padding: '1rem 0',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -406,8 +406,8 @@ export default function BlogAuthoringPage() {
                     <button
                       style={{
                         ...formStyles.button,
-                        background: '#1c2430',
-                        color: '#e6e6e6',
+                        background: 'var(--border)',
+                        color: 'var(--fg)',
                       }}
                       onClick={() => setDraft(toDraft(a))}
                     >

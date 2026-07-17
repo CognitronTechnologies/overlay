@@ -35,10 +35,11 @@ export class StatsService {
 
   /**
    * Leaderboard: verified tipsters only, filtered by a minimum sample size so
-   * lucky newcomers don't top the board. Ranked by yield then CLV.
+   * lucky newcomers don't top the board. Ranked by yield then CLV. Includes the
+   * tipster's country so the UI can show a flag next to their name.
    */
-  leaderboard(minSampleSize = 10, limit = 100) {
-    return this.prisma.tipsterStats.findMany({
+  async leaderboard(minSampleSize = 10, limit = 100) {
+    const rows = await this.prisma.tipsterStats.findMany({
       where: {
         sampleSize: { gte: minSampleSize },
         // Hide suspended tipsters from the public marketplace/leaderboard.
@@ -46,6 +47,11 @@ export class StatsService {
       },
       orderBy: [{ yield: 'desc' }, { clvAvg: 'desc' }],
       take: limit,
+      include: { tipster: { select: { country: true } } },
     });
+    return rows.map(({ tipster, ...s }) => ({
+      ...s,
+      country: tipster?.country ?? null,
+    }));
   }
 }

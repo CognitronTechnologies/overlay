@@ -21,6 +21,32 @@
 
 export type MarketOutcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';
 
+/**
+ * Markets a tipster can post and the settlement engine can grade — the single
+ * source of truth shared by the pick DTO (server validation), the pick form
+ * (client) and {@link gradeMarket}. To add a market: add it here, add a `case`
+ * in `gradeMarket`, and add a selection hint in the pick form.
+ */
+export const SUPPORTED_MARKETS = [
+  '1X2',
+  'moneyline',
+  'dnb',
+  'double_chance',
+  'btts',
+  'odd_even',
+  'correct_score',
+  'spreads',
+  'totals',
+  'team_totals',
+] as const;
+
+export type SupportedMarket = (typeof SUPPORTED_MARKETS)[number];
+
+/** Whether a raw string is one of the supported, gradeable markets. */
+export function isSupportedMarket(market: string): market is SupportedMarket {
+  return (SUPPORTED_MARKETS as readonly string[]).includes(market);
+}
+
 const EPS = 1e-9;
 
 /** Format a handicap/point with an explicit sign, e.g. -1.5 → "-1.5", 2 → "+2". */

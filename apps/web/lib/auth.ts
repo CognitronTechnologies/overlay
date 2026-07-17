@@ -225,3 +225,206 @@ export async function deleteMyAccount(): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete your account');
   await signOut();
 }
+
+/** Feedback sentiment about a tipster. */
+export type FeedbackSentiment = 'positive' | 'negative';
+
+/** Reasons for a complaint (negative feedback). */
+export type NegativeReason =
+  | 'fake_record'
+  | 'scam'
+  | 'impersonation'
+  | 'spam'
+  | 'other';
+
+/** Reasons for praise (positive feedback). */
+export type PositiveReason =
+  | 'accurate'
+  | 'communication'
+  | 'value'
+  | 'recommend'
+  | 'other';
+
+export const NEGATIVE_REASON_LABELS: Record<NegativeReason, string> = {
+  fake_record: 'Faked or misleading track record',
+  scam: 'Scam / fraud',
+  impersonation: 'Impersonation',
+  spam: 'Spam',
+  other: 'Something else',
+};
+
+export const POSITIVE_REASON_LABELS: Record<PositiveReason, string> = {
+  accurate: 'Accurate, reliable tips',
+  communication: 'Great communication',
+  value: 'Worth the price',
+  recommend: 'Would recommend',
+  other: 'Something else',
+};
+
+/** Leave feedback (praise or a complaint) about a tipster you subscribe to. */
+export async function submitTipsterFeedback(
+  tipsterId: string,
+  sentiment: FeedbackSentiment,
+  reason: string,
+  details?: string,
+): Promise<void> {
+  const res = await authFetch('/api/reports', {
+    method: 'POST',
+    body: JSON.stringify({ tipsterId, sentiment, reason, details }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
+    throw new Error(msg || `Failed to submit feedback (${res.status})`);
+  }
+}
+
+/** A feedback row for the admin review dashboard. */
+export interface AdminReport {
+  id: string;
+  sentiment: 'positive' | 'negative';
+  reason: string;
+  details: string | null;
+  status: 'open' | 'reviewing' | 'resolved' | 'dismissed';
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  reporter: { id: string; username: string | null; email: string };
+  tipsterId: string;
+  tipsterName: string | null;
+}
+
+export async function adminListReports(status?: string): Promise<AdminReport[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await authFetch(`/api/admin/reports${qs}`);
+  if (!res.ok) return [];
+  return (await res.json()) as AdminReport[];
+}
+
+export async function adminReviewReport(
+  id: string,
+  status: string,
+  note?: string,
+): Promise<void> {
+  const res = await authFetch(`/api/admin/reports/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, note }),
+  });
+  if (!res.ok) throw new Error(`Failed to update report (${res.status})`);
+}
+
+/** Support-center feedback categories. */
+export type FeedbackCategory =
+  | 'question'
+  | 'fees'
+  | 'complaint'
+  | 'suggestion'
+  | 'bug'
+  | 'other';
+
+export const FEEDBACK_CATEGORY_LABELS: Record<FeedbackCategory, string> = {
+  question: 'General question',
+  fees: 'Fees & payouts',
+  complaint: 'Complaint',
+  suggestion: 'Product suggestion',
+  bug: 'Report a bug',
+  other: 'Something else',
+};
+
+/** Send a support-center message (works signed in or not). */
+export async function submitFeedback(
+  category: FeedbackCategory,
+  message: string,
+  email?: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/api/feedback`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ category, message, email }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
+    throw new Error(msg || `Could not send your message (${res.status})`);
+  }
+}
+
+/** A support-center feedback row for admin review. */
+export interface AdminFeedback {
+  id: string;
+  category: string;
+  message: string;
+  email: string | null;
+  userId: string | null;
+  status: 'new' | 'reviewed' | 'archived';
+  createdAt: string;
+}
+
+export async function adminListFeedback(status?: string): Promise<AdminFeedback[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await authFetch(`/api/admin/feedback${qs}`);
+  if (!res.ok) return [];
+  return (await res.json()) as AdminFeedback[];
+}
+
+export async function adminUpdateFeedback(
+  id: string,
+  status: string,
+): Promise<void> {
+  const res = await authFetch(`/api/admin/feedback/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error(`Failed to update feedback (${res.status})`);
+}
+
+/** Tipster requests an off-schedule payout (created awaiting admin approval). */
+export async function requestPayout(): Promise<{ amountCents: number }> {
+  const res = await authFetch('/api/payouts/request', { method: 'POST' });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
+    throw new Error(msg || `Could not request payout (${res.status})`);
+  }
+  return (await res.json()) as { amountCents: number };
+}
+
+/** A payout awaiting admin approval. */
+export interface AwaitingPayout {
+  id: string;
+  tipsterId: string;
+  tipsterName: string | null;
+  amountCents: number;
+  grossCents: number;
+  feeCents: number;
+  kind: string;
+  createdAt: string;
+}
+
+export async function adminListAwaitingPayouts(): Promise<AwaitingPayout[]> {
+  const res = await authFetch('/api/admin/payouts');
+  if (!res.ok) return [];
+  return (await res.json()) as AwaitingPayout[];
+}
+
+export async function adminApprovePayout(id: string): Promise<void> {
+  const res = await authFetch(
+    `/api/admin/payouts/${encodeURIComponent(id)}/approve`,
+    { method: 'POST' },
+  );
+  if (!res.ok) throw new Error(`Failed to approve payout (${res.status})`);
+}
+
+export async function adminRejectPayout(id: string): Promise<void> {
+  const res = await authFetch(
+    `/api/admin/payouts/${encodeURIComponent(id)}/reject`,
+    { method: 'POST' },
+  );
+  if (!res.ok) throw new Error(`Failed to reject payout (${res.status})`);
+}

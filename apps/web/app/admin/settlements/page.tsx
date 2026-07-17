@@ -46,12 +46,12 @@ const FILTERS: { label: string; value: StatusFilter }[] = [
   { label: '½ Lost', value: 'half_lost' },
 ];
 
-const muted = { color: '#9aa4b2' } as const;
+const muted = { color: 'var(--muted)' } as const;
 
 const outcomeColor: Record<Outcome, string> = {
   won: '#4ade80',
   lost: '#ff6b8a',
-  void: '#9aa4b2',
+  void: 'var(--muted)',
   half_won: '#86efac',
   half_lost: '#fca5b5',
 };
@@ -199,9 +199,9 @@ export default function AdminSettlementsPage() {
               setStatus(f.value);
             }}
             style={{
-              background: status === f.value ? '#1c2430' : 'transparent',
-              color: status === f.value ? '#fff' : '#9aa4b2',
-              border: '1px solid #1c2430',
+              background: status === f.value ? 'var(--border)' : 'transparent',
+              color: status === f.value ? '#fff' : 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.4rem 0.9rem',
               cursor: 'pointer',
@@ -221,7 +221,7 @@ export default function AdminSettlementsPage() {
       </div>
 
       {error ? <p style={formStyles.error}>{error}</p> : null}
-      {notice ? <p style={{ color: '#6ea8fe', margin: 0 }}>{notice}</p> : null}
+      {notice ? <p style={{ color: 'var(--accent)', margin: 0 }}>{notice}</p> : null}
 
       {loading && !data ? (
         <p style={muted}>Loading…</p>
@@ -244,7 +244,7 @@ export default function AdminSettlementsPage() {
           </thead>
           <tbody>
             {data.items.map((s) => (
-              <tr key={s.id} style={{ borderTop: '1px solid #1c2430' }}>
+              <tr key={s.id} style={{ borderTop: '1px solid var(--border)' }}>
                 <td style={{ padding: '0.6rem 0', ...muted }}>
                   {s.settledAt ? new Date(s.settledAt).toLocaleString() : '—'}
                 </td>
@@ -270,7 +270,7 @@ export default function AdminSettlementsPage() {
                       style={{
                         background: 'transparent',
                         color: '#ff6b8a',
-                        border: '1px solid #1c2430',
+                        border: '1px solid var(--border)',
                         borderRadius: 8,
                         padding: '0.4rem 0.9rem',
                         cursor: busyId === s.id ? 'default' : 'pointer',
@@ -301,8 +301,8 @@ export default function AdminSettlementsPage() {
             onClick={() => setSkip((s) => Math.max(0, s - PAGE_SIZE))}
             style={{
               background: 'transparent',
-              color: '#9aa4b2',
-              border: '1px solid #1c2430',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.5rem 1rem',
               cursor: skip <= 0 ? 'default' : 'pointer',
@@ -319,8 +319,8 @@ export default function AdminSettlementsPage() {
             onClick={() => setSkip((s) => s + PAGE_SIZE)}
             style={{
               background: 'transparent',
-              color: '#9aa4b2',
-              border: '1px solid #1c2430',
+              color: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: '0.5rem 1rem',
               cursor: page >= totalPages ? 'default' : 'pointer',

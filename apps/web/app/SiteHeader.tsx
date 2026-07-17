@@ -51,25 +51,39 @@ export default function SiteHeader() {
             Blog
           </Link>
           <Link href="/tools/odds-calculator" onClick={closeMenu}>
-            Odds calculator
+            Betting Calculator
           </Link>
-          <Link href="/about" onClick={closeMenu}>
-            About
-          </Link>
+          <div className="nav-dropdown">
+            <button
+              type="button"
+              className="nav-dropdown__trigger"
+              aria-haspopup="true"
+            >
+              About <span aria-hidden="true">▾</span>
+            </button>
+            <div className="nav-dropdown__menu" role="menu">
+              <Link href="/about" onClick={closeMenu} role="menuitem">
+                How it works
+              </Link>
+              <Link href="/support" onClick={closeMenu} role="menuitem">
+                Support Center
+              </Link>
+            </div>
+          </div>
           {role === 'user' ? (
-            <Link href="/feed" onClick={closeMenu}>
-              My feed
-            </Link>
-          ) : null}
-          {role === 'tipster' ? (
             <>
               <Link href="/dashboard" onClick={closeMenu}>
                 Dashboard
               </Link>
-              <Link href="/earnings" onClick={closeMenu}>
-                Earnings
+              <Link href="/feed" onClick={closeMenu}>
+                My feed
               </Link>
             </>
+          ) : null}
+          {role === 'tipster' ? (
+            <Link href="/dashboard" onClick={closeMenu}>
+              Dashboard
+            </Link>
           ) : null}
           {role === 'admin' ? (
             <Link href="/admin" onClick={closeMenu}>
@@ -79,11 +93,10 @@ export default function SiteHeader() {
         </nav>
 
         <div className="site-header__actions">
-          <ThemeToggle />
           {ready ? (
             role ? (
               <Link href="/account" onClick={closeMenu}>
-                Account
+                My Account
               </Link>
             ) : (
               <Link href="/login" onClick={closeMenu}>
@@ -91,6 +104,7 @@ export default function SiteHeader() {
               </Link>
             )
           ) : null}
+          <ThemeToggle />
         </div>
       </div>
     </header>

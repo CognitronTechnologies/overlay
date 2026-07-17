@@ -10,10 +10,10 @@ import type { FeedPick } from '../../lib/api';
 const POLL_MS = 30_000;
 
 function statusColor(status: string): string {
-  if (status === 'won' || status === 'half_won') return '#3fb950';
-  if (status === 'lost' || status === 'half_lost') return '#f85149';
-  if (status === 'void') return '#9aa4b2';
-  return '#6ea8fe'; // pending / live
+  if (status === 'won' || status === 'half_won') return 'var(--success)';
+  if (status === 'lost' || status === 'half_lost') return 'var(--danger)';
+  if (status === 'void') return 'var(--muted)';
+  return 'var(--accent)'; // pending / live
 }
 
 function statusLabel(status: string): string {
@@ -33,10 +33,46 @@ function timeAgo(ms: number): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type StatusFilter = 'live' | 'settled' | 'all';
+type OutcomeFilter = 'all' | 'won' | 'lost' | 'void';
+
+/** Bucket a raw pick status into won/lost/void (half-results roll up). */
+function outcomeBucket(status: string): OutcomeFilter | 'live' {
+  if (status === 'pending') return 'live';
+  if (status === 'won' || status === 'half_won') return 'won';
+  if (status === 'lost' || status === 'half_lost') return 'lost';
+  return 'void';
+}
+
+function pillStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '0.35rem 0.7rem',
+    borderRadius: 999,
+    border: '1px solid var(--border)',
+    background: active ? 'var(--accent)' : 'transparent',
+    color: active ? 'var(--on-accent)' : 'var(--muted)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+  };
+}
+
+const selectStyle: React.CSSProperties = {
+  padding: '0.4rem 0.6rem',
+  borderRadius: 8,
+  border: '1px solid var(--border)',
+  background: 'var(--surface)',
+  color: 'var(--fg)',
+  fontSize: '0.9rem',
+};
+
 export default function FeedPage() {
   const router = useRouter();
   const [picks, setPicks] = useState<FeedPick[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tipsterFilter, setTipsterFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('all');
   const active = useRef(true);
 
   const loadFeed = useCallback(async () => {
@@ -72,39 +108,115 @@ export default function FeedPage() {
     };
   }, [router, loadFeed]);
 
+  const list = picks ?? [];
+  const tipsters = [...new Set(list.map((p) => p.tipsterId))].sort();
+  const filtered = list.filter((p) => {
+    if (tipsterFilter && p.tipsterId !== tipsterFilter) return false;
+    const bucket = outcomeBucket(p.status);
+    if (statusFilter === 'live' && bucket !== 'live') return false;
+    if (statusFilter === 'settled') {
+      if (bucket === 'live') return false;
+      if (outcomeFilter !== 'all' && bucket !== outcomeFilter) return false;
+    }
+    return true;
+  });
+
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>My feed</h1>
-      <p style={{ color: '#9aa4b2' }}>
+      <p style={{ color: 'var(--muted)' }}>
         Live and settled picks from every tipster you subscribe to, newest
         first. Updates automatically.
       </p>
 
       {error ? (
-        <p style={{ color: '#f85149', margin: '0 0 1rem' }}>{error}</p>
+        <p style={{ color: 'var(--danger)', margin: '0 0 1rem' }}>{error}</p>
       ) : null}
 
       {picks === null ? (
-        <p style={{ color: '#9aa4b2' }}>Loading…</p>
-      ) : picks.length === 0 ? (
-        <p style={{ color: '#9aa4b2' }}>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+      ) : list.length === 0 ? (
+        <p style={{ color: 'var(--muted)' }}>
           No picks yet.{' '}
-          <Link href="/tipsters" style={{ color: '#6ea8fe' }}>
+          <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
             Find a tipster to subscribe to
           </Link>{' '}
           and their live picks will show up here.
         </p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0 0' }}>
-          {picks.map((p) => (
+        <>
+          {/* Filters: by tipster (for multiple subscriptions) + by status. */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              alignItems: 'center',
+              margin: '1.5rem 0 0.5rem',
+            }}
+          >
+            {tipsters.length > 1 ? (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                Tipster
+                <select
+                  value={tipsterFilter}
+                  onChange={(e) => setTipsterFilter(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">All tipsters</option>
+                  {tipsters.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {(['live', 'settled', 'all'] as StatusFilter[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatusFilter(s)}
+                  style={pillStyle(statusFilter === s)}
+                >
+                  {s === 'live' ? 'Live' : s === 'settled' ? 'Settled' : 'All'}
+                </button>
+              ))}
+            </div>
+
+            {statusFilter === 'settled' ? (
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {(['all', 'won', 'lost', 'void'] as OutcomeFilter[]).map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => setOutcomeFilter(o)}
+                    style={pillStyle(outcomeFilter === o)}
+                  >
+                    {o === 'all' ? 'All' : o[0].toUpperCase() + o.slice(1)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          {filtered.length === 0 ? (
+            <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
+              No picks match these filters.
+            </p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0 0' }}>
+              {filtered.map((p) => (
             <li
               key={p.id}
               style={{
-                border: '1px solid #1c2430',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '0.9rem 1.1rem',
                 marginBottom: '0.75rem',
-                background: '#111826',
+                background: 'var(--surface)',
               }}
             >
               <div
@@ -117,7 +229,7 @@ export default function FeedPage() {
               >
                 <Link
                   href={`/tipsters/${p.tipsterId}`}
-                  style={{ color: '#6ea8fe', fontWeight: 600 }}
+                  style={{ color: 'var(--accent)', fontWeight: 600 }}
                 >
                   {p.tipsterId}
                 </Link>
@@ -128,13 +240,13 @@ export default function FeedPage() {
 
               <div style={{ margin: '0.4rem 0 0.2rem' }}>
                 <strong>{p.selection}</strong>{' '}
-                <span style={{ color: '#9aa4b2' }}>
+                <span style={{ color: 'var(--muted)' }}>
                   ({p.market} @ {p.oddsAtPick.toFixed(2)} · {p.stakeUnits}u)
                 </span>
               </div>
 
               {p.event ? (
-                <div style={{ color: '#9aa4b2', fontSize: '0.9rem' }}>
+                <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
                   {p.event.home} vs {p.event.away} · {p.event.sport}
                 </div>
               ) : null}
@@ -143,10 +255,10 @@ export default function FeedPage() {
                 <p
                   style={{
                     margin: '0.5rem 0 0',
-                    color: '#c9d1d9',
+                    color: 'var(--fg)',
                     fontSize: '0.9rem',
                     fontStyle: 'italic',
-                    borderLeft: '2px solid #30363d',
+                    borderLeft: '2px solid var(--border)',
                     paddingLeft: '0.6rem',
                   }}
                 >
@@ -156,7 +268,7 @@ export default function FeedPage() {
 
               <div
                 style={{
-                  color: '#6b7280',
+                  color: 'var(--muted)',
                   fontSize: '0.82rem',
                   marginTop: '0.35rem',
                 }}
@@ -167,7 +279,9 @@ export default function FeedPage() {
               </div>
             </li>
           ))}
-        </ul>
+            </ul>
+          )}
+        </>
       )}
     </main>
   );
