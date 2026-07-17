@@ -211,7 +211,7 @@ const ARTICLES = [
   {
     slug: 'what-is-closing-line-value',
     title: 'What Is Closing Line Value (CLV) and Why It Predicts Long-Term Profit',
-    tags: ['clv', 'strategy', 'fundamentals'],
+    tags: ['content', 'clv', 'strategy', 'fundamentals'],
     excerpt:
       'Closing line value measures whether you beat the market before it corrected. It is the single best leading indicator of a betting edge.',
     body: `## The one metric sharps actually track
@@ -246,7 +246,7 @@ ranks tipsters on verified CLV, not just win rate.`,
   {
     slug: 'expected-value-betting-explained',
     title: 'Expected Value Betting Explained: Finding the Overlay',
-    tags: ['ev', 'strategy', 'fundamentals'],
+    tags: ['content', 'ev', 'strategy', 'fundamentals'],
     excerpt:
       'An overlay is a bet where the offered odds are longer than the true probability warrants. Here is how to spot one.',
     body: `## What "overlay" means
@@ -279,7 +279,7 @@ Find them, bet them, and track your CLV to confirm you were right.`,
   {
     slug: 'bankroll-management-kelly-criterion',
     title: 'Bankroll Management: Staking, Units, and the Kelly Criterion',
-    tags: ['bankroll', 'strategy', 'risk'],
+    tags: ['content', 'bankroll', 'strategy', 'risk'],
     excerpt:
       'A positive edge still busts you if you stake badly. Learn unit sizing and a practical, fractional-Kelly approach.',
     body: `## Edge without discipline goes broke

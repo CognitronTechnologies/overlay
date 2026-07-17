@@ -125,6 +125,53 @@ export async function getArticle(slug: string): Promise<Article | null> {
   return getJson<Article>(`/api/articles/${encodeURIComponent(slug)}`);
 }
 
+// --- Global search ----------------------------------------------------------
+
+export interface SearchTipster {
+  tipsterId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  country: string | null;
+  yield: number | null;
+  clvAvg: number | null;
+  sampleSize: number | null;
+  subscriptionPriceCents: number;
+}
+
+export interface SearchArticle {
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: 'content' | 'news';
+  readingMinutes: number;
+  publishedAt: string | null;
+}
+
+export interface SearchResults {
+  query: string;
+  tipsters: SearchTipster[];
+  articles: SearchArticle[];
+}
+
+const EMPTY_SEARCH: SearchResults = { query: '', tipsters: [], articles: [] };
+
+/** Global search across tipsters and articles. */
+export async function search(q: string): Promise<SearchResults> {
+  const query = q.trim();
+  if (query.length < 2) return { ...EMPTY_SEARCH, query };
+  try {
+    const res = await fetch(
+      `${API_URL}/api/search?q=${encodeURIComponent(query)}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return { ...EMPTY_SEARCH, query };
+    return (await res.json()) as SearchResults;
+  } catch {
+    return { ...EMPTY_SEARCH, query };
+  }
+}
+
+
 export async function listArticleSlugs(): Promise<
   { slug: string; updatedAt: string; publishedAt: string | null }[]
 > {
