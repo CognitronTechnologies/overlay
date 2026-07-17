@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getFullProfile, updateUsername, supabase } from '../../lib/auth';
 import { formStyles } from '../formStyles';
+import AvatarPicker from '../AvatarPicker';
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
@@ -17,6 +18,7 @@ export default function ChooseUsernameClient() {
   const router = useRouter();
   const params = useSearchParams();
   const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -34,6 +36,7 @@ export default function ChooseUsernameClient() {
         router.replace(next);
         return;
       }
+      setAvatarUrl(p.avatarUrl);
       // Prefill the handle the user chose at signup, if it made it to metadata.
       try {
         const { data } = await supabase().auth.getUser();
@@ -99,6 +102,23 @@ export default function ChooseUsernameClient() {
           {saving ? 'Saving…' : 'Continue'}
         </button>
       </form>
+
+      <section style={{ marginTop: '2rem' }}>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+          Profile picture{' '}
+          <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.9rem' }}>
+            (optional)
+          </span>
+        </h2>
+        <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
+          Upload a photo or pick an avatar — you can change it any time.
+        </p>
+        <AvatarPicker
+          seed={username || 'you'}
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+        />
+      </section>
     </main>
   );
 }

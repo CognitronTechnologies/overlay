@@ -12,13 +12,11 @@ import {
   changeEmail,
   getNotificationPreferences,
   updateNotificationPreferences,
-  uploadAvatar,
-  removeAvatar,
   type FullProfile,
   type NotificationPreferences,
 } from '../../lib/auth';
 import { formStyles } from '../formStyles';
-import Avatar from '../Avatar';
+import AvatarPicker from '../AvatarPicker';
 
 interface Subscription {
   id: string;
@@ -58,8 +56,6 @@ export default function AccountPage() {
   const [prefsMsg, setPrefsMsg] = useState<string | null>(null);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarMsg, setAvatarMsg] = useState<string | null>(null);
-  const [avatarBusy, setAvatarBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -78,37 +74,6 @@ export default function AccountPage() {
       getNotificationPreferences().then(setPrefs);
     })();
   }, [router]);
-
-  async function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setAvatarMsg(null);
-    setAvatarBusy(true);
-    try {
-      const { avatarUrl: url } = await uploadAvatar(file);
-      setAvatarUrl(url);
-      setAvatarMsg('Avatar updated \u2713');
-    } catch (err) {
-      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setAvatarBusy(false);
-    }
-  }
-
-  async function onAvatarRemove() {
-    setAvatarMsg(null);
-    setAvatarBusy(true);
-    try {
-      await removeAvatar();
-      setAvatarUrl(null);
-      setAvatarMsg('Avatar removed \u2713');
-    } catch (err) {
-      setAvatarMsg(err instanceof Error ? err.message : 'Failed');
-    } finally {
-      setAvatarBusy(false);
-    }
-  }
 
   async function saveUsername(e: React.FormEvent) {
     e.preventDefault();
@@ -229,44 +194,12 @@ export default function AccountPage() {
 
       {/* --- Profile summary --- */}
       <div style={{ ...cardStyle, marginTop: '1.25rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: '1.1rem',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            marginBottom: '1rem',
-          }}
-        >
-          <Avatar src={avatarUrl} seed={profile.username ?? profile.userId} size={72} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <label className="btn btn--secondary btn--sm" style={{ cursor: avatarBusy ? 'default' : 'pointer' }}>
-                {avatarBusy ? 'Saving…' : avatarUrl ? 'Change photo' : 'Upload photo'}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={onAvatarChange}
-                  disabled={avatarBusy}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              {avatarUrl ? (
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  onClick={onAvatarRemove}
-                  disabled={avatarBusy}
-                >
-                  Remove
-                </button>
-              ) : null}
-            </div>
-            <span style={labelStyle}>
-              {avatarMsg ??
-                'Optional — we’ll use a generated avatar if you don’t add one. JPG/PNG/WEBP, up to 2 MB.'}
-            </span>
-          </div>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <AvatarPicker
+            seed={profile.username ?? profile.userId}
+            value={avatarUrl}
+            onChange={setAvatarUrl}
+          />
         </div>
         <div
           style={{

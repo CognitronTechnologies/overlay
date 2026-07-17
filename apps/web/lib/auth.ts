@@ -520,4 +520,16 @@ export async function removeAvatar(): Promise<{ avatarUrl: string | null }> {
   return (await res.json()) as { avatarUrl: string | null };
 }
 
+/** Choose a generated ("preset") avatar by its URL. */
+export async function selectAvatarPreset(
+  url: string,
+): Promise<{ avatarUrl: string | null }> {
+  const res = await authFetch('/api/users/me/avatar-preset', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) throw new Error(`Could not select avatar (${res.status})`);
+  return (await res.json()) as { avatarUrl: string | null };
+}
+
 
