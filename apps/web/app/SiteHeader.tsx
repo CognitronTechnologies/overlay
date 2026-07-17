@@ -71,14 +71,9 @@ export default function SiteHeader() {
             </div>
           </div>
           {role === 'user' ? (
-            <>
-              <Link href="/dashboard" onClick={closeMenu}>
-                Dashboard
-              </Link>
-              <Link href="/feed" onClick={closeMenu}>
-                My feed
-              </Link>
-            </>
+            <Link href="/dashboard" onClick={closeMenu}>
+              Dashboard
+            </Link>
           ) : null}
           {role === 'tipster' ? (
             <Link href="/dashboard" onClick={closeMenu}>

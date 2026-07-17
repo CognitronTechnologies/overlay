@@ -11,6 +11,7 @@ type TipsterStatus = 'active' | 'suspended';
 interface AdminUser {
   id: string;
   email: string;
+  username: string | null;
   role: Role;
   createdAt: string;
   tipster: {
@@ -247,7 +248,8 @@ export default function AdminUsersPage() {
         >
           <thead>
             <tr style={{ textAlign: 'left', ...muted }}>
-              <th style={{ padding: '0.5rem 0' }}>Email</th>
+              <th style={{ padding: '0.5rem 0' }}>Username</th>
+              <th>Email</th>
               <th>Role</th>
               <th>Tipster</th>
               <th>Subscribers</th>
@@ -257,6 +259,9 @@ export default function AdminUsersPage() {
           <tbody>
             {data.items.map((u) => (
               <tr key={u.id} style={{ borderTop: '1px solid var(--border)' }}>
+                <td style={{ padding: '0.6rem 0' }}>
+                  {u.username ?? <span style={muted}>—</span>}
+                </td>
                 <td style={{ padding: '0.6rem 0' }}>{u.email}</td>
                 <td>
                   <select

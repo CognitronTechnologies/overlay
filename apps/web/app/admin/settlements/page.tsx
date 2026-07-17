@@ -19,7 +19,10 @@ interface Settlement {
   closingOdds: number | null;
   clv: number | null;
   settledAt: string | null;
-  tipster: { user: { email: string } } | null;
+  tipster: {
+    displayName: string | null;
+    user: { username: string | null; email: string };
+  } | null;
   event: {
     sport: string;
     league: string | null;
@@ -248,7 +251,13 @@ export default function AdminSettlementsPage() {
                 <td style={{ padding: '0.6rem 0', ...muted }}>
                   {s.settledAt ? new Date(s.settledAt).toLocaleString() : '—'}
                 </td>
-                <td>{s.tipster?.user.email ?? s.tipsterId}</td>
+                <td>
+                  {s.tipster
+                    ? (s.tipster.displayName ??
+                      s.tipster.user.username ??
+                      s.tipster.user.email)
+                    : s.tipsterId}
+                </td>
                 <td style={muted}>
                   {s.event ? `${s.event.home} v ${s.event.away}` : '—'}
                 </td>

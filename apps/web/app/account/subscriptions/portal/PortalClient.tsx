@@ -93,7 +93,7 @@ export default function PortalClient() {
               }}
             >
               <div>
-                <strong>{v.tipsterId}</strong>
+                <strong>{v.tipsterName ?? v.tipsterId}</strong>
                 <div style={{ color: MUTED, marginTop: '0.25rem' }}>
                   {v.statusLabel}
                   {v.periodEndLabel ? ` · ${v.periodEndLabel}` : ''}

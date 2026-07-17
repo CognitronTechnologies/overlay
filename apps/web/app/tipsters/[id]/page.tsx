@@ -16,7 +16,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const t = await getTipster(params.id);
   if (!t) return { title: 'Tipster not found — Overlay Bets' };
-  const name = t.displayName ?? t.tipsterId;
+  const name = t.displayName ?? t.username ?? t.tipsterId;
   const y = t.stats ? `${t.stats.yield.toFixed(1)}% yield` : 'verified picks';
   return {
     title: `${name} — ${y} · Overlay Bets`,
@@ -154,7 +154,7 @@ export default async function TipsterPage({
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
-        {t.displayName ?? t.tipsterId}
+        {t.displayName ?? t.username ?? t.tipsterId}
         {t.country ? (
           <Flag code={t.country} style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }} />
         ) : null}

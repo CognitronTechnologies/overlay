@@ -22,6 +22,7 @@ import { formStyles } from '../formStyles';
 interface Subscription {
   id: string;
   tipsterId: string;
+  tipsterName: string | null;
   status: string;
   currentPeriodEnd: string | null;
 }
@@ -30,7 +31,10 @@ const cardStyle: React.CSSProperties = {
   border: '1px solid var(--border)',
   borderRadius: 10,
   padding: '1.25rem 1.4rem',
-  marginTop: '1.25rem',
+};
+const dividerStyle: React.CSSProperties = {
+  borderTop: '1px solid var(--border)',
+  margin: '1.1rem 0',
 };
 const labelStyle: React.CSSProperties = { color: 'var(--muted)', fontSize: '0.9rem' };
 
@@ -161,14 +165,14 @@ export default function AccountPage() {
 
   if (!profile) {
     return (
-      <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      <main style={{ maxWidth: 920, margin: '0 auto', padding: '3rem 1.5rem' }}>
         <p style={{ color: 'var(--muted)' }}>Loading…</p>
       </main>
     );
   }
 
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+    <main style={{ maxWidth: 920, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1 style={{ marginBottom: '0.25rem' }}>
         Welcome, {profile.username ?? 'there'}
       </h1>
@@ -219,28 +223,34 @@ export default function AccountPage() {
       </div>
 
       {/* --- Profile summary --- */}
-      <div style={cardStyle}>
-        <div style={{ display: 'grid', gap: '0.5rem' }}>
-          <Row label="Username" value={profile.username ?? '— not set —'} />
-          <Row label="Email" value={profile.email} />
-          <Row label="Account type" value={profile.role} />
-          <Row
+      <div style={{ ...cardStyle, marginTop: '1.25rem' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '0.85rem 1.5rem',
+          }}
+        >
+          <Fact label="Username" value={profile.username ?? '— not set —'} />
+          <Fact label="Email" value={profile.email} />
+          <Fact label="Account type" value={profile.role} />
+          <Fact
             label="Member since"
             value={new Date(profile.createdAt).toLocaleDateString()}
           />
           {profile.role === 'tipster' ? (
-            <Row label="Role" value="Verified tipster" />
+            <Fact label="Role" value="Verified tipster" />
           ) : (
-            <Row
+            <Fact
               label="Subscriptions"
               value={String(profile.subscriptionCount)}
             />
           )}
         </div>
         {profile.role === 'tipster' ? (
-          <p style={{ marginTop: '1rem' }}>
+          <p style={{ margin: '1rem 0 0' }}>
             <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
-              → Go to tipster dashboard
+              → Tipster dashboard
             </Link>
             {' · '}
             <Link href="/onboarding" style={{ color: 'var(--accent)' }}>
@@ -254,152 +264,159 @@ export default function AccountPage() {
         ) : null}
       </div>
 
-      {/* --- Username --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Username</h2>
-        <form onSubmit={saveUsername} style={{ ...formStyles.form, gap: '0.6rem' }}>
-          <input
-            style={formStyles.input}
-            placeholder="your_handle"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            minLength={3}
-            maxLength={20}
-            required
-          />
-          <span style={labelStyle}>3–20 chars: letters, numbers, underscore.</span>
-          {usernameMsg ? <p style={labelStyle}>{usernameMsg}</p> : null}
-          <button style={formStyles.button} disabled={savingUsername}>
-            {savingUsername ? 'Saving…' : 'Save username'}
-          </button>
-        </form>
-      </section>
+      {/* --- Settings: a horizontal grid instead of a tall stack of cards --- */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '1.25rem',
+          marginTop: '1.25rem',
+          alignItems: 'start',
+        }}
+      >
+        {/* Login & security — username, email and password in one card */}
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Login &amp; security</h2>
 
-      {/* --- Change email --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Change email</h2>
-        <form onSubmit={saveEmail} style={{ ...formStyles.form, gap: '0.6rem' }}>
-          <input
-            style={formStyles.input}
-            type="email"
-            placeholder="new@email.com"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            required
-          />
-          {emailMsg ? <p style={labelStyle}>{emailMsg}</p> : null}
-          <button style={formStyles.button}>Send confirmation</button>
-        </form>
-      </section>
+          <form onSubmit={saveUsername} style={{ ...formStyles.form, gap: '0.5rem' }}>
+            <span style={labelStyle}>Username</span>
+            <input
+              style={formStyles.input}
+              placeholder="your_handle"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              minLength={3}
+              maxLength={20}
+              required
+            />
+            {usernameMsg ? <p style={labelStyle}>{usernameMsg}</p> : null}
+            <button style={formStyles.button} disabled={savingUsername}>
+              {savingUsername ? 'Saving…' : 'Save username'}
+            </button>
+          </form>
 
-      {/* --- Change password --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Change password</h2>
-        <form
-          onSubmit={savePassword}
-          style={{ ...formStyles.form, gap: '0.6rem' }}
-        >
-          <input
-            style={formStyles.input}
-            type="password"
-            placeholder="New password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            minLength={6}
-            required
-          />
-          {passwordMsg ? <p style={labelStyle}>{passwordMsg}</p> : null}
-          <button style={formStyles.button}>Update password</button>
-        </form>
-      </section>
+          <div style={dividerStyle} />
 
-      {/* --- Notification preferences --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Notifications</h2>
-        {prefs === null ? (
-          <p style={labelStyle}>Loading…</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-            >
-              <input
-                type="checkbox"
-                checked={prefs.emailEnabled}
-                onChange={(e) => savePrefs({ emailEnabled: e.target.checked })}
-              />
-              Email notifications
-            </label>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-            >
-              <input
-                type="checkbox"
-                checked={prefs.pushEnabled}
-                onChange={(e) => savePrefs({ pushEnabled: e.target.checked })}
-              />
-              Push notifications
-            </label>
-            <label style={{ display: 'grid', gap: '0.3rem' }}>
-              <span style={labelStyle}>New-pick delivery</span>
-              <select
-                style={formStyles.input}
-                value={prefs.frequency}
-                onChange={(e) =>
-                  savePrefs({
-                    frequency: e.target.value as 'instant' | 'daily',
-                  })
-                }
+          <form onSubmit={saveEmail} style={{ ...formStyles.form, gap: '0.5rem' }}>
+            <span style={labelStyle}>Change email</span>
+            <input
+              style={formStyles.input}
+              type="email"
+              placeholder="new@email.com"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              required
+            />
+            {emailMsg ? <p style={labelStyle}>{emailMsg}</p> : null}
+            <button style={formStyles.button}>Send confirmation</button>
+          </form>
+
+          <div style={dividerStyle} />
+
+          <form onSubmit={savePassword} style={{ ...formStyles.form, gap: '0.5rem' }}>
+            <span style={labelStyle}>Change password</span>
+            <input
+              style={formStyles.input}
+              type="password"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={6}
+              required
+            />
+            {passwordMsg ? <p style={labelStyle}>{passwordMsg}</p> : null}
+            <button style={formStyles.button}>Update password</button>
+          </form>
+        </section>
+
+        {/* --- Notification preferences --- */}
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Notifications</h2>
+          {prefs === null ? (
+            <p style={labelStyle}>Loading…</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <label
+                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
               >
-                <option value="instant">Instant — every pick</option>
-                <option value="daily">Daily digest</option>
-              </select>
-            </label>
-            {prefsMsg ? <p style={labelStyle}>{prefsMsg}</p> : null}
-          </div>
-        )}
-      </section>
+                <input
+                  type="checkbox"
+                  checked={prefs.emailEnabled}
+                  onChange={(e) => savePrefs({ emailEnabled: e.target.checked })}
+                />
+                Email notifications
+              </label>
+              <label
+                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={prefs.pushEnabled}
+                  onChange={(e) => savePrefs({ pushEnabled: e.target.checked })}
+                />
+                Push notifications
+              </label>
+              <label style={{ display: 'grid', gap: '0.3rem' }}>
+                <span style={labelStyle}>New-pick delivery</span>
+                <select
+                  style={formStyles.input}
+                  value={prefs.frequency}
+                  onChange={(e) =>
+                    savePrefs({
+                      frequency: e.target.value as 'instant' | 'daily',
+                    })
+                  }
+                >
+                  <option value="instant">Instant — every pick</option>
+                  <option value="daily">Daily digest</option>
+                </select>
+              </label>
+              {prefsMsg ? <p style={labelStyle}>{prefsMsg}</p> : null}
+            </div>
+          )}
+        </section>
 
-      {/* --- Privacy & data --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Privacy &amp; data</h2>
-        <p style={labelStyle}>
-          Download everything we hold about you, or permanently delete your
-          account.
-        </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={downloadData}
-            style={{
-              ...formStyles.button,
-              width: 'auto',
-              background: 'transparent',
-              color: 'var(--accent)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            Download my data
-          </button>
-          <button
-            type="button"
-            onClick={deleteAccount}
-            disabled={deleting}
-            style={{
-              ...formStyles.button,
-              width: 'auto',
-              background: 'transparent',
-              color: 'var(--danger)',
-              border: '1px solid var(--danger)',
-            }}
-          >
-            {deleting ? 'Deleting…' : 'Delete account'}
-          </button>
-        </div>
-        {privacyMsg ? (
-          <p style={{ ...labelStyle, marginTop: '0.75rem' }}>{privacyMsg}</p>
-        ) : null}
-      </section>
+        {/* --- Privacy & data --- */}
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Privacy &amp; data</h2>
+          <p style={labelStyle}>
+            Download everything we hold about you, or permanently delete your
+            account.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={downloadData}
+              style={{
+                ...formStyles.button,
+                width: 'auto',
+                background: 'transparent',
+                color: 'var(--accent)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              Download my data
+            </button>
+            <button
+              type="button"
+              onClick={deleteAccount}
+              disabled={deleting}
+              style={{
+                ...formStyles.button,
+                width: 'auto',
+                background: 'transparent',
+                color: 'var(--danger)',
+                border: '1px solid var(--danger)',
+              }}
+            >
+              {deleting ? 'Deleting…' : 'Delete account'}
+            </button>
+          </div>
+          {privacyMsg ? (
+            <p style={{ ...labelStyle, marginTop: '0.75rem' }}>{privacyMsg}</p>
+          ) : null}
+        </section>
+      </div>
 
       {/* --- Subscriptions --- */}
       {profile.role === 'admin' ? (
@@ -442,7 +459,7 @@ export default function AccountPage() {
                 href={`/tipsters/${s.tipsterId}`}
                 style={{ color: 'var(--accent)' }}
               >
-                {s.tipsterId}
+                {s.tipsterName ?? s.tipsterId}
               </Link>
               <span style={{ color: 'var(--muted)' }}>{s.status}</span>
             </li>
@@ -468,11 +485,11 @@ export default function AccountPage() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: 'var(--muted)' }}>{label}</span>
-      <span>{value}</span>
+    <div>
+      <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>{label}</div>
+      <div style={{ marginTop: '0.15rem', wordBreak: 'break-word' }}>{value}</div>
     </div>
   );
 }

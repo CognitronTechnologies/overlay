@@ -172,6 +172,7 @@ export interface TipsterStats {
 export interface TipsterProfile {
   tipsterId: string;
   displayName: string | null;
+  username: string | null;
   country: string | null;
   bio: string | null;
   sports: string[];
