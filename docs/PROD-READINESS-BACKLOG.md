@@ -288,9 +288,9 @@
 **Category:** Integrity · **Priority:** P1
 **Description:** Enforce a configurable cutoff before kickoff (not just start-time), clock-skew tolerance, and reject picks on events with missing/invalid start times.
 **Acceptance criteria:**
-- [ ] Configurable cutoff; server-clock authoritative; edge cases rejected with clear errors.
+- [x] Configurable cutoff; server-clock authoritative; edge cases rejected with clear errors.
 **Tests:**
-- [ ] Unit/integration: pick at cutoff boundary; event without start time.
+- [x] Unit/integration: pick at cutoff boundary; event without start time.
 
 ---
 
