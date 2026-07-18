@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeHtml } from './markdown.ts';
+import { sanitizeHtml, stripHtml } from './markdown.ts';
 
 test('keeps safe formatting markup untouched', () => {
   const html = '<p>Hello <strong>world</strong> and <em>value</em>.</p>';
@@ -90,4 +90,47 @@ test('preserves allowed image with safe attributes', () => {
 test('handles empty and non-tag input', () => {
   assert.equal(sanitizeHtml(''), '');
   assert.equal(sanitizeHtml('just text'), 'just text');
+});
+
+// ---------------------------------------------------------------------------
+// stripHtml — plain-text sanitizer for fields rendered as text (e.g. bio).
+// ---------------------------------------------------------------------------
+
+test('stripHtml removes all tags but keeps visible text', () => {
+  assert.equal(stripHtml('Hello <b>there</b> world'), 'Hello there world');
+});
+
+test('stripHtml neutralizes a stored XSS payload', () => {
+  assert.equal(stripHtml('<script>alert(1)</script>'), '');
+  assert.equal(stripHtml('hi<script>alert(1)</script>'), 'hi');
+  assert.equal(
+    stripHtml('<img src=x onerror=alert(1)>ok'),
+    'ok',
+  );
+  assert.equal(stripHtml('<svg/onload=alert(1)>'), '');
+});
+
+test('stripHtml drops style blocks with their content', () => {
+  assert.equal(stripHtml('a<style>body{}</style>b'), 'ab');
+});
+
+test('stripHtml is case-insensitive for dangerous tags', () => {
+  assert.equal(stripHtml('x<SCRIPT>evil()</SCRIPT>y'), 'xy');
+});
+
+test('stripHtml preserves a lone less-than that is not a tag', () => {
+  assert.equal(stripHtml('5 < 10 and 3 > 2'), '5 < 10 and 3 > 2');
+});
+
+test('stripHtml removes an unterminated tag remnant', () => {
+  assert.equal(stripHtml('<script>alert(1)'), 'alert(1)');
+});
+
+test('stripHtml removes comments and declarations', () => {
+  assert.equal(stripHtml('a<!-- c -->b'), 'ab');
+});
+
+test('stripHtml handles empty and plain input', () => {
+  assert.equal(stripHtml(''), '');
+  assert.equal(stripHtml('just text'), 'just text');
 });

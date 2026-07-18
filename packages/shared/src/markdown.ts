@@ -247,3 +247,40 @@ export function sanitizeHtml(input: string): string {
 
   return out;
 }
+
+/** Matches an opening/closing/self-closing HTML tag (requires a tag name). */
+const HTML_TAG = /<\/?[a-zA-Z][^>]*>/g;
+/** Matches an HTML comment or declaration/processing instruction. */
+const HTML_COMMENT_OR_DECL = /<!--[\s\S]*?-->|<[!?][^>]*>/g;
+
+/**
+ * Strip ALL HTML from a plain-text, user-generated field (e.g. a tipster bio).
+ *
+ * Unlike {@link sanitizeHtml} — which preserves a safe subset of tags for
+ * rendered markdown — this removes every tag so the value can never introduce
+ * markup or script when stored and later displayed. Dangerous elements
+ * (`<script>`, `<style>`, …) are removed together with their content; all other
+ * tags are dropped while their visible text is kept. A lone `<` that is not the
+ * start of a tag (e.g. "5 < 10") is preserved. The result is whitespace-trimmed.
+ */
+export function stripHtml(input: string): string {
+  if (!input) return '';
+
+  // Remove dangerous elements together with their content first, so text like
+  // an inline script body is not left behind as plain text.
+  let out = input;
+  for (const tag of DROP_CONTENT_TAGS) {
+    const withContent = new RegExp(
+      `<\\s*${tag}\\b[^>]*>[\\s\\S]*?<\\s*/\\s*${tag}\\s*>`,
+      'gi',
+    );
+    out = out.replace(withContent, '');
+  }
+
+  // Drop any remaining comments/declarations and well-formed tags, keeping the
+  // text between them. Only sequences that start a real tag are removed.
+  return out
+    .replace(HTML_COMMENT_OR_DECL, '')
+    .replace(HTML_TAG, '')
+    .trim();
+}
