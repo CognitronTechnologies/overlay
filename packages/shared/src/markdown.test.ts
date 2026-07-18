@@ -122,8 +122,9 @@ test('stripHtml preserves a lone less-than that is not a tag', () => {
   assert.equal(stripHtml('5 < 10 and 3 > 2'), '5 < 10 and 3 > 2');
 });
 
-test('stripHtml removes an unterminated tag remnant', () => {
-  assert.equal(stripHtml('<script>alert(1)'), 'alert(1)');
+test('stripHtml removes an unterminated dangerous tag remnant', () => {
+  assert.equal(stripHtml('<script>alert(1)'), '');
+  assert.equal(stripHtml('ok<b'), 'ok');
 });
 
 test('stripHtml removes comments and declarations', () => {
@@ -133,4 +134,17 @@ test('stripHtml removes comments and declarations', () => {
 test('stripHtml handles empty and plain input', () => {
   assert.equal(stripHtml(''), '');
   assert.equal(stripHtml('just text'), 'just text');
+});
+
+test('stripHtml is not defeated by split/nested tag payloads', () => {
+  // A single-pass string replace could re-expose a tag here; the scanner must not.
+  for (const payload of [
+    '<scr<script>ipt>alert(1)</script>',
+    '<<script>script>alert(1)<</script>/script>',
+    '<img/src=x onerror=alert(1)>',
+  ]) {
+    const out = stripHtml(payload);
+    assert.ok(!/<\s*script/i.test(out), `residual script tag in: ${out}`);
+    assert.ok(!/onerror/i.test(out), `residual handler in: ${out}`);
+  }
 });

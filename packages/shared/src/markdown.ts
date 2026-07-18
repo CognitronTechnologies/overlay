@@ -248,39 +248,93 @@ export function sanitizeHtml(input: string): string {
   return out;
 }
 
-/** Matches an opening/closing/self-closing HTML tag (requires a tag name). */
-const HTML_TAG = /<\/?[a-zA-Z][^>]*>/g;
-/** Matches an HTML comment or declaration/processing instruction. */
-const HTML_COMMENT_OR_DECL = /<!--[\s\S]*?-->|<[!?][^>]*>/g;
-
 /**
  * Strip ALL HTML from a plain-text, user-generated field (e.g. a tipster bio).
  *
  * Unlike {@link sanitizeHtml} — which preserves a safe subset of tags for
  * rendered markdown — this removes every tag so the value can never introduce
- * markup or script when stored and later displayed. Dangerous elements
- * (`<script>`, `<style>`, …) are removed together with their content; all other
- * tags are dropped while their visible text is kept. A lone `<` that is not the
- * start of a tag (e.g. "5 < 10") is preserved. The result is whitespace-trimmed.
+ * markup or script when stored and later displayed. It uses the same
+ * single-pass scanner as {@link sanitizeHtml} (no regex backtracking, no
+ * incomplete multi-pass replacement): dangerous elements (`<script>`,
+ * `<style>`, …) are removed together with their content; all other tags are
+ * dropped while their visible text is kept. A lone `<` that is not the start of
+ * a tag (e.g. "5 < 10") is preserved. The result is whitespace-trimmed.
  */
 export function stripHtml(input: string): string {
   if (!input) return '';
+  let out = '';
+  let i = 0;
+  const n = input.length;
 
-  // Remove dangerous elements together with their content first, so text like
-  // an inline script body is not left behind as plain text.
-  let out = input;
-  for (const tag of DROP_CONTENT_TAGS) {
-    const withContent = new RegExp(
-      `<\\s*${tag}\\b[^>]*>[\\s\\S]*?<\\s*/\\s*${tag}\\s*>`,
-      'gi',
-    );
-    out = out.replace(withContent, '');
+  while (i < n) {
+    const lt = input.indexOf('<', i);
+    if (lt === -1) {
+      out += input.slice(i);
+      break;
+    }
+    out += input.slice(i, lt);
+
+    // Comments.
+    if (input.startsWith('<!--', lt)) {
+      const end = input.indexOf('-->', lt + 4);
+      i = end === -1 ? n : end + 3;
+      continue;
+    }
+    // Declarations / processing instructions (<!doctype>, <?xml ?>).
+    if (input[lt + 1] === '!' || input[lt + 1] === '?') {
+      const end = input.indexOf('>', lt + 1);
+      i = end === -1 ? n : end + 1;
+      continue;
+    }
+
+    // Only treat '<' as a tag when a tag name (or a closing-tag name) follows;
+    // otherwise keep it as literal text (e.g. "5 < 10").
+    const next = input[lt + 1] ?? '';
+    const nameChar = next === '/' ? (input[lt + 2] ?? '') : next;
+    if (!/[a-zA-Z]/.test(nameChar)) {
+      out += '<';
+      i = lt + 1;
+      continue;
+    }
+
+    // Find the end of the tag, respecting quoted attribute values.
+    let j = lt + 1;
+    let quote = '';
+    while (j < n) {
+      const c = input[j];
+      if (quote) {
+        if (c === quote) quote = '';
+      } else if (c === '"' || c === "'") {
+        quote = c;
+      } else if (c === '>') {
+        break;
+      }
+      j++;
+    }
+    if (j >= n) break; // unterminated tag: drop the remainder
+
+    const rawTag = input.slice(lt + 1, j);
+    i = j + 1;
+
+    const isClose = rawTag[0] === '/';
+    const bodyStr = isClose ? rawTag.slice(1) : rawTag;
+    const nameMatch = /^([a-zA-Z][a-zA-Z0-9]*)/.exec(bodyStr);
+    const name = nameMatch ? nameMatch[1].toLowerCase() : '';
+
+    // For dangerous elements, drop their text content up to the close tag too.
+    if (
+      name &&
+      DROP_CONTENT_TAGS.has(name) &&
+      !isClose &&
+      !/\/\s*$/.test(bodyStr)
+    ) {
+      const closeRe = new RegExp(`</\\s*${name}\\s*>`, 'i');
+      const rest = input.slice(i);
+      const m = closeRe.exec(rest);
+      i = m ? i + m.index + m[0].length : n;
+    }
+    // Otherwise: simply drop the tag markup; text between tags is kept.
   }
 
-  // Drop any remaining comments/declarations and well-formed tags, keeping the
-  // text between them. Only sequences that start a real tag are removed.
-  return out
-    .replace(HTML_COMMENT_OR_DECL, '')
-    .replace(HTML_TAG, '')
-    .trim();
+  return out.trim();
 }
