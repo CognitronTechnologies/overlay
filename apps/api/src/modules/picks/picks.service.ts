@@ -8,6 +8,8 @@ import {
   generateNonce,
   hashPick,
   buildPerformanceDashboard,
+  isLivePicksGated,
+  normalizeGraduationStatus,
   type PickPayload,
   type SettledPick,
 } from '@overlay/shared';
@@ -159,16 +161,37 @@ export class PicksService {
 
   /**
    * Live picks for a subscriber — includes still-pending (pre-event) picks and
-   * settled ones, with event context. Gated: requires an active subscription.
+   * settled ones, with event context.
+   *
+   * Gating (OB-153): a tipster's live picks are only paywalled once they are
+   * verified AND have enabled subscription gating. Provisional "rising" tipsters
+   * (and verified tipsters who haven't switched gating on) publish their live
+   * picks for free, so newcomers can build an audience without friction.
    */
   async listLiveForSubscriber(
     userId: string,
     tipsterId: string,
   ): Promise<FeedPick[]> {
-    const entitled = await this.subs.isEntitled(userId, tipsterId);
-    if (!entitled) {
-      throw new ForbiddenException('Active subscription required');
+    const tipster = await this.prisma.tipster.findUnique({
+      where: { userId: tipsterId },
+      select: { graduationStatus: true, subscriptionGatingEnabled: true },
+    });
+    if (!tipster) {
+      throw new NotFoundException('Tipster not found');
     }
+
+    const gated = isLivePicksGated({
+      graduationStatus: normalizeGraduationStatus(tipster.graduationStatus),
+      subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
+    });
+
+    if (gated) {
+      const entitled = await this.subs.isEntitled(userId, tipsterId);
+      if (!entitled) {
+        throw new ForbiddenException('Active subscription required');
+      }
+    }
+
     const picks = await this.prisma.pick.findMany({
       where: { tipsterId },
       orderBy: { lockedAt: 'desc' },

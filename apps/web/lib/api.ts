@@ -234,6 +234,17 @@ export interface TipsterProfile {
   subscriptionPriceCents: number;
   billingInterval: 'weekly' | 'monthly';
   verified: boolean;
+  /**
+   * Rising-tipster graduation badge (OB-153): "Rising tipster" while provisional,
+   * "Verified tipster" once graduated.
+   */
+  graduation: {
+    status: 'rising' | 'pending_review' | 'verified';
+    label: string;
+    provisional: boolean;
+  };
+  /** Whether the tipster's live (pre-event) picks are gated behind a subscription. */
+  liveGated: boolean;
   socials: {
     x: string | null;
     instagram: string | null;
@@ -252,6 +263,19 @@ export interface TipsterProfile {
     clv: number | null;
     note: string | null;
     settledAt: string | null;
+  }[];
+  /**
+   * Free open (pre-event) picks, shown publicly while the tipster's live picks
+   * aren't gated. Empty once gating is enabled.
+   */
+  openPicks: {
+    id: string;
+    market: string;
+    selection: string;
+    oddsAtPick: number;
+    status: string;
+    note: string | null;
+    lockedAt: string;
   }[];
 }
 

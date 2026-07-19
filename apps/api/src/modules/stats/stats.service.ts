@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { computeTipsterStats, type SettledPick } from '@overlay/shared';
+import {
+  computeTipsterStats,
+  evaluateGraduation,
+  nextGraduationStatus,
+  normalizeGraduationStatus,
+  type SettledPick,
+} from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
+import { resolveGraduationThreshold } from './graduation-config';
 
 @Injectable()
 export class StatsService {
@@ -10,6 +17,11 @@ export class StatsService {
    * Recompute a tipster's materialized stats from their settled picks using the
    * shared, unit-tested stats engine. Called by the stats worker after each
    * settlement batch (see docs/ARCHITECTURE.md §3.3).
+   *
+   * Also advances the tipster's Rising → Verified graduation state (OB-153): a
+   * provisional (`rising`) tipster that crosses the configurable graduation
+   * threshold is flagged `pending_review` so an admin can assign the verified
+   * tag. This never gates picks or enables billing on its own.
    */
   async recomputeForTipster(tipsterId: string) {
     const picks = await this.prisma.pick.findMany({
@@ -26,10 +38,56 @@ export class StatsService {
 
     const s = computeTipsterStats(input);
 
-    return this.prisma.tipsterStats.upsert({
+    const stats = await this.prisma.tipsterStats.upsert({
       where: { tipsterId },
       create: { tipsterId, ...s },
       update: s,
+    });
+
+    await this.evaluateGraduationFor(tipsterId, s.winRate, s.sampleSize);
+
+    return stats;
+  }
+
+  /**
+   * Advance a tipster along the graduation path from their freshly-computed
+   * stats. Promotion is monotonic (see the shared engine): a `rising` tipster
+   * that meets the threshold becomes `pending_review` (surfacing them on the
+   * admin review dashboard); already-reviewed states are never auto-demoted.
+   * Eligibility is derived only from verified settled picks.
+   */
+  private async evaluateGraduationFor(
+    tipsterId: string,
+    winRate: number,
+    settledBets: number,
+  ) {
+    const tipster = await this.prisma.tipster.findUnique({
+      where: { userId: tipsterId },
+      select: { graduationStatus: true, graduationEligibleAt: true },
+    });
+    if (!tipster) return;
+
+    const current = normalizeGraduationStatus(tipster.graduationStatus);
+    const evaluation = evaluateGraduation(
+      { winRate, settledBets },
+      resolveGraduationThreshold(),
+    );
+    const next = nextGraduationStatus(current, evaluation);
+
+    // Nothing to do unless the tipster is being promoted for the first time.
+    if (next === current && tipster.graduationEligibleAt) return;
+    if (next === current && !evaluation.eligible) return;
+
+    await this.prisma.tipster.update({
+      where: { userId: tipsterId },
+      data: {
+        graduationStatus: next,
+        // Stamp the first time they qualified so the admin queue can order by it.
+        graduationEligibleAt:
+          evaluation.eligible && !tipster.graduationEligibleAt
+            ? new Date()
+            : tipster.graduationEligibleAt,
+      },
     });
   }
 
