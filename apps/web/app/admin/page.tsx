@@ -16,6 +16,7 @@ interface DashboardMetrics {
   grossPendingPayoutCents: number;
   publishedArticles: number;
   draftArticles: number;
+  graduationReviews: number;
 }
 
 function formatCents(cents: number): string {
@@ -228,6 +229,10 @@ export default function AdminPage() {
             value={(
               metrics.publishedArticles + metrics.draftArticles
             ).toLocaleString()}
+          />
+          <MetricCard
+            label="Rising tipster reviews"
+            value={(metrics.graduationReviews ?? 0).toLocaleString()}
           />
         </div>
       )}

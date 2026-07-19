@@ -80,18 +80,24 @@ function LiveBadge() {
 }
 
 /**
- * Unified "Tips" browser on a tipster's public profile (OB-012): filter their
- * picks by Open (pre-event) / Settled / All. Settled picks are public; open
- * picks are gated behind an active subscription (paywall otherwise).
+ * Unified "Tips" browser on a tipster's public profile (OB-012 / OB-153): filter
+ * their picks by Open (pre-event) / Settled / All. Settled picks are always
+ * public. Open picks are free/public while the tipster is provisional or hasn't
+ * enabled subscription gating (`liveGated` false); once gated they're paywalled
+ * behind an active subscription.
  */
 export default function TipsterTips({
   tipsterId,
   priceCents,
   billingInterval,
+  liveGated = false,
+  freeOpenPicks = [],
 }: {
   tipsterId: string;
   priceCents: number;
   billingInterval: 'weekly' | 'monthly';
+  liveGated?: boolean;
+  freeOpenPicks?: FeedPick[];
 }) {
   const [filter, setFilter] = useState<Filter>('all');
   const [settledOutcome, setSettledOutcome] = useState<SettledOutcome>('all');
@@ -144,11 +150,14 @@ export default function TipsterTips({
   }, [tipsterId]);
 
   const entitled = live.kind === 'entitled';
-  // When entitled the live feed already contains open + settled; otherwise use
-  // the public settled list and paywall the open picks.
+  // When the live feed loaded it already contains open + settled. Otherwise use
+  // the public settled list, and — when the tipster isn't gating — the free open
+  // picks fetched with the public profile.
   const openPicks = entitled
     ? live.picks.filter((p) => p.status === 'pending')
-    : [];
+    : liveGated
+      ? []
+      : freeOpenPicks;
   const settledPicks = entitled
     ? live.picks.filter((p) => p.status !== 'pending')
     : settled;
@@ -174,13 +183,18 @@ export default function TipsterTips({
         ? filteredSettled
         : entitled
           ? live.picks
-          : settledPicks;
+          : [...openPicks, ...settledPicks];
 
-  const showPaywall = !entitled && filter !== 'settled';
+  // Paywall the open picks only when the tipster gates them AND the viewer isn't
+  // entitled. Provisional / ungated tipsters publish their open picks for free.
+  const showPaywall = liveGated && !entitled && filter !== 'settled';
 
-  // Open count is gated for non-subscribers, so show a lock instead of a number.
-  const openBadge = entitled ? String(openPicks.length) : '🔒';
-  const allCount = entitled ? live.picks.length : settledPicks.length;
+  // When gated and not entitled the open count is hidden behind a lock.
+  const openBadge =
+    liveGated && !entitled ? '🔒' : String(openPicks.length);
+  const allCount = entitled
+    ? live.picks.length
+    : openPicks.length + settledPicks.length;
   const mainTabs: { key: Filter; label: string; badge: string }[] = [
     { key: 'open', label: 'Open', badge: openBadge },
     { key: 'settled', label: 'Settled', badge: String(settledPicks.length) },

@@ -177,6 +177,23 @@ export default async function TipsterPage({
                 ✓ Verified
               </span>
             ) : null}
+            {t.graduation?.provisional ? (
+              <span
+                title="Rising tipster — tips are free while this tipster builds a verified track record"
+                style={{
+                  marginLeft: '0.6rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 999,
+                  padding: '0.1rem 0.5rem',
+                  verticalAlign: 'middle',
+                }}
+              >
+                🌱 Rising tipster
+              </span>
+            ) : null}
           </h1>
           <p style={{ color: 'var(--muted)', margin: 0 }}>
             {t.country ? `${countryLabel(t.country)} · ` : ''}
@@ -262,6 +279,24 @@ export default async function TipsterPage({
           tipsterId={t.tipsterId}
           priceCents={t.subscriptionPriceCents}
           billingInterval={t.billingInterval}
+          liveGated={t.liveGated}
+          freeOpenPicks={(t.openPicks ?? []).map((p) => ({
+            id: p.id,
+            tipsterId: t.tipsterId,
+            tipsterName: t.displayName ?? t.username,
+            market: p.market,
+            selection: p.selection,
+            oddsAtPick: p.oddsAtPick,
+            pickType: 'pre_match',
+            stakeUnits: 0,
+            status: p.status,
+            clv: null,
+            result: null,
+            note: p.note,
+            lockedAt: Date.parse(p.lockedAt),
+            settledAt: null,
+            event: null,
+          }))}
         />
       </div>
 

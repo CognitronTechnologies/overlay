@@ -160,6 +160,17 @@ model Tipster {
   // optional trust step that unlocks the "verified" badge.
   stripeOnboarded        Boolean         @default(false)
   identityVerified       Boolean         @default(false)
+  // Rising-tipster graduation (OB-153): new tipsters start `rising` (provisional
+  // — tips are free/public and live picks are ungated). Crossing the configurable
+  // graduation threshold (verified settled win rate + sample size) auto-advances
+  // them to `pending_review` so an admin can assign the verified tag. Live picks
+  // are only ever gated once `verified` AND `subscriptionGatingEnabled` is on —
+  // graduation never auto-enables billing.
+  graduationStatus          String    @default("rising")
+  subscriptionGatingEnabled Boolean   @default(false)
+  // First time this tipster met the graduation threshold (for the admin review
+  // queue); null until they qualify.
+  graduationEligibleAt      DateTime?
   // Social / "digital identity" handles surfaced on the verified profile.
   socialX                String?
   socialInstagram        String?

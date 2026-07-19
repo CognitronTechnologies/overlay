@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { stripHtml } from '@overlay/shared';
+import {
+  graduationBadge,
+  isLivePicksGated,
+  normalizeGraduationStatus,
+  stripHtml,
+} from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
 import {
   filterAndRankTipsters,
@@ -101,6 +106,14 @@ export class TipstersService {
     });
     if (!tipster) throw new NotFoundException('Tipster not found');
 
+    const graduationStatus = normalizeGraduationStatus(
+      tipster.graduationStatus,
+    );
+    const liveGated = isLivePicksGated({
+      graduationStatus,
+      subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
+    });
+
     const [recentPicks, articlesPublished, subscriberCount, followerCount] =
       await Promise.all([
         this.prisma.pick.findMany({
@@ -133,6 +146,26 @@ export class TipstersService {
         this.prisma.follow.count({ where: { tipsterId } }),
       ]);
 
+    // When live picks aren't gated (provisional "rising" tipster, or a verified
+    // tipster who hasn't enabled subscription gating), their open (pre-event)
+    // picks are free/public — surface them so anyone can see the current tips.
+    const openPicks = liveGated
+      ? []
+      : await this.prisma.pick.findMany({
+          where: { tipsterId, status: 'pending' },
+          orderBy: { lockedAt: 'desc' },
+          take: 20,
+          select: {
+            id: true,
+            market: true,
+            selection: true,
+            oddsAtPick: true,
+            status: true,
+            note: true,
+            lockedAt: true,
+          },
+        });
+
     return {
       tipsterId,
       displayName: tipster.displayName,
@@ -144,6 +177,10 @@ export class TipstersService {
       subscriptionPriceCents: tipster.subscriptionPriceCents,
       billingInterval: tipster.billingInterval,
       verified: tipster.identityVerified,
+      // Rising-tipster graduation (OB-153): the public badge plus whether live
+      // picks are currently gated behind a subscription.
+      graduation: graduationBadge(graduationStatus),
+      liveGated,
       socials: {
         x: tipster.socialX,
         instagram: tipster.socialInstagram,
@@ -154,6 +191,8 @@ export class TipstersService {
       followerCount,
       articlesPublished,
       recentPicks,
+      // Free open picks (empty when gated).
+      openPicks,
     };
   }
 
