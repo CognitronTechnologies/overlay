@@ -12,6 +12,7 @@ import {
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
+import { UpdateArticleAuthorStatusDto } from './dto/update-article-author-status.dto';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { RolesGuard, Roles } from '../../common/roles.guard';
 import { CurrentUser } from '../../common/current-user.decorator';
@@ -21,7 +22,7 @@ import type { AuthUser } from '../../common/crypto';
 export class ArticlesController {
   constructor(private readonly articles: ArticlesService) {}
 
-  // ---- public (SEO) ----
+  // ---- public ----
 
   @Get()
   list(
@@ -32,7 +33,12 @@ export class ArticlesController {
   ) {
     return this.articles.listPublished({
       tag,
-      category: category === 'news' ? 'news' : category === 'content' ? 'content' : undefined,
+      category:
+        category === 'news'
+          ? 'news'
+          : category === 'content'
+            ? 'content'
+            : undefined,
       take: take ? Number(take) : undefined,
       skip: skip ? Number(skip) : undefined,
     });
@@ -48,21 +54,19 @@ export class ArticlesController {
     return this.articles.listPublishedSlugs();
   }
 
+  // @Get(':slug')
+  // bySlug(@Param('slug') slug: string) {
+  //   return this.articles.getPublishedBySlug(slug);
+  // }
+
   @Get(':slug')
-  bySlug(@Param('slug') slug: string) {
-    return this.articles.getPublishedBySlug(slug);
-  }
+bySlug(@Param('slug') slug: string) {
+  console.log('Slug route hit:', slug);
+  return this.articles.getPublishedBySlug(slug);
+}
 
-  // ---- authoring (admin + approved tipsters) ----
+  // ---- authoring ----
 
-  @Get('admin/all')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
-  all() {
-    return this.articles.listAll();
-  }
-
-  /** Articles the caller may manage (admins: all, tipsters: their own). */
   @Get('manage/mine')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'tipster')
@@ -73,7 +77,10 @@ export class ArticlesController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'tipster')
-  create(@Body() dto: CreateArticleDto, @CurrentUser() user: AuthUser) {
+  create(
+    @Body() dto: CreateArticleDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.articles.create(user, dto);
   }
 
@@ -91,7 +98,36 @@ export class ArticlesController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'tipster')
-  remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.articles.remove(id, user);
+  }
+
+  // ---- admin ----
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  all() {
+    return this.articles.listAll();
+  }
+
+  @Get('admin/authors')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  authors() {
+    return this.articles.listAuthors();
+  }
+
+  @Patch('admin/authors/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  updateAuthorStatus(
+    @Param('userId') userId: string,
+    @Body() dto: UpdateArticleAuthorStatusDto,
+  ) {
+    return this.articles.updateAuthorStatus(userId, dto);
   }
 }

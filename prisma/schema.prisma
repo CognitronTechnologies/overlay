@@ -61,6 +61,12 @@ enum ArticleStatus {
   archived
 }
 
+enum ArticleAuthorStatus {
+  pending
+  approved
+  suspended
+}
+
 /// Editorial section an article belongs to (OB): `content` is evergreen guides
 /// and how-tos (CLV, bankroll, bookies); `news` is timely happenings in sport
 /// and betting.
@@ -107,19 +113,26 @@ model User {
 model Tipster {
   userId                 String   @id
   user                   User     @relation(fields: [userId], references: [id])
+
   // Public identity (OB-020): shown on the profile / marketplace card.
   displayName            String?
   country                String?
+
   // Preferred direct-contact channel captured at onboarding: one of
   // `phone` | `telegram` | `whatsapp`, with the handle/number in contactValue.
   contactMethod          String?
   contactValue           String?
+
   bio                    String?
   sports                 String[]
+
   subscriptionPriceCents Int      @default(0)
+
   // Billing cadence the subscription price is charged on (OB-020).
   billingInterval        BillingInterval @default(monthly)
+
   stripeAccountId        String?
+
   // Payout destination (OB-06x): which rail a tipster is paid out on and its
   // details. `payoutMethod` is one of `stripe` | `crypto` | `mobile_money`;
   // Stripe uses stripeAccountId, crypto the wallet fields, mobile money the
@@ -129,30 +142,41 @@ model Tipster {
   payoutWalletChain      String?
   payoutMobileNumber     String?
   payoutMobileNetwork    String?
+
   // Onboarding wizard (OB-020): Stripe Connect onboarding + identity
   // verification progress. Publishing is gated until every required step
   // (profile, sports, bio, pricing, Stripe) is complete; verification is an
   // optional trust step that unlocks the "verified" badge.
   stripeOnboarded        Boolean  @default(false)
   identityVerified       Boolean  @default(false)
+
   // Social / "digital identity" handles surfaced on the verified profile.
   socialX                String?
   socialInstagram        String?
   socialTelegram         String?
+
   // Uploaded official document (ID / passport / driver licence) backing the
   // verification step. Path is storage-relative; name is the original filename.
   identityDocPath        String?
   identityDocName        String?
   identityDocSubmittedAt DateTime?
+
   status                 String   @default("active")
+
+  // Editorial workflow (OB-0xx): controls whether a tipster may create and
+  // manage blog articles. This is intentionally independent of the marketplace
+  // status above so that article authorship can be approved, suspended or
+  // reinstated without affecting subscriptions, picks or payouts.
+  articleAuthorStatus    ArticleAuthorStatus @default(pending)
+
   createdAt              DateTime @default(now())
 
-  picks         Pick[]
-  subscriptions Subscription[]
-  stats         TipsterStats?
-  payouts       Payout[]
-  reports       TipsterReport[]
-  followers     Follow[]
+  picks                  Pick[]
+  subscriptions          Subscription[]
+  stats                  TipsterStats?
+  payouts                Payout[]
+  reports                TipsterReport[]
+  followers              Follow[]
 }
 
 model Event {

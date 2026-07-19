@@ -183,6 +183,13 @@ export default function AccountPage() {
             >
               My subscriptions
             </Link>
+
+            <Link
+              href="/account/blog"
+              className="btn btn--secondary btn--sm"
+            >
+              My blog
+            </Link>
           </>
         ) : null}
         {profile.role === 'admin' ? (

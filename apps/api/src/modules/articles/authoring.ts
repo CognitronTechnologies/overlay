@@ -4,54 +4,44 @@
 // Node's native type-stripping test runner.
 
 export type AuthorRole = 'user' | 'tipster' | 'admin';
-
 export type ArticleStatus = 'draft' | 'pending' | 'published' | 'archived';
+export type ArticleAuthorStatus = 'pending' | 'approved' | 'suspended';
 
 export interface AuthoringActor {
   userId: string;
   role: AuthorRole;
 }
 
-export interface TipsterApproval {
-  status: string;
-}
-
+export interface TipsterApproval { articleAuthorStatus: ArticleAuthorStatus; }
 /**
  * Whether a principal may author articles at all. Admins always can; tipsters
- * may author only once approved (an active tipster account).
+ * may author only once their article authorship has been approved. This is
+ * intentionally independent of the tipster marketplace status.
  */
-export function canAuthorArticles(
-  actor: AuthoringActor,
-  tipster?: TipsterApproval | null,
-): boolean {
+export function canAuthorArticles(actor: AuthoringActor, tipster?: TipsterApproval | null,): boolean {
   if (actor.role === 'admin') return true;
-  if (actor.role === 'tipster') return tipster?.status === 'active';
-  return false;
+
+  return (actor.role === 'tipster' && tipster?.articleAuthorStatus === 'approved');
 }
 
 /**
  * Whether a principal may edit/delete a specific article. Admins may manage
  * any article; authors (tipsters) may manage only their own.
  */
-export function canManageArticle(
-  actor: AuthoringActor,
-  article: { authorId: string },
-): boolean {
+export function canManageArticle(actor: AuthoringActor, article: { authorId: string },): boolean {
   if (actor.role === 'admin') return true;
-  return actor.role === 'tipster' && article.authorId === actor.userId;
+
+  return (actor.role === 'tipster' && article.authorId === actor.userId);
 }
 
 /**
  * Resolve the status an article should actually be persisted with. Author
- * (tipster) posts require admin review before going live: a tipster cannot
- * publish directly, so requesting `published` instead submits the article for
- * review (`pending`). Admins may set any status directly, which is how a
- * pending article gets approved and published.
+ * (tipsters) require admin review before going live: requesting "published"
+ * instead submits the article for review ("pending"). Admins may set any
+ * status directly, which is how pending articles are approved and published.
  */
-export function resolveArticleStatus(
-  actor: AuthoringActor,
-  requested: ArticleStatus,
-): ArticleStatus {
+export function resolveArticleStatus(actor: AuthoringActor, requested: ArticleStatus, ): ArticleStatus {
   if (actor.role === 'admin') return requested;
-  return requested === 'published' ? 'pending' : requested;
+
+  return requested === 'published' ? 'pending': requested;
 }

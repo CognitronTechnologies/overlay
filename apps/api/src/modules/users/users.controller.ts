@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -18,9 +17,7 @@ import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { CurrentUser } from '../../common/current-user.decorator';
 import type { AuthUser } from '../../common/crypto';
 import {
-  InvalidAvatarError,
   MAX_AVATAR_BYTES,
-  storeAvatar,
   type UploadedImage,
 } from './avatar-upload';
 
@@ -47,19 +44,12 @@ export class UsersController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: MAX_AVATAR_BYTES } }),
   )
-  async uploadAvatar(
+  uploadAvatar(
     @CurrentUser() user: AuthUser,
     @UploadedFile() file?: UploadedImage,
   ) {
-    try {
-      const url = await storeAvatar(file);
-      return this.users.setAvatar(user.userId, url);
-    } catch (err) {
-      if (err instanceof InvalidAvatarError) {
-        throw new BadRequestException(err.message);
-      }
-      throw err;
-    }
+    // Delegate avatar replacement to the service.
+    return this.users.uploadAvatar(user.userId, file);
   }
 
   /** Remove the caller's avatar (revert to the generated fallback). */

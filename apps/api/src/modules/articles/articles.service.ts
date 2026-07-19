@@ -13,6 +13,7 @@ import {
 import { PrismaService } from '../../prisma.service';
 import type { CreateArticleDto } from './dto/create-article.dto';
 import type { UpdateArticleDto } from './dto/update-article.dto';
+import type { UpdateArticleAuthorStatusDto } from './dto/update-article-author-status.dto';
 import {
   canAuthorArticles,
   canManageArticle,
@@ -103,15 +104,22 @@ export class ArticlesService {
   /** Throw unless the actor is allowed to author articles (approved tipster/admin). */
   private async assertCanAuthor(actor: AuthoringActor) {
     if (actor.role === 'admin') return;
+
     const tipster =
       actor.role === 'tipster'
         ? await this.prisma.tipster.findUnique({
             where: { userId: actor.userId },
+            select: {
+              articleAuthorStatus: true,
+            },
           })
         : null;
-    if (!canAuthorArticles(actor, tipster)) {
-      throw new ForbiddenException('Not allowed to author articles');
+
+    if (canAuthorArticles(actor, tipster)) {
+      return;
     }
+
+    throw new ForbiddenException('Not allowed to author articles');
   }
 
   async create(actor: AuthoringActor, dto: CreateArticleDto) {
@@ -196,5 +204,40 @@ export class ArticlesService {
     }
     await this.prisma.article.delete({ where: { id } });
     return { deleted: true };
+  }
+
+  async listAuthors() {
+    return this.prisma.tipster.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        userId: true,
+        displayName: true,
+        status: true,
+        articleAuthorStatus: true,
+        identityVerified: true,
+        createdAt: true,
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateAuthorStatus(
+    userId: string,
+    dto: UpdateArticleAuthorStatusDto,
+  ) {
+    return this.prisma.tipster.update({
+      where: {
+        userId,
+      },
+      data: {
+        articleAuthorStatus: dto.articleAuthorStatus,
+      },
+    });
   }
 }

@@ -169,6 +169,7 @@ export default function AdminPage() {
           { href: '/admin/payouts', label: 'Payout approvals' },
           { href: '/admin/audit-log', label: 'Audit log' },
           { href: '/admin/blog', label: 'Blog authoring' },
+          { href: '/admin/authorship', label: 'Tipster authorship' }
         ].map((item) => (
           <Link
             key={item.href}
