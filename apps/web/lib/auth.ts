@@ -400,6 +400,18 @@ export async function adminListNewsletter(
   return (await res.json()) as AdminNewsletterSubscriber[];
 }
 
+/** Admin: compose + send the weekly "Picks of the Week" digest (OB-157). */
+export async function adminSendNewsletterDigest(): Promise<{
+  sent: number;
+  picks: number;
+}> {
+  const res = await authFetch('/api/admin/newsletter/digest', {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Failed to send digest (${res.status})`);
+  return (await res.json()) as { sent: number; picks: number };
+}
+
 /** Tipster requests an off-schedule payout (created awaiting admin approval). */
 export async function requestPayout(): Promise<{ amountCents: number }> {
   const res = await authFetch('/api/payouts/request', { method: 'POST' });

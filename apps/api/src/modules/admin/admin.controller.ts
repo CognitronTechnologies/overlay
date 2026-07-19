@@ -195,6 +195,12 @@ export class AdminController {
     return this.newsletter.listForAdmin(status);
   }
 
+  /** Manually compose + send the weekly "Picks of the Week" digest (OB-157). */
+  @Post('newsletter/digest')
+  sendNewsletterDigest() {
+    return this.newsletter.sendWeeklyDigest();
+  }
+
   @Patch('feedback/:id')
   reviewFeedback(@Param('id') id: string, @Body() dto: FeedbackStatusDto) {
     return this.feedback.updateStatus(id, dto.status);
