@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { todayIsoDate } from '@overlay/shared/daily-tips';
-import { roleHasPermission } from '@overlay/shared';
+import { roleHasPermission } from '@overlay/shared/rbac';
 import { authFetch, getProfile } from '../../../lib/auth';
 
 interface ManagedTip {

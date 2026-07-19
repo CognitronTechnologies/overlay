@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../../lib/auth';
-import { roleHasPermission } from '@overlay/shared';
+import { roleHasPermission } from '@overlay/shared/rbac';
 import { formStyles } from '../../formStyles';
 
 type Outcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';

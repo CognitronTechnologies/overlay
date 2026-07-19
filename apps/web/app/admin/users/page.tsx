@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { roleHasPermission, type Role } from '@overlay/shared';
+import { roleHasPermission, type Role } from '@overlay/shared/rbac';
 import { authFetch, getProfile } from '../../../lib/auth';
 import { formStyles } from '../../formStyles';
 

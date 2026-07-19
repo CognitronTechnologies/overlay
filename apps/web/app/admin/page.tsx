@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../lib/auth';
-import { roleHasPermission, type Role } from '@overlay/shared';
+import { roleHasPermission, type Role } from '@overlay/shared/rbac';
 import { downloadExport, type ExportFormat } from '../../lib/export';
 
 interface DashboardMetrics {

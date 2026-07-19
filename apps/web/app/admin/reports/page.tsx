@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { roleHasPermission } from '@overlay/shared';
+import { roleHasPermission } from '@overlay/shared/rbac';
 import {
   getProfile,
   adminListReports,

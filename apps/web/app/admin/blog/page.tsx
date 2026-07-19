@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@overlay/shared/markdown';
-import type { Role } from '@overlay/shared';
+import type { Role } from '@overlay/shared/rbac';
 import { authFetch, getProfile } from '../../../lib/auth';
 import { formStyles } from '../../formStyles';
 

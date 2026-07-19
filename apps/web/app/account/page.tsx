@@ -22,7 +22,7 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from '../../lib/push';
-import { roleHasPermission } from '@overlay/shared';
+import { roleHasPermission } from '@overlay/shared/rbac';
 import {
   DELETE_CONFIRM_PHRASE,
   isDeleteConfirmed,

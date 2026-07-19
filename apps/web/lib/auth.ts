@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Role } from '@overlay/shared';
+import type { Role } from '@overlay/shared/rbac';
 import { API_URL } from './api';
 
 /** Resolved local profile returned by GET /api/auth/me. */
