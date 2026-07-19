@@ -115,9 +115,7 @@ model User {
   subscriptions          Subscription[]
   articles               Article[]
   notificationPreference NotificationPreference?
-  pushSubscriptions PushSubscription[]
-  reportsMade   TipsterReport[] @relation("ReportsMade")
-  follows       Follow[]
+  pushSubscriptions      PushSubscription[]
   reportsMade            TipsterReport[]         @relation("ReportsMade")
   follows                Follow[]
 }
