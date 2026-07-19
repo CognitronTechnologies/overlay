@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../lib/auth';
+import { roleHasPermission, type Role } from '@overlay/shared';
 import { downloadExport, type ExportFormat } from '../../lib/export';
 
 interface DashboardMetrics {
@@ -55,6 +56,7 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 
 export default function AdminPage() {
   const router = useRouter();
+  const [role, setRole] = useState<Role | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,10 +73,11 @@ export default function AdminPage() {
         router.replace('/login');
         return;
       }
-      if (profile.role !== 'admin') {
+      if (!roleHasPermission(profile.role, 'audit:read')) {
         router.replace('/account');
         return;
       }
+      setRole(profile.role);
       const res = await authFetch('/api/admin/dashboard');
       if (!res.ok) {
         setError('Failed to load metrics.');
@@ -161,32 +164,65 @@ export default function AdminPage() {
           margin: '0 0 1rem',
         }}
       >
-        {[
-          { href: '/admin/users', label: 'Users & roles' },
-          { href: '/admin/settlements', label: 'Settlements' },
-          { href: '/admin/reports', label: 'Tipster feedback' },
-          { href: '/admin/feedback', label: 'Support & feedback' },
-          { href: '/admin/newsletter', label: 'Newsletter subscribers' },
-          { href: '/admin/payouts', label: 'Payout approvals' },
-          { href: '/admin/audit-log', label: 'Audit log' },
-          { href: '/admin/blog', label: 'Blog authoring' },
-        ].map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              padding: '0.55rem 0.95rem',
-              color: 'var(--accent)',
-              textDecoration: 'none',
-              fontSize: '0.95rem',
-            }}
-          >
-            {item.label} →
-          </Link>
-        ))}
+        {(
+          [
+            { href: '/admin/users', label: 'Users & roles', perm: 'user:manage' },
+            {
+              href: '/admin/settlements',
+              label: 'Settlements',
+              perm: 'finance:manage',
+            },
+            {
+              href: '/admin/reports',
+              label: 'Tipster feedback',
+              perm: 'content:moderate',
+            },
+            {
+              href: '/admin/feedback',
+              label: 'Support & feedback',
+              perm: 'content:moderate',
+            },
+            {
+              href: '/admin/newsletter',
+              label: 'Newsletter subscribers',
+              perm: 'content:moderate',
+            },
+            {
+              href: '/admin/payouts',
+              label: 'Payout approvals',
+              perm: 'finance:manage',
+            },
+            { href: '/admin/audit-log', label: 'Audit log', perm: 'audit:read' },
+            {
+              href: '/admin/blog',
+              label: 'Blog authoring',
+              perm: 'content:moderate',
+            },
+            {
+              href: '/admin/tips',
+              label: 'Daily tips',
+              perm: 'content:moderate',
+            },
+          ] as const
+        )
+          .filter((item) => role && roleHasPermission(role, item.perm))
+          .map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                padding: '0.55rem 0.95rem',
+                color: 'var(--accent)',
+                textDecoration: 'none',
+                fontSize: '0.95rem',
+              }}
+            >
+              {item.label} →
+            </Link>
+          ))}
       </nav>
 
       {error ? (
@@ -216,14 +252,18 @@ export default function AdminPage() {
             label="Settled"
             value={metrics.settledPicks.toLocaleString()}
           />
-          <MetricCard
-            label="Pending payouts"
-            value={metrics.pendingPayouts.toLocaleString()}
-          />
-          <MetricCard
-            label="Pending payout total"
-            value={formatCents(metrics.grossPendingPayoutCents)}
-          />
+          {role && roleHasPermission(role, 'finance:manage') ? (
+            <>
+              <MetricCard
+                label="Pending payouts"
+                value={metrics.pendingPayouts.toLocaleString()}
+              />
+              <MetricCard
+                label="Pending payout total"
+                value={formatCents(metrics.grossPendingPayoutCents)}
+              />
+            </>
+          ) : null}
           <MetricCard
             label="Articles"
             value={(
@@ -237,16 +277,19 @@ export default function AdminPage() {
         </div>
       )}
 
-      <section
-        style={{
-          marginTop: '2.5rem',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '1.5rem',
-        }}
-      >
-        <h2 style={{ marginTop: 0, fontSize: '1.2rem' }}>Operations</h2>
+      {role &&
+      (roleHasPermission(role, 'finance:manage') ||
+        roleHasPermission(role, 'data:ingest')) ? (
+        <section
+          style={{
+            marginTop: '2.5rem',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: '1.5rem',
+          }}
+        >
+          <h2 style={{ marginTop: 0, fontSize: '1.2rem' }}>Operations</h2>
         <p style={{ color: 'var(--muted)', marginTop: 0 }}>
           Run monthly tipster payouts and ingest fixtures from the sports
           provider.
@@ -258,6 +301,7 @@ export default function AdminPage() {
             gap: '1.5rem',
           }}
         >
+          {roleHasPermission(role, 'finance:manage') ? (
           <form onSubmit={runPayouts} style={{ display: 'grid', gap: '0.5rem' }}>
             <label style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
               Payout period (YYYY-MM)
@@ -290,7 +334,9 @@ export default function AdminPage() {
               {running ? 'Working…' : 'Run payouts'}
             </button>
           </form>
+          ) : null}
 
+          {roleHasPermission(role, 'data:ingest') ? (
           <form
             onSubmit={ingestEvents}
             style={{ display: 'grid', gap: '0.5rem' }}
@@ -325,11 +371,13 @@ export default function AdminPage() {
               {running ? 'Working…' : 'Ingest events'}
             </button>
           </form>
+          ) : null}
         </div>
         {opMsg ? (
           <p style={{ marginTop: '1rem', color: 'var(--muted)' }}>{opMsg}</p>
         ) : null}
-      </section>
+        </section>
+      ) : null}
 
       <section
         style={{
@@ -344,13 +392,33 @@ export default function AdminPage() {
         <p style={{ color: 'var(--muted)', marginTop: 0 }}>
           Generate platform reports in XLSX, CSV or PDF format.
         </p>
-        {[
-          { title: 'Users', path: '/api/exports/admin/users' },
-          { title: 'Audit log', path: '/api/exports/admin/audit-log' },
-          { title: 'Settlements', path: '/api/exports/admin/settlements' },
-          { title: 'Reports', path: '/api/exports/admin/reports' },
-          { title: 'Payouts', path: '/api/exports/admin/payouts' },
-        ].map((item) => (
+        {(
+          [
+            { title: 'Users', path: '/api/exports/admin/users', perm: 'user:manage' },
+            {
+              title: 'Audit log',
+              path: '/api/exports/admin/audit-log',
+              perm: 'audit:read',
+            },
+            {
+              title: 'Settlements',
+              path: '/api/exports/admin/settlements',
+              perm: 'finance:manage',
+            },
+            {
+              title: 'Reports',
+              path: '/api/exports/admin/reports',
+              perm: 'content:moderate',
+            },
+            {
+              title: 'Payouts',
+              path: '/api/exports/admin/payouts',
+              perm: 'finance:manage',
+            },
+          ] as const
+        )
+          .filter((item) => role && roleHasPermission(role, item.perm))
+          .map((item) => (
           <div
             key={item.path}
             style={{

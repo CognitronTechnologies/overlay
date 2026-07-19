@@ -16,6 +16,7 @@ import type { UpdateArticleDto } from './dto/update-article.dto';
 import {
   canAuthorArticles,
   canManageArticle,
+  isArticleModerator,
   resolveArticleStatus,
   type AuthoringActor,
 } from './authoring';
@@ -92,10 +93,10 @@ export class ArticlesService {
     return this.prisma.article.findMany({ orderBy: { updatedAt: 'desc' } });
   }
 
-  /** Articles the current author may manage: admins see all, tipsters see own. */
+  /** Articles the current author may manage: moderators (admin/staff) see all, tipsters see own. */
   listMine(actor: AuthoringActor) {
     return this.prisma.article.findMany({
-      where: actor.role === 'admin' ? {} : { authorId: actor.userId },
+      where: isArticleModerator(actor.role) ? {} : { authorId: actor.userId },
       orderBy: { updatedAt: 'desc' },
     });
   }

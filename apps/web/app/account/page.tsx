@@ -22,6 +22,7 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from '../../lib/push';
+import { roleHasPermission } from '@overlay/shared';
 import {
   DELETE_CONFIRM_PHRASE,
   isDeleteConfirmed,
@@ -273,7 +274,7 @@ export default function AccountPage() {
             </Link>
           </>
         ) : null}
-        {profile.role === 'admin' ? (
+        {roleHasPermission(profile.role, 'audit:read') ? (
           <Link href="/admin" className="btn btn--primary btn--sm">
             Admin dashboard
           </Link>
@@ -449,7 +450,7 @@ export default function AccountPage() {
       </div>
 
       {/* --- Subscriptions --- */}
-      {profile.role === 'admin' ? (
+      {roleHasPermission(profile.role, 'user:manage') ? (
         <p>
           <Link href="/admin/users" style={{ color: 'var(--accent)' }}>
             → Manage users

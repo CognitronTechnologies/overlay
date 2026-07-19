@@ -251,7 +251,7 @@ export default function DashboardPage() {
         router.replace('/login');
         return;
       }
-      if (profile.role === 'admin') {
+      if (profile.role === 'admin' || profile.role === 'staff') {
         router.replace('/admin');
         return;
       }

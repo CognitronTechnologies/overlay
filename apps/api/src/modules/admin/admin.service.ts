@@ -1,12 +1,15 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { canAssignRole, type Role } from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
 import { SettlementService } from '../../workers/settlement.service';
+import type { AuthUser } from '../../common/crypto';
 import {
   normalizeUsersQuery,
   paginateUsers,
@@ -150,11 +153,16 @@ export class AdminService {
   }
 
   async setUserRole(
-    actorId: string,
+    actor: AuthUser,
     userId: string,
-    role: 'user' | 'tipster' | 'admin',
+    role: Role,
     note?: string,
   ) {
+    if (!canAssignRole(actor.role, role)) {
+      throw new ForbiddenException(
+        `Role '${actor.role}' may not assign role '${role}'`,
+      );
+    }
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -173,7 +181,7 @@ export class AdminService {
       }
       await tx.auditLog.create({
         data: {
-          actor: `admin:${actorId}`,
+          actor: `admin:${actor.userId}`,
           action: 'user.role_changed',
           entity: 'User',
           entityId: userId,
