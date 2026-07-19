@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { AdminService } from './admin.service';
 import { ReportsService } from '../reports/reports.service';
 import { PayoutsService } from '../payouts/payouts.service';
@@ -61,6 +61,26 @@ class FeedbackStatusDto {
   status!: 'new' | 'reviewed' | 'archived';
 }
 
+class GraduationReviewDto {
+  @IsIn(['verify', 'reject'])
+  decision!: 'verify' | 'reject';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
+class SetGatingDto {
+  @IsBoolean()
+  enabled!: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
 /** All admin routes require an authenticated admin principal. */
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -110,6 +130,35 @@ export class AdminController {
   @Get('tipsters/:id/identity-document')
   identityDocument(@Param('id') id: string) {
     return this.admin.getTipsterIdentityDocument(id);
+  }
+
+  /** Rising-tipster graduation review queue (OB-153). */
+  @Get('graduations')
+  graduations() {
+    return this.admin.listGraduationReviews();
+  }
+
+  @Patch('tipsters/:id/graduation')
+  reviewGraduation(
+    @Param('id') id: string,
+    @Body() dto: GraduationReviewDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.admin.reviewTipsterGraduation(
+      actor.userId,
+      id,
+      dto.decision,
+      dto.note,
+    );
+  }
+
+  @Patch('tipsters/:id/gating')
+  setGating(
+    @Param('id') id: string,
+    @Body() dto: SetGatingDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.admin.setTipsterGating(actor.userId, id, dto.enabled, dto.note);
   }
 
   @Get('audit-log')
@@ -193,6 +242,12 @@ export class AdminController {
   @Get('newsletter')
   newsletterList(@Query('status') status?: string) {
     return this.newsletter.listForAdmin(status);
+  }
+
+  /** Manually compose + send the weekly "Picks of the Week" digest (OB-157). */
+  @Post('newsletter/digest')
+  sendNewsletterDigest() {
+    return this.newsletter.sendWeeklyDigest();
   }
 
   @Patch('feedback/:id')

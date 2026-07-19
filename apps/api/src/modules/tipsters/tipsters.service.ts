@@ -1,4 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  graduationBadge,
+  isLivePicksGated,
+  normalizeGraduationStatus,
+  stripHtml,
+} from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
 import {
   filterAndRankTipsters,
@@ -89,6 +95,31 @@ export class TipstersService {
     return filterAndRankTipsters(rows, query);
   }
 
+  /**
+   * Active tipster ids + last-modified timestamps for sitemap / ISR static
+   * generation (OB-131). Mirrors the articles sitemap: the web app pre-renders
+   * these public profiles at build time and revalidates them on a schedule.
+   * `updatedAt` reflects the tipster's stats refresh (the profile's most
+   * frequently changing input), falling back to account creation time.
+   */
+  async listPublicTipsterIds(): Promise<
+    { tipsterId: string; updatedAt: string }[]
+  > {
+    const tipsters = await this.prisma.tipster.findMany({
+      where: { status: 'active' },
+      select: {
+        userId: true,
+        createdAt: true,
+        stats: { select: { updatedAt: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return tipsters.map((t) => ({
+      tipsterId: t.userId,
+      updatedAt: (t.stats?.updatedAt ?? t.createdAt).toISOString(),
+    }));
+  }
+
   /** Public tipster profile: bio, verified stats, and recent settled picks. */
   async getProfile(tipsterId: string) {
     const tipster = await this.prisma.tipster.findUnique({
@@ -99,6 +130,14 @@ export class TipstersService {
       },
     });
     if (!tipster) throw new NotFoundException('Tipster not found');
+
+    const graduationStatus = normalizeGraduationStatus(
+      tipster.graduationStatus,
+    );
+    const liveGated = isLivePicksGated({
+      graduationStatus,
+      subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
+    });
 
     const [recentPicks, articlesPublished, subscriberCount, followerCount] =
       await Promise.all([
@@ -114,6 +153,7 @@ export class TipstersService {
             market: true,
             selection: true,
             oddsAtPick: true,
+            pickType: true,
             status: true,
             clv: true,
             note: true,
@@ -131,6 +171,26 @@ export class TipstersService {
         this.prisma.follow.count({ where: { tipsterId } }),
       ]);
 
+    // When live picks aren't gated (provisional "rising" tipster, or a verified
+    // tipster who hasn't enabled subscription gating), their open (pre-event)
+    // picks are free/public — surface them so anyone can see the current tips.
+    const openPicks = liveGated
+      ? []
+      : await this.prisma.pick.findMany({
+          where: { tipsterId, status: 'pending' },
+          orderBy: { lockedAt: 'desc' },
+          take: 20,
+          select: {
+            id: true,
+            market: true,
+            selection: true,
+            oddsAtPick: true,
+            status: true,
+            note: true,
+            lockedAt: true,
+          },
+        });
+
     return {
       tipsterId,
       displayName: tipster.displayName,
@@ -142,6 +202,10 @@ export class TipstersService {
       subscriptionPriceCents: tipster.subscriptionPriceCents,
       billingInterval: tipster.billingInterval,
       verified: tipster.identityVerified,
+      // Rising-tipster graduation (OB-153): the public badge plus whether live
+      // picks are currently gated behind a subscription.
+      graduation: graduationBadge(graduationStatus),
+      liveGated,
       socials: {
         x: tipster.socialX,
         instagram: tipster.socialInstagram,
@@ -152,14 +216,21 @@ export class TipstersService {
       followerCount,
       articlesPublished,
       recentPicks,
+      // Free open picks (empty when gated).
+      openPicks,
     };
   }
 
   /** Update the caller's own tipster profile. */
   updateProfile(tipsterId: string, data: UpdateTipsterInput) {
+    // Defense-in-depth: the bio is free-form, user-generated content shown on
+    // the public profile. Strip any HTML so no markup/script can ever be stored
+    // and later rendered (guards against stored XSS regardless of the client).
+    const sanitized: UpdateTipsterInput =
+      data.bio === undefined ? data : { ...data, bio: stripHtml(data.bio) };
     return this.prisma.tipster.update({
       where: { userId: tipsterId },
-      data,
+      data: sanitized,
     });
   }
 
