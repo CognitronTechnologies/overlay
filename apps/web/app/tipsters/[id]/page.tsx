@@ -6,10 +6,15 @@ import { countryLabel } from '@overlay/shared/countries';
 import Flag from '../../Flag';
 import FollowButton from '../../FollowButton';
 import Avatar from '../../Avatar';
-import { getTipster, SITE_URL } from '../../../lib/api';
+import { getTipster, listTipsterIds, tipsterStaticParams, SITE_URL } from '../../../lib/api';
 import TipsterTips from './TipsterTips';
 
 export const revalidate = 60;
+
+/** Pre-render active tipster profiles at build time for SEO/perf (OB-131). */
+export async function generateStaticParams() {
+  return tipsterStaticParams(await listTipsterIds());
+}
 
 export async function generateMetadata({
   params,
