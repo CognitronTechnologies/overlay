@@ -6,6 +6,7 @@ import {
   normalizeGraduationStatus,
   type SettledPick,
 } from '@overlay/shared';
+import { computeSegmentedStats, type SettledPick } from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
 import { resolveGraduationThreshold } from './graduation-config';
 
@@ -22,6 +23,9 @@ export class StatsService {
    * provisional (`rising`) tipster that crosses the configurable graduation
    * threshold is flagged `pending_review` so an admin can assign the verified
    * tag. This never gates picks or enables billing on its own.
+   * The headline figures cover PRE-MATCH picks only (the CLV-bearing book), so
+   * the leaderboard yield is never diluted by in-play results. Live/in-play
+   * picks are aggregated into the separate `live*` fields (OB-039).
    */
   async recomputeForTipster(tipsterId: string) {
     const picks = await this.prisma.pick.findMany({
@@ -32,16 +36,23 @@ export class StatsService {
       oddsAtPick: p.oddsAtPick,
       stakeUnits: p.stakeUnits,
       status: p.status,
+      pickType: p.pickType,
       closingOdds: p.closingOdds,
       settledAt: p.settledAt ? p.settledAt.getTime() : null,
     }));
 
-    const s = computeTipsterStats(input);
+    const { preMatch, live } = computeSegmentedStats(input);
+    const data = {
+      ...preMatch,
+      liveYield: live.yield,
+      liveWinRate: live.winRate,
+      liveSampleSize: live.sampleSize,
+    };
 
     const stats = await this.prisma.tipsterStats.upsert({
       where: { tipsterId },
-      create: { tipsterId, ...s },
-      update: s,
+      create: { tipsterId, ...data },
+      update: data,
     });
 
     await this.evaluateGraduationFor(tipsterId, s.winRate, s.sampleSize);

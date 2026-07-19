@@ -25,6 +25,15 @@ enum PickStatus {
   half_lost
 }
 
+/// Whether a pick was placed before kickoff (`pre_match`, the default and the
+/// only CLV-bearing type) or during the game (`live`, in-play). Live picks
+/// bypass the OB-038 kickoff cutoff but are excluded from CLV and aggregated
+/// separately so live and pre-match yield are never blended (OB-039).
+enum PickType {
+  pre_match
+  live
+}
+
 enum SubscriptionStatus {
   active
   past_due
@@ -194,6 +203,12 @@ model Event {
   status            String    @default("scheduled")
   closingCapturedAt DateTime?
 
+  // Latest known in-play score (OB-039). Populated from the provider score feed
+  // while the game is live; `null` until a score is observed. Used by the
+  // timing gate to reject live picks on markets the game has already decided.
+  liveHomeScore Int?
+  liveAwayScore Int?
+
   picks Pick[]
 
   @@index([startTime])
@@ -212,6 +227,9 @@ model Pick {
   selection  String
   oddsAtPick Float
   stakeUnits Float   @default(1)
+  // Pre-match (before kickoff, CLV-bearing) vs live/in-play (after kickoff,
+  // excluded from CLV, aggregated separately). Set at lock time; immutable.
+  pickType   PickType @default(pre_match)
   // Optional tipster-authored context / reasoning, captured at lock time.
   // Not part of the integrity hash — it's commentary, not the wager itself.
   note       String?
@@ -263,6 +281,10 @@ model Follow {
 }
 
 /// Materialized stats, recomputed by the stats worker after each settlement batch.
+/// Headline fields (roi/yield/clvAvg/winRate/sampleSize/…) cover PRE-MATCH picks
+/// only, so the CLV-ranked yield is never diluted by in-play results. The `live*`
+/// fields carry the separate in-play book so live and pre-match yield are shown
+/// distinctly, never blended (OB-039).
 model TipsterStats {
   tipsterId     String   @id
   tipster       Tipster  @relation(fields: [tipsterId], references: [userId])
@@ -273,6 +295,10 @@ model TipsterStats {
   sampleSize    Int      @default(0)
   maxDrawdown   Float    @default(0)
   currentStreak Int      @default(0)
+  // Live / in-play book, kept separate from the pre-match headline above.
+  liveYield      Float   @default(0)
+  liveWinRate    Float   @default(0)
+  liveSampleSize Int     @default(0)
   updatedAt     DateTime @updatedAt
 }
 
@@ -374,11 +400,24 @@ model Feedback {
 
 /// Marketing newsletter opt-ins from the public /newsletter page (OB-072).
 /// Email is unique so re-subscribing is idempotent. Status: subscribed | unsubscribed.
+/// Newsletter opt-ins (OB-072/OB-157). Double opt-in: a signup starts as
+/// `pending` with a confirm token and only becomes `subscribed` after the
+/// visitor clicks the confirmation link (consent recorded in `confirmedAt`).
+/// Every row carries an opaque `unsubscribeToken` powering one-click,
+/// CAN-SPAM/GDPR-compliant unsubscribe. `unsubscribed` rows are retained as a
+/// suppression record and receive nothing.
 model NewsletterSubscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  status    String   @default("subscribed")
-  createdAt DateTime @default(now())
+  id               String    @id @default(cuid())
+  email            String    @unique
+  status           String    @default("pending")
+  /// Set while `pending`; cleared once confirmed. Unique so a link maps to one row.
+  confirmToken     String?   @unique
+  /// Opaque per-subscriber token backing the one-click unsubscribe link.
+  unsubscribeToken String    @unique
+  /// When double opt-in was completed (consent timestamp), null until confirmed.
+  confirmedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([status])
 }

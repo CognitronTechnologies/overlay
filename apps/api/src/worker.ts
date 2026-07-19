@@ -7,6 +7,7 @@ import { SettlementService } from './workers/settlement.service';
 import { startSettlementQueue } from './workers/settlement.queue';
 import { METRICS_CONTENT_TYPE, metrics } from './common/metrics';
 import { NotificationsService } from './modules/notifications/notifications.service';
+import { NewsletterService } from './modules/newsletter/newsletter.service';
 import { EventsService } from './modules/events/events.service';
 
 /**
@@ -111,6 +112,29 @@ async function main() {
     }
   };
   setInterval(digestTick, digestMs);
+
+  // Weekly "Picks of the Week" newsletter (OB-157): composes the week's picks
+  // into one digest and emails every confirmed newsletter subscriber. Defaults
+  // to every 7 days; disable by setting NEWSLETTER_DIGEST_INTERVAL_MS=0.
+  const newsletter = app.get(NewsletterService);
+  const weeklyMs = Number(
+    process.env.NEWSLETTER_DIGEST_INTERVAL_MS ?? 7 * 24 * 60 * 60_000,
+  );
+  if (weeklyMs > 0) {
+    const weeklyTick = async () => {
+      try {
+        const { sent, picks } = await newsletter.sendWeeklyDigest(weeklyMs);
+        // eslint-disable-next-line no-console
+        console.log(
+          `newsletter digest cycle sent ${sent} email(s) for ${picks} pick(s)`,
+        );
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('newsletter digest cycle failed', err);
+      }
+    };
+    setInterval(weeklyTick, weeklyMs);
+  }
 }
 
 main();
