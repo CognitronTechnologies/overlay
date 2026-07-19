@@ -362,11 +362,24 @@ model Feedback {
 
 /// Marketing newsletter opt-ins from the public /newsletter page (OB-072).
 /// Email is unique so re-subscribing is idempotent. Status: subscribed | unsubscribed.
+/// Newsletter opt-ins (OB-072/OB-157). Double opt-in: a signup starts as
+/// `pending` with a confirm token and only becomes `subscribed` after the
+/// visitor clicks the confirmation link (consent recorded in `confirmedAt`).
+/// Every row carries an opaque `unsubscribeToken` powering one-click,
+/// CAN-SPAM/GDPR-compliant unsubscribe. `unsubscribed` rows are retained as a
+/// suppression record and receive nothing.
 model NewsletterSubscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  status    String   @default("subscribed")
-  createdAt DateTime @default(now())
+  id               String    @id @default(cuid())
+  email            String    @unique
+  status           String    @default("pending")
+  /// Set while `pending`; cleared once confirmed. Unique so a link maps to one row.
+  confirmToken     String?   @unique
+  /// Opaque per-subscriber token backing the one-click unsubscribe link.
+  unsubscribeToken String    @unique
+  /// When double opt-in was completed (consent timestamp), null until confirmed.
+  confirmedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([status])
 }
