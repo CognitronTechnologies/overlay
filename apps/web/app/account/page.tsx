@@ -10,6 +10,8 @@ import {
   updateUsername,
   changePassword,
   changeEmail,
+  exportMyData,
+  deleteMyAccount,
   getNotificationPreferences,
   updateNotificationPreferences,
   type FullProfile,
@@ -20,6 +22,11 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from '../../lib/push';
+import {
+  DELETE_CONFIRM_PHRASE,
+  isDeleteConfirmed,
+  validateNewPassword,
+} from '../../lib/account';
 import { formStyles } from '../formStyles';
 import AvatarPicker from '../AvatarPicker';
 
@@ -63,6 +70,13 @@ export default function AccountPage() {
   const [pushSupported, setPushSupported] = useState(true);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   useEffect(() => {
     setPushSupported(isPushSupported());
@@ -115,6 +129,11 @@ export default function AccountPage() {
   async function savePassword(e: React.FormEvent) {
     e.preventDefault();
     setPasswordMsg(null);
+    const invalid = validateNewPassword(newPassword);
+    if (invalid) {
+      setPasswordMsg(invalid);
+      return;
+    }
     try {
       await changePassword(newPassword);
       setPasswordMsg('Password updated ✓');
@@ -127,6 +146,41 @@ export default function AccountPage() {
   async function logout() {
     await signOut();
     router.push('/');
+  }
+
+  async function downloadData() {
+    setExportMsg(null);
+    setExportBusy(true);
+    try {
+      await exportMyData();
+      setExportMsg('Download started ✓');
+    } catch (err) {
+      setExportMsg(err instanceof Error ? err.message : 'Failed to export');
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  /**
+   * Irreversible: anonymizes the account's PII (append-only picks are
+   * preserved) then signs out. Gated behind a typed confirmation so it can't
+   * be triggered by an accidental click.
+   */
+  async function confirmDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setDeleteMsg(null);
+    if (!isDeleteConfirmed(deleteConfirm)) {
+      setDeleteMsg(`Type ${DELETE_CONFIRM_PHRASE} to confirm.`);
+      return;
+    }
+    setDeleteBusy(true);
+    try {
+      await deleteMyAccount();
+      router.replace('/');
+    } catch (err) {
+      setDeleteMsg(err instanceof Error ? err.message : 'Failed to delete');
+      setDeleteBusy(false);
+    }
   }
 
   async function savePrefs(patch: Partial<NotificationPreferences>) {
@@ -446,6 +500,118 @@ export default function AccountPage() {
       )}
         </>
       ) : null}
+
+      {/* --- Data & privacy (GDPR self-service) --- */}
+      <section style={{ ...cardStyle, marginTop: '2rem' }}>
+        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Data &amp; privacy</h2>
+        <p style={labelStyle}>
+          Download everything we hold about you, or permanently close your
+          account.
+        </p>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.6rem',
+            alignItems: 'center',
+            marginTop: '0.75rem',
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={downloadData}
+            disabled={exportBusy}
+          >
+            {exportBusy ? 'Preparing…' : 'Export my data'}
+          </button>
+          {exportMsg ? <span style={labelStyle}>{exportMsg}</span> : null}
+        </div>
+
+        <div style={dividerStyle} />
+
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--danger)' }}>
+          Delete account
+        </h3>
+        <p style={labelStyle}>
+          This anonymizes your personal data and signs you out. It can&apos;t be
+          undone.
+        </p>
+        {!deleteOpen ? (
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteMsg(null);
+              setDeleteConfirm('');
+              setDeleteOpen(true);
+            }}
+            style={{
+              marginTop: '0.5rem',
+              background: 'transparent',
+              color: 'var(--danger)',
+              border: '1px solid var(--danger)',
+              borderRadius: 8,
+              padding: '0.6rem 1.2rem',
+              cursor: 'pointer',
+            }}
+          >
+            Delete my account…
+          </button>
+        ) : (
+          <form
+            onSubmit={confirmDeleteAccount}
+            style={{ ...formStyles.form, gap: '0.5rem', marginTop: '0.5rem' }}
+          >
+            <label style={labelStyle} htmlFor="delete-confirm">
+              Type <strong>{DELETE_CONFIRM_PHRASE}</strong> to confirm.
+            </label>
+            <input
+              id="delete-confirm"
+              style={formStyles.input}
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder={DELETE_CONFIRM_PHRASE}
+              autoComplete="off"
+            />
+            {deleteMsg ? (
+              <p style={{ ...labelStyle, color: 'var(--danger)' }}>{deleteMsg}</p>
+            ) : null}
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button
+                type="submit"
+                disabled={deleteBusy || !isDeleteConfirmed(deleteConfirm)}
+                style={{
+                  background: 'var(--danger)',
+                  color: 'var(--on-accent)',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '0.6rem 1.2rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  opacity: deleteBusy || !isDeleteConfirmed(deleteConfirm) ? 0.6 : 1,
+                }}
+              >
+                {deleteBusy ? 'Deleting…' : 'Permanently delete'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleteBusy}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '0.6rem 1.2rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
 
       <button
         onClick={logout}
