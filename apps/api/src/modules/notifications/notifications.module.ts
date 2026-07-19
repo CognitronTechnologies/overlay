@@ -20,6 +20,6 @@ import { PrismaService } from '../../prisma.service';
         process.env.NOTIFIER_PROVIDER === 'resend' ? resend : mock,
     },
   ],
-  exports: [NotificationsService],
+  exports: [NotificationsService, NOTIFIER],
 })
 export class NotificationsModule {}
