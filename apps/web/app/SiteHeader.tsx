@@ -94,7 +94,7 @@ export default function SiteHeader() {
               Dashboard
             </Link>
           ) : null}
-          {role === 'admin' ? (
+          {role === 'admin' || role === 'staff' ? (
             <Link href="/admin" onClick={closeMenu}>
               Admin
             </Link>
