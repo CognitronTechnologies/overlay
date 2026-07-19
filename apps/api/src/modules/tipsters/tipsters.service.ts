@@ -95,6 +95,31 @@ export class TipstersService {
     return filterAndRankTipsters(rows, query);
   }
 
+  /**
+   * Active tipster ids + last-modified timestamps for sitemap / ISR static
+   * generation (OB-131). Mirrors the articles sitemap: the web app pre-renders
+   * these public profiles at build time and revalidates them on a schedule.
+   * `updatedAt` reflects the tipster's stats refresh (the profile's most
+   * frequently changing input), falling back to account creation time.
+   */
+  async listPublicTipsterIds(): Promise<
+    { tipsterId: string; updatedAt: string }[]
+  > {
+    const tipsters = await this.prisma.tipster.findMany({
+      where: { status: 'active' },
+      select: {
+        userId: true,
+        createdAt: true,
+        stats: { select: { updatedAt: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return tipsters.map((t) => ({
+      tipsterId: t.userId,
+      updatedAt: (t.stats?.updatedAt ?? t.createdAt).toISOString(),
+    }));
+  }
+
   /** Public tipster profile: bio, verified stats, and recent settled picks. */
   async getProfile(tipsterId: string) {
     const tipster = await this.prisma.tipster.findUnique({

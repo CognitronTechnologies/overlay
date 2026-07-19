@@ -178,6 +178,49 @@ export async function listArticleSlugs(): Promise<
   return (await getJson(`/api/articles/sitemap`)) ?? [];
 }
 
+/** One active tipster for sitemap / static-generation of public profiles. */
+export interface TipsterSitemapEntry {
+  tipsterId: string;
+  updatedAt: string;
+}
+
+/**
+ * Active tipster ids + timestamps used to statically generate (ISR) public
+ * profile pages and to build the sitemap (OB-131). Cached for an hour — the
+ * roster changes slowly and individual profiles revalidate on their own.
+ */
+export async function listTipsterIds(): Promise<TipsterSitemapEntry[]> {
+  return (await getJson<TipsterSitemapEntry[]>(`/api/tipsters/sitemap`, 3600)) ?? [];
+}
+
+/**
+ * Upper bound on how many tipster profiles are pre-rendered at build time. The
+ * rest are generated on-demand and cached (ISR), so the build stays bounded no
+ * matter how large the roster grows.
+ */
+export const MAX_PRERENDERED_TIPSTERS = 200;
+
+/**
+ * Build the `generateStaticParams` list for tipster profiles from a set of
+ * sitemap entries: drops blank/duplicate ids and caps the count so the build
+ * never fans out to an unbounded number of pages.
+ */
+export function tipsterStaticParams(
+  entries: { tipsterId: string }[],
+  limit: number = MAX_PRERENDERED_TIPSTERS,
+): { id: string }[] {
+  const seen = new Set<string>();
+  const params: { id: string }[] = [];
+  for (const entry of entries) {
+    const id = entry.tipsterId?.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    params.push({ id });
+    if (params.length >= limit) break;
+  }
+  return params;
+}
+
 /**
  * A free "bet of the day" from the public Daily Tips hub (OB-150). Admin-curated
  * and ungated — not linked to any tipster. `date` is the calendar day
