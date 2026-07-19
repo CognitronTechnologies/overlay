@@ -1,12 +1,13 @@
 'use client';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Role } from '@overlay/shared/rbac';
 import { API_URL } from './api';
 
 /** Resolved local profile returned by GET /api/auth/me. */
 export interface Profile {
   userId: string;
-  role: 'user' | 'tipster' | 'admin';
+  role: Role;
   tipsterId?: string;
 }
 
@@ -107,7 +108,7 @@ export interface FullProfile {
   email: string;
   username: string | null;
   avatarUrl: string | null;
-  role: 'user' | 'tipster' | 'admin';
+  role: Role;
   createdAt: string;
   tipsterId: string | null;
   subscriptionCount: number;
