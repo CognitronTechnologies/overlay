@@ -56,6 +56,7 @@ export class AdminService {
       pendingPayouts,
       publishedArticles,
       draftArticles,
+      graduationReviews,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.tipster.count(),
@@ -65,6 +66,10 @@ export class AdminService {
       this.prisma.payout.count({ where: { status: 'pending' } }),
       this.prisma.article.count({ where: { status: 'published' } }),
       this.prisma.article.count({ where: { status: 'draft' } }),
+      // Rising tipsters who have met the graduation threshold and await review.
+      this.prisma.tipster.count({
+        where: { graduationStatus: 'pending_review' },
+      }),
     ]);
 
     const grossPendingPayoutCents = await this.prisma.payout.aggregate({
@@ -82,6 +87,7 @@ export class AdminService {
       grossPendingPayoutCents: grossPendingPayoutCents._sum.amountCents ?? 0,
       publishedArticles,
       draftArticles,
+      graduationReviews,
     };
   }
 
