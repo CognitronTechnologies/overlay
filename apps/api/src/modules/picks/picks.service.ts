@@ -15,6 +15,9 @@ import {
   type SettledPick,
 } from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
+import { Inject } from '@nestjs/common';
+import type { EntityCache } from '../../common/cache/entity-cache';
+import { TIPSTER_PROFILE_CACHE } from '../../common/cache/cache.module';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { canPublishPicks } from '../tipsters/onboarding';
@@ -28,6 +31,7 @@ export class PicksService {
     private readonly prisma: PrismaService,
     private readonly subs: SubscriptionsService,
     private readonly notifications: NotificationsService,
+    @Inject(TIPSTER_PROFILE_CACHE) private readonly profileCache: EntityCache,
   ) {}
 
   private get pepper(): string {
@@ -116,6 +120,10 @@ export class PicksService {
       selection: pick.selection,
       oddsAtPick: pick.oddsAtPick,
     });
+
+    // OB-130: a newly locked pick shows up in the tipster's public profile
+    // (open/free picks), so retire that profile's cached copy.
+    await this.profileCache.invalidate(tipsterId);
 
     return pick;
   }
