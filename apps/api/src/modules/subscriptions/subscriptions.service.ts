@@ -258,7 +258,6 @@ export class SubscriptionsService {
   async listForUserView(userId: string) {
     const subs = await this.prisma.subscription.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
       include: {
         tipster: {
           select: {
