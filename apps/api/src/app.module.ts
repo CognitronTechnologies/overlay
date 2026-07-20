@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from './prisma.service';
 import { globalThrottleRule } from './common/throttling';
+import { CacheModule } from './common/cache/cache.module';
 import { CorrelationMiddleware } from './common/logging/correlation.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
@@ -42,6 +43,8 @@ import { SettlementModule } from './workers/settlement.module';
     // Sensitive routes (auth, pick submission, checkout, payout runs) tighten
     // this further via @Throttle overrides. All limits are env-configurable.
     ThrottlerModule.forRoot([globalThrottleRule()]),
+    // OB-130: process-wide Redis caching layer for hot reads (global).
+    CacheModule,
     AuthModule,
     HealthModule,
     MetricsModule,
