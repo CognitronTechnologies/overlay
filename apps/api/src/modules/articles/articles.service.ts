@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,6 +12,11 @@ import {
   readingTimeMinutes,
 } from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
+import {
+  EntityCache,
+  readThroughCache,
+} from '../../common/cache/entity-cache';
+import { ARTICLE_LIST_CACHE } from '../../common/cache/cache.module';
 import type { CreateArticleDto } from './dto/create-article.dto';
 import type { UpdateArticleDto } from './dto/update-article.dto';
 import {
@@ -23,7 +29,10 @@ import {
 
 @Injectable()
 export class ArticlesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(ARTICLE_LIST_CACHE) private readonly listCache: EntityCache,
+  ) {}
 
   /** Public list: only published articles, newest first, optional tag/category filter. */
   async listPublished(
@@ -35,26 +44,32 @@ export class ArticlesService {
     } = {},
   ) {
     const take = Math.min(opts.take ?? 20, 50);
-    return this.prisma.article.findMany({
-      where: {
-        status: 'published',
-        ...(opts.tag ? { tags: { has: opts.tag } } : {}),
-        ...(opts.category ? { category: opts.category } : {}),
-      },
-      orderBy: { publishedAt: 'desc' },
-      take,
-      skip: opts.skip ?? 0,
-      select: {
-        slug: true,
-        title: true,
-        excerpt: true,
-        coverImage: true,
-        tags: true,
-        category: true,
-        readingMinutes: true,
-        publishedAt: true,
-      },
-    });
+    const skip = opts.skip ?? 0;
+    // OB-130: hot, public SEO read served through the Redis cache. Keyed by the
+    // normalized query shape; invalidated globally on any article write below.
+    const key = `published:t=${opts.tag ?? ''}:c=${opts.category ?? ''}:k=${take}:s=${skip}`;
+    return readThroughCache(this.listCache, key, () =>
+      this.prisma.article.findMany({
+        where: {
+          status: 'published',
+          ...(opts.tag ? { tags: { has: opts.tag } } : {}),
+          ...(opts.category ? { category: opts.category } : {}),
+        },
+        orderBy: { publishedAt: 'desc' },
+        take,
+        skip,
+        select: {
+          slug: true,
+          title: true,
+          excerpt: true,
+          coverImage: true,
+          tags: true,
+          category: true,
+          readingMinutes: true,
+          publishedAt: true,
+        },
+      }),
+    );
   }
 
   /** Public single article by slug (published only). */
@@ -68,13 +83,17 @@ export class ArticlesService {
 
   /** All distinct tags across published articles (for topic nav / sitemap). */
   async listTags(): Promise<string[]> {
-    const rows = await this.prisma.article.findMany({
-      where: { status: 'published' },
-      select: { tags: true },
+    // OB-130: served through the same cache as the article lists; any article
+    // write invalidates the whole namespace, so tags stay in sync.
+    return readThroughCache(this.listCache, 'tags', async () => {
+      const rows = await this.prisma.article.findMany({
+        where: { status: 'published' },
+        select: { tags: true },
+      });
+      const set = new Set<string>();
+      for (const r of rows) for (const t of r.tags) set.add(t);
+      return [...set].sort();
     });
-    const set = new Set<string>();
-    for (const r of rows) for (const t of r.tags) set.add(t);
-    return [...set].sort();
   }
 
   /** Slugs + timestamps for sitemap generation. */
@@ -132,7 +151,7 @@ export class ArticlesService {
     // Tipster posts require admin review: `resolveArticleStatus` downgrades a
     // tipster's `published` request to `pending` (admins publish directly).
     const status = resolveArticleStatus(actor, dto.status ?? 'draft');
-    return this.prisma.article.create({
+    const created = await this.prisma.article.create({
       data: {
         slug,
         title: dto.title,
@@ -150,6 +169,9 @@ export class ArticlesService {
         publishedAt: status === 'published' ? new Date() : null,
       },
     });
+    // OB-130: a new article may appear in the public lists — retire the cache.
+    await this.listCache.invalidate();
+    return created;
   }
 
   async update(id: string, dto: UpdateArticleDto, actor: AuthoringActor) {
@@ -165,7 +187,7 @@ export class ArticlesService {
     const wasPublished = existing.status === 'published';
     const nowPublished = nextStatus === 'published';
 
-    return this.prisma.article.update({
+    const updated = await this.prisma.article.update({
       where: { id },
       data: {
         title: dto.title ?? existing.title,
@@ -187,6 +209,10 @@ export class ArticlesService {
           nowPublished && !wasPublished ? new Date() : existing.publishedAt,
       },
     });
+    // OB-130: an edit can change a published article's fields, its published
+    // state, or its tags — retire the public list cache.
+    await this.listCache.invalidate();
+    return updated;
   }
 
   async remove(id: string, actor: AuthoringActor) {
@@ -196,6 +222,8 @@ export class ArticlesService {
       throw new ForbiddenException('Not allowed to delete this article');
     }
     await this.prisma.article.delete({ where: { id } });
+    // OB-130: a removed article must drop out of the public lists.
+    await this.listCache.invalidate();
     return { deleted: true };
   }
 }

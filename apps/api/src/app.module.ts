@@ -1,8 +1,14 @@
-import { Module } from '@nestjs/common';
+import {
+  Module,
+  type MiddlewareConsumer,
+  type NestModule,
+} from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from './prisma.service';
 import { globalThrottleRule } from './common/throttling';
+import { CacheModule } from './common/cache/cache.module';
+import { CorrelationMiddleware } from './common/logging/correlation.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
@@ -37,6 +43,8 @@ import { SettlementModule } from './workers/settlement.module';
     // Sensitive routes (auth, pick submission, checkout, payout runs) tighten
     // this further via @Throttle overrides. All limits are env-configurable.
     ThrottlerModule.forRoot([globalThrottleRule()]),
+    // OB-130: process-wide Redis caching layer for hot reads (global).
+    CacheModule,
     AuthModule,
     HealthModule,
     MetricsModule,
@@ -67,4 +75,10 @@ import { SettlementModule } from './workers/settlement.module';
   ],
   exports: [PrismaService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // Tag every request with a correlation id (OB-091) before any other handler
+  // runs, so all downstream log lines share the request's `x-request-id`.
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(CorrelationMiddleware).forRoutes('*');
+  }
+}

@@ -370,9 +370,9 @@
 **Category:** Stats · **Priority:** P1
 **Description:** Cache leaderboard (Redis) and invalidate on settlement so it "updates within minutes" per exit criteria, without full recompute per request.
 **Acceptance criteria:**
-- [ ] Cached reads; cache invalidated after stats recompute.
+- [x] Cached reads; cache invalidated after stats recompute.
 **Tests:**
-- [ ] Integration: settlement invalidates cache; stale data not served.
+- [x] Integration: settlement invalidates cache; stale data not served.
 
 ### OB-056 — Configurable minimum sample & confidence indicators
 **Category:** Stats · **Priority:** P2
@@ -593,11 +593,17 @@
 
 ### OB-086 — Dependency & container vulnerability scanning
 **Category:** Security · **Priority:** P1
-**Description:** Add `npm audit`/Dependabot + image scanning to CI; triage the current 22 advisories.
+**Description:** Add `npm audit`/Dependabot + image scanning to CI; triage the current advisories.
 **Acceptance criteria:**
-- [ ] CI fails on new high/critical; existing advisories triaged.
+- [x] CI fails on new high/critical; existing advisories triaged.
 **Tests:**
-- [ ] CI job present and gating.
+- [x] CI job present and gating.
+
+**Implementation:** Dependabot (`npm` + `github-actions` + `docker`) in
+`.github/dependabot.yml`; a `npm audit` gate (`scripts/audit-ci.mjs`, run as the
+CI `audit` job) that fails on new high/critical advisories while triaged ones are
+allow-listed in `.audit-allowlist.json`; and a Trivy container `image-scan` CI
+job. See `docs/SECURITY-SCANNING.md`.
 
 ---
 
@@ -647,9 +653,9 @@
 **Category:** Ops · **Priority:** P1
 **Description:** Runbooks for common incidents (settlement stuck, webhook backlog, vendor outage, payout failure).
 **Acceptance criteria:**
-- [ ] Runbooks published; escalation path defined.
+- [x] Runbooks published; escalation path defined. — see [RUNBOOK-ONCALL.md](./RUNBOOK-ONCALL.md) (settlement stuck, webhook backlog, vendor outage, payout failure) + [OBSERVABILITY.md](./OBSERVABILITY.md) alert routing.
 **Tests:**
-- [ ] N/A (doc review checklist).
+- [x] N/A (doc review checklist). — see the checklist in [RUNBOOK-ONCALL.md](./RUNBOOK-ONCALL.md#doc-review-checklist-acceptance-criteria).
 
 ---
 

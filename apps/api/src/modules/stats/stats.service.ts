@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   computeSegmentedStats,
   evaluateGraduation,
@@ -8,10 +8,20 @@ import {
 } from '@overlay/shared';
 import { PrismaService } from '../../prisma.service';
 import { resolveGraduationThreshold } from './graduation-config';
+import type { LeaderboardCache } from './leaderboard-cache';
+import { LEADERBOARD_CACHE } from './leaderboard-cache.redis';
+import type { EntityCache } from '../../common/cache/entity-cache';
+import { TIPSTER_PROFILE_CACHE } from '../../common/cache/cache.module';
+import { readLeaderboardCached } from './leaderboard-query';
 
 @Injectable()
 export class StatsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(LEADERBOARD_CACHE) private readonly cache: LeaderboardCache,
+    @Inject(TIPSTER_PROFILE_CACHE)
+    private readonly profileCache: EntityCache,
+  ) {}
 
   /**
    * Recompute a tipster's materialized stats from their settled picks using the
@@ -55,6 +65,15 @@ export class StatsService {
     });
 
     await this.evaluateGraduationFor(tipsterId, stats.winRate, stats.sampleSize);
+
+    // OB-055: the recompute changed the materialized figures that rank the
+    // board, so retire the cached leaderboard. The next read recomputes fresh
+    // rows — this is how settlement "updates within minutes".
+    await this.cache.invalidate();
+
+    // OB-130: the same figures appear on the tipster's public profile, so retire
+    // its cached copy too (scoped to this tipster).
+    await this.profileCache.invalidate(tipsterId);
 
     return stats;
   }
@@ -107,6 +126,22 @@ export class StatsService {
    * tipster's country so the UI can show a flag next to their name.
    */
   async leaderboard(minSampleSize = 10, limit = 100) {
+    // OB-055: serve from the Redis cache when warm (read-through). The cache is
+    // best-effort — a miss (or an unreachable Redis) falls through to the DB
+    // aggregate below and repopulates it.
+    return readLeaderboardCached<LeaderboardRow>(
+      this.cache,
+      minSampleSize,
+      limit,
+      () => this.computeLeaderboard(minSampleSize, limit),
+    );
+  }
+
+  /** The uncached DB aggregate behind the leaderboard. */
+  private async computeLeaderboard(
+    minSampleSize: number,
+    limit: number,
+  ): Promise<LeaderboardRow[]> {
     const rows = await this.prisma.tipsterStats.findMany({
       where: {
         sampleSize: { gte: minSampleSize },
@@ -134,3 +169,10 @@ export class StatsService {
     }));
   }
 }
+
+/** A single, UI-ready leaderboard row (materialized stats + public identity). */
+type LeaderboardRow = Record<string, unknown> & {
+  country: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+};
