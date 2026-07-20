@@ -85,6 +85,7 @@ export default function AccountPage() {
   useEffect(() => {
     (async () => {
       const p = await getFullProfile();
+      console.log("API profile", p);
       if (!p) {
         router.replace('/login');
         return;
@@ -271,6 +272,13 @@ export default function AccountPage() {
               className="btn btn--secondary btn--sm"
             >
               My subscriptions
+            </Link>
+
+            <Link
+              href="/account/blog"
+              className="btn btn--secondary btn--sm"
+            >
+              My blog
             </Link>
           </>
         ) : null}
