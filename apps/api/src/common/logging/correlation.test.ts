@@ -46,8 +46,8 @@ test('nested scopes shadow and restore the parent id', () => {
   });
 });
 
-test('resolveCorrelationId trusts a supplied non-empty header value', () => {
-  assert.equal(resolveCorrelationId('caller-id'), 'caller-id');
+test('resolveCorrelationId trusts a supplied safe, bounded token', () => {
+  assert.equal(resolveCorrelationId('caller-id_1.2'), 'caller-id_1.2');
   assert.equal(resolveCorrelationId('  spaced  '), 'spaced');
   assert.equal(resolveCorrelationId(['first', 'second']), 'first');
 });
@@ -58,6 +58,19 @@ test('resolveCorrelationId mints a UUID for absent/blank ids', () => {
   assert.match(resolveCorrelationId(''), uuidRe);
   assert.match(resolveCorrelationId('   '), uuidRe);
   assert.match(resolveCorrelationId([]), uuidRe);
+});
+
+test('resolveCorrelationId rejects unsafe or oversized ids and mints a UUID', () => {
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  // CR-LF / header-injection attempt.
+  assert.match(resolveCorrelationId('abc\r\nSet-Cookie: x=1'), uuidRe);
+  // Spaces and other punctuation are not in the safe charset.
+  assert.match(resolveCorrelationId('has spaces'), uuidRe);
+  assert.match(resolveCorrelationId('a/b?c'), uuidRe);
+  // Over the length bound.
+  assert.match(resolveCorrelationId('x'.repeat(129)), uuidRe);
+  // At the length bound is fine.
+  assert.equal(resolveCorrelationId('y'.repeat(128)), 'y'.repeat(128));
 });
 
 test('newCorrelationId returns distinct UUIDs', () => {

@@ -53,16 +53,34 @@ export function getCorrelationId(): string | undefined {
 
 /**
  * Normalise a caller-supplied id (e.g. from the `x-request-id` header) into a
- * usable correlation id, generating a fresh UUID when absent or blank. Header
- * values may arrive as `string | string[] | undefined`; only a non-empty string
- * is trusted, otherwise a new id is minted.
+ * usable correlation id, generating a fresh UUID when absent, blank, or
+ * untrusted. Header values may arrive as `string | string[] | undefined`; a
+ * supplied value is only reused when it is a single, reasonably-sized token of
+ * safe characters (letters, digits, `-`, `_`, `.`). This bounds the id length
+ * and rejects control characters / CR-LF so the value is safe to echo into a
+ * response header and into structured logs; anything else yields a new UUID.
  */
 export function resolveCorrelationId(
   supplied: string | string[] | undefined,
 ): string {
   const value = Array.isArray(supplied) ? supplied[0] : supplied;
   const trimmed = typeof value === 'string' ? value.trim() : '';
-  return trimmed.length > 0 ? trimmed : randomUUID();
+  return isSafeCorrelationId(trimmed) ? trimmed : randomUUID();
+}
+
+/** Max accepted length for a caller-supplied correlation id. */
+export const MAX_CORRELATION_ID_LENGTH = 128;
+
+/** Safe token charset for a correlation id: letters, digits, `-`, `_`, `.`. */
+const SAFE_CORRELATION_ID = /^[A-Za-z0-9._-]+$/;
+
+/** True when a supplied id is a non-empty, bounded, safe-charset token. */
+export function isSafeCorrelationId(value: string): boolean {
+  return (
+    value.length > 0 &&
+    value.length <= MAX_CORRELATION_ID_LENGTH &&
+    SAFE_CORRELATION_ID.test(value)
+  );
 }
 
 /** Mint a fresh correlation id (used for background jobs with no inbound id). */
