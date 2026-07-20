@@ -126,7 +126,7 @@ jobs:
       # Unfixed advisories are reported but don't block; triaged CVEs live in
       # .trivyignore.
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: overlay-api:${{ github.sha }}
           format: table
