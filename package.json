@@ -30,7 +30,8 @@
     "node": ">=22"
   },
   "overrides": {
-    "ioredis": "5.11.1"
+    "ioredis": "5.11.1",
+    "multer": "2.2.0"
   },
   "devDependencies": {
     "@bradygaster/squad-cli": "^0.11.0",
