@@ -213,6 +213,11 @@ model Event {
   picks Pick[]
 
   @@index([startTime])
+  // OB-120: the settlement worker's closing-odds capture scans events at/after
+  // kickoff that haven't been captured yet (closingCapturedAt IS NULL). Leading
+  // with closingCapturedAt lets Postgres seek the small uncaptured set instead of
+  // sequentially scanning every past event.
+  @@index([closingCapturedAt, startTime])
 }
 
 /// Append-only. Core fields are immutable after `lockedAt`.
@@ -249,6 +254,10 @@ model Pick {
 
   @@index([tipsterId, status])
   @@index([eventId, status])
+  // OB-120: profile track record + subscriber feed list picks by tipster newest
+  // first (ORDER BY lockedAt DESC). This composite lets Postgres return rows in
+  // lockedAt order per tipster without a separate sort step.
+  @@index([tipsterId, lockedAt])
 }
 
 model Subscription {
@@ -301,6 +310,11 @@ model TipsterStats {
   liveWinRate    Float   @default(0)
   liveSampleSize Int     @default(0)
   updatedAt     DateTime @updatedAt
+
+  // OB-120: the public leaderboard ranks by yield then CLV (ORDER BY yield DESC,
+  // clvAvg DESC). This composite lets Postgres return the top tipsters via an
+  // ordered index scan instead of sorting the whole stats table.
+  @@index([yield, clvAvg])
 }
 
 model Payout {
