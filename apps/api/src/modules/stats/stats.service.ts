@@ -10,6 +10,8 @@ import { PrismaService } from '../../prisma.service';
 import { resolveGraduationThreshold } from './graduation-config';
 import type { LeaderboardCache } from './leaderboard-cache';
 import { LEADERBOARD_CACHE } from './leaderboard-cache.redis';
+import type { EntityCache } from '../../common/cache/entity-cache';
+import { TIPSTER_PROFILE_CACHE } from '../../common/cache/cache.module';
 import { readLeaderboardCached } from './leaderboard-query';
 
 @Injectable()
@@ -17,6 +19,8 @@ export class StatsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(LEADERBOARD_CACHE) private readonly cache: LeaderboardCache,
+    @Inject(TIPSTER_PROFILE_CACHE)
+    private readonly profileCache: EntityCache,
   ) {}
 
   /**
@@ -66,6 +70,10 @@ export class StatsService {
     // board, so retire the cached leaderboard. The next read recomputes fresh
     // rows — this is how settlement "updates within minutes".
     await this.cache.invalidate();
+
+    // OB-130: the same figures appear on the tipster's public profile, so retire
+    // its cached copy too (scoped to this tipster).
+    await this.profileCache.invalidate(tipsterId);
 
     return stats;
   }
