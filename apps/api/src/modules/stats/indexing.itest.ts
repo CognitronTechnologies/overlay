@@ -29,6 +29,7 @@ const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
 const tag = randomUUID().slice(0, 8);
 const tipsterA = `it_idx_a_${tag}`;
 const tipsterB = `it_idx_b_${tag}`;
+const eventTag = `it_idx_evt_${tag}`;
 let eventId = '';
 
 /**
@@ -66,7 +67,7 @@ before(async () => {
   }
   const event = await prisma.event.create({
     data: {
-      vendorEventId: `it_idx_evt_${tag}`,
+      vendorEventId: eventTag,
       sport: 'soccer',
       home: 'Home',
       away: 'Away',
@@ -75,6 +76,26 @@ before(async () => {
     },
   });
   eventId = event.id;
+  // Settlement capture scans events at/after kickoff that are not yet captured
+  // (closingCapturedAt IS NULL). In production the overwhelming majority of past
+  // events are already captured, so a plain startTime scan reads (and filters
+  // out) most of the table. Seed that realistic distribution — many captured
+  // past events plus a handful of uncaptured ones — so ANALYZE reflects that
+  // `closingCapturedAt IS NULL` is highly selective and the planner proves the
+  // (closingCapturedAt, startTime) index actually serves the query.
+  const capturedEvents = Array.from({ length: 200 }, (_, n) => {
+    const start = new Date(Date.now() - (n + 2) * 60 * 60 * 1000);
+    return {
+      vendorEventId: `${eventTag}_cap_${n}`,
+      sport: 'soccer',
+      home: 'Home',
+      away: 'Away',
+      startTime: start,
+      status: 'settled',
+      closingCapturedAt: new Date(start.getTime() + 2 * 60 * 60 * 1000),
+    };
+  });
+  await prisma.event.createMany({ data: capturedEvents });
   const now = Date.now();
   const picks = Array.from({ length: 40 }, (_, n) => ({
     tipsterId: n % 2 === 0 ? tipsterA : tipsterB,
@@ -94,7 +115,7 @@ before(async () => {
 
 after(async () => {
   await prisma.pick.deleteMany({ where: { tipsterId: { in: [tipsterA, tipsterB] } } });
-  await prisma.event.deleteMany({ where: { id: eventId } });
+  await prisma.event.deleteMany({ where: { vendorEventId: { startsWith: eventTag } } });
   await prisma.tipsterStats.deleteMany({ where: { tipsterId: { in: [tipsterA, tipsterB] } } });
   await prisma.tipster.deleteMany({ where: { userId: { in: [tipsterA, tipsterB] } } });
   await prisma.user.deleteMany({ where: { id: { in: [tipsterA, tipsterB] } } });
