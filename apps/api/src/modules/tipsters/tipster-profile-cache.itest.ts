@@ -24,11 +24,9 @@ import {
 
 // Default to the local docker-compose connection when DATABASE_URL is unset.
 const PG = 'overlay';
-const DB_URL =
-  process.env.DATABASE_URL ??
-  `postgresql://${PG}:${PG}@localhost:5432/${PG}?schema=public`;
+process.env.DATABASE_URL ??= `postgresql://${PG}:${PG}@localhost:5432/${PG}?schema=public`;
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 
 /** In-memory stand-in for Redis. */
 class InMemoryStore implements CacheStore {

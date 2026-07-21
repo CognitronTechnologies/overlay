@@ -16,10 +16,11 @@ import { evaluateReadiness } from './health.checks.ts';
 const UNREACHABLE_DB_URL =
   '******192.0.2.1:5432/overlay?schema=public&connect_timeout=1';
 
+// Override DATABASE_URL so PrismaClient (Prisma 7) uses the unreachable address.
+process.env.DATABASE_URL = UNREACHABLE_DB_URL;
+
 test('readiness degrades when the database is down', async () => {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: UNREACHABLE_DB_URL } },
-  });
+  const prisma = new PrismaClient();
 
   try {
     const result = await evaluateReadiness(

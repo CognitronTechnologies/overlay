@@ -18,11 +18,9 @@ import {
 import { computeNetFromGross } from '../payouts/payouts.math.ts';
 import type { SubscriptionEvent } from '../../integrations/payments/payment-provider.interface.ts';
 
-const DB_URL =
-  process.env.DATABASE_URL ??
-  'postgresql://overlay:overlay@localhost:5432/overlay?schema=public';
+process.env.DATABASE_URL ??= 'postgresql://overlay:overlay@localhost:5432/overlay?schema=public';
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 
 // Unique per run so parallel/re-runs never collide, and cleanup is scoped.
 // A tipster's primary key IS its tipsterId (Tipster.userId), so we create a

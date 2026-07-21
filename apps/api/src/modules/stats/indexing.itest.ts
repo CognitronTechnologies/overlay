@@ -20,11 +20,9 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 
-const DB_URL =
-  process.env.DATABASE_URL ??
-  `postgresql://${'overlay'}:${'overlay'}@localhost:5432/overlay?schema=public`;
+process.env.DATABASE_URL ??= `postgresql://${'overlay'}:${'overlay'}@localhost:5432/overlay?schema=public`;
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 
 const tag = randomUUID().slice(0, 8);
 const tipsterA = `it_idx_a_${tag}`;

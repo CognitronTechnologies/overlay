@@ -29,11 +29,9 @@ import type {
   PushMessage,
 } from '../notifications/notifier.interface.ts';
 
-const DB_URL =
-  process.env.DATABASE_URL ??
-  '******localhost:5432/overlay?schema=public';
+process.env.DATABASE_URL ??= '******localhost:5432/overlay?schema=public';
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 const BASE_URL = 'http://localhost:4000';
 
 /** Provider-mocked Notifier that records every call. */

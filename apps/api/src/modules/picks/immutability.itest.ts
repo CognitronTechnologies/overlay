@@ -17,11 +17,9 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { generateNonce, hashPick, type PickPayload } from '@overlay/shared';
 
-const DB_URL =
-  process.env.DATABASE_URL ??
-  '******localhost:5432/overlay?schema=public';
+process.env.DATABASE_URL ??= '******localhost:5432/overlay?schema=public';
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 
 const tag = randomUUID().slice(0, 8);
 const tipsterId = `it_immut_${tag}`;

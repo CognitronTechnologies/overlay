@@ -26,11 +26,9 @@ import {
 } from './web-push.ts';
 import type { Notifier, PushMessage } from './notifier.interface.ts';
 
-const DB_URL =
-  process.env.DATABASE_URL ??
-  '******localhost:5432/overlay?schema=public';
+process.env.DATABASE_URL ??= '******localhost:5432/overlay?schema=public';
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 
 const tag = randomUUID().slice(0, 8);
 const tipsterId = `it_push_tipster_${tag}`;

@@ -22,11 +22,9 @@ import { computeSegmentedStats, type SettledPick } from '@overlay/shared';
 import { LeaderboardCache, type CacheStore } from './leaderboard-cache.ts';
 import { readLeaderboardCached } from './leaderboard-query.ts';
 
-const DB_URL =
-  process.env.DATABASE_URL ??
-  'postgresql://overlay:overlay@localhost:5432/overlay?schema=public';
+process.env.DATABASE_URL ??= 'postgresql://overlay:overlay@localhost:5432/overlay?schema=public';
 
-const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
+const prisma = new PrismaClient();
 
 /** In-memory stand-in for Redis. */
 class InMemoryStore implements CacheStore {
