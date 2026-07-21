@@ -9,7 +9,7 @@
 # See docs/PROD-READINESS-BACKLOG.md OB-100.
 
 # ---- Builder ----------------------------------------------------------------
-FROM node:22-bookworm-slim AS builder
+FROM node:26-bookworm-slim AS builder
 WORKDIR /app
 
 # Prisma engines need openssl at generate/runtime.
@@ -42,13 +42,15 @@ RUN npm run prisma:generate \
 RUN npm prune --omit=dev
 
 # ---- Runtime ----------------------------------------------------------------
-FROM node:22-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && npm install -g npm@latest \
+ && npm cache clean --force
 
 # Bring over installed deps (incl. generated Prisma client + workspace symlink)
 # and the compiled output. Source TS is intentionally left out of the image.
