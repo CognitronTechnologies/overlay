@@ -80,20 +80,21 @@ function pageHref(base: MarketplaceParams, page: number): string {
 export default async function TipstersPage({
   searchParams,
 }: {
-  searchParams: MarketplaceParams;
+  searchParams: Promise<MarketplaceParams>;
 }) {
+  const rawSearchParams = await searchParams;
   const params: MarketplaceParams = {
-    sport: searchParams.sport,
-    maxPrice: searchParams.maxPrice,
-    minSample: searchParams.minSample,
-    sort: searchParams.sort,
-    page: searchParams.page,
+    sport: rawSearchParams.sport,
+    maxPrice: rawSearchParams.maxPrice,
+    minSample: rawSearchParams.minSample,
+    sort: rawSearchParams.sort,
+    page: rawSearchParams.page,
   };
   const [data, leaderboard] = await Promise.all([
     listMarketplace(params),
     getLeaderboard(),
   ]);
-  const activeSort = (searchParams.sort as MarketplaceSort) ?? 'yield';
+  const activeSort = (rawSearchParams.sort as MarketplaceSort) ?? 'yield';
   const topTipsters = leaderboard.slice(0, 8);
 
   return (
@@ -121,7 +122,7 @@ export default async function TipstersPage({
           >
             <label style={labelStyle}>
               Sport
-              <select name="sport" defaultValue={searchParams.sport ?? ''} style={inputStyle}>
+              <select name="sport" defaultValue={rawSearchParams.sport ?? ''} style={inputStyle}>
                 <option value="">All sports</option>
                 {SPORTS.map((s) => (
                   <option key={s} value={s}>
@@ -138,7 +139,7 @@ export default async function TipstersPage({
                 name="maxPrice"
                 min={0}
                 placeholder="Any"
-                defaultValue={searchParams.maxPrice ?? ''}
+                defaultValue={rawSearchParams.maxPrice ?? ''}
                 style={{ ...inputStyle, width: 120 }}
               />
             </label>
@@ -150,7 +151,7 @@ export default async function TipstersPage({
                 name="minSample"
                 min={0}
                 placeholder="10"
-                defaultValue={searchParams.minSample ?? ''}
+                defaultValue={rawSearchParams.minSample ?? ''}
                 style={{ ...inputStyle, width: 110 }}
               />
             </label>

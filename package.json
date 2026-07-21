@@ -31,7 +31,9 @@
   },
   "overrides": {
     "ioredis": "5.11.1",
-    "multer": "2.2.0"
+    "multer": "2.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@bradygaster/squad-cli": "^0.11.0",
