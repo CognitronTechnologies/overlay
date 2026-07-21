@@ -22,6 +22,8 @@ on:
   schedule:
     # Weekly full scan so alerts stay fresh even without new commits.
     - cron: "27 4 * * 1"
+  # Allow maintainers to re-run the analysis on demand from the Actions tab.
+  workflow_dispatch:
 
 # Cancel superseded runs on the same branch/PR to save minutes.
 concurrency:
