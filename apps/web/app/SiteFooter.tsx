@@ -35,6 +35,7 @@ export default function SiteFooter() {
         <nav className="site-footer__column" aria-label="Resources">
           <h3>Resources</h3>
           <Link href="/support">Support Center</Link>
+          <Link href="/free-bets">Free Bets & Offers</Link>
           <Link href="/content">Content</Link>
           <Link href="/news">News</Link>
         </nav>

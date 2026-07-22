@@ -203,6 +203,11 @@ export default function AdminPage() {
               label: 'Daily tips',
               perm: 'content:moderate',
             },
+            {
+              href: '/admin/affiliates',
+              label: 'Affiliates',
+              perm: 'content:moderate',
+            },
           ] as const
         )
           .filter((item) => role && roleHasPermission(role, item.perm))

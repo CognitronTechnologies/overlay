@@ -419,6 +419,176 @@ async function main() {
     console.log(`Article: ${a.slug}`);
   }
 
+  // --- Affiliate bookmakers & offers ---
+  const BOOKMAKERS = [
+    {
+      name: 'Betway',
+      slug: 'betway',
+      logo: 'https://logo.clearbit.com/betway.com',
+      website: 'https://betway.com',
+      destinationUrl: 'https://betway.com/register',
+      trackingParams: '?ref=overlay',
+      promoCode: 'OVERLAY50',
+      promoCodeDescription: '50% matched deposit up to KES 10,000',
+      description: 'Betway is a global sportsbook with a strong presence in Africa, offering competitive odds across football, basketball, tennis and more.',
+      welcomeOffer: 'Get a 100% matched deposit bonus up to KES 10,000 when you sign up with code OVERLAY50.',
+      termsSummary: '18+. Min deposit KES 100. Wagering requirements apply. Full T&Cs on Betway.',
+      rating: 4.2,
+      isFeatured: true,
+      isActive: true,
+      supportedCountries: ['KE', 'UG', 'TZ', 'ZA', 'GH', 'NG'],
+      displayOrder: 0,
+    },
+    {
+      name: 'SportPesa',
+      slug: 'sportpesa',
+      logo: 'https://logo.clearbit.com/sportpesa.com',
+      website: 'https://sportpesa.com',
+      destinationUrl: 'https://sportpesa.com/join',
+      trackingParams: '?ref=overlay',
+      promoCode: 'OVERLAY',
+      promoCodeDescription: 'Free bet on first deposit',
+      description: 'SportPesa is East Africa\'s most popular betting platform, known for its extensive football coverage and competitive odds.',
+      welcomeOffer: 'Deposit KES 100 and get KES 200 in free bets to use on any sport.',
+      termsSummary: '18+. New customers only. Free bets expire in 7 days. T&Cs apply.',
+      rating: 4.0,
+      isFeatured: true,
+      isActive: true,
+      supportedCountries: ['KE', 'TZ', 'ZA'],
+      displayOrder: 1,
+    },
+    {
+      name: 'Betika',
+      slug: 'betika',
+      logo: 'https://logo.clearbit.com/betika.com',
+      website: 'https://betika.com',
+      destinationUrl: 'https://betika.com/register',
+      trackingParams: '?ref=overlay',
+      promoCode: null,
+      promoCodeDescription: null,
+      description: 'Betika offers a modern betting experience with great odds, fast payouts, and a user-friendly mobile app.',
+      welcomeOffer: 'Get a 200% welcome bonus up to KES 6,000 on your first deposit.',
+      termsSummary: '18+. Min deposit KES 50. Wagering requirements apply. T&Cs apply.',
+      rating: 3.8,
+      isFeatured: false,
+      isActive: true,
+      supportedCountries: ['KE'],
+      displayOrder: 2,
+    },
+    {
+      name: 'Bet365',
+      slug: 'bet365',
+      logo: 'https://logo.clearbit.com/bet365.com',
+      website: 'https://bet365.com',
+      destinationUrl: 'https://bet365.com/join',
+      trackingParams: '?ref=overlay',
+      promoCode: null,
+      promoCodeDescription: null,
+      description: 'Bet365 is the world\'s largest online sportsbook, offering an unmatched range of markets, live streaming, and in-play betting.',
+      welcomeOffer: 'Bet £10 and get £30 in free bets. Credit or debit card deposits only.',
+      termsSummary: '18+. New customers only. Min deposit £10. Free bets expire in 30 days. T&Cs apply.',
+      rating: 4.5,
+      isFeatured: true,
+      isActive: true,
+      supportedCountries: ['GB', 'IE', 'AU', 'NZ', 'ZA'],
+      displayOrder: 3,
+    },
+    {
+      name: '1xBet',
+      slug: '1xbet',
+      logo: 'https://logo.clearbit.com/1xbet.com',
+      website: 'https://1xbet.com',
+      destinationUrl: 'https://1xbet.com/registration',
+      trackingParams: '?ref=overlay',
+      promoCode: 'OVERLAY100',
+      promoCodeDescription: '100% first deposit bonus',
+      description: '1xBet is a global betting giant with thousands of daily events, high odds, and a comprehensive casino section.',
+      welcomeOffer: 'Get a 100% bonus up to €100 on your first deposit. Use code OVERLAY100.',
+      termsSummary: '18+. Min deposit €1. Wagering requirements apply. T&Cs apply.',
+      rating: 3.9,
+      isFeatured: false,
+      isActive: true,
+      supportedCountries: ['KE', 'NG', 'GH', 'ZA', 'GB', 'IE'],
+      displayOrder: 4,
+    },
+  ];
+
+  const OFFERS = [
+    { title: 'First deposit match 100%', cta: 'Claim bonus', destinationUrl: 'https://betway.com/register?ref=overlay', description: 'Double your first deposit up to KES 10,000 with code OVERLAY50.', isActive: true },
+    { title: 'Free bet on accumulator', cta: 'Bet now', destinationUrl: 'https://betway.com/acca?ref=overlay', description: 'Get a free bet when you place a 3+ leg accumulator.', isActive: true },
+    { title: 'KES 200 free bet', cta: 'Join SportPesa', destinationUrl: 'https://sportpesa.com/join?ref=overlay', description: 'Deposit KES 100 and receive KES 200 in free bets.', isActive: true },
+    { title: 'Weekly cashback', cta: 'Get cashback', destinationUrl: 'https://sportpesa.com/cashback?ref=overlay', description: 'Get 10% cashback on all losing bets every week.', isActive: false },
+    { title: '200% welcome bonus', cta: 'Claim bonus', destinationUrl: 'https://betika.com/register?ref=overlay', description: 'Get a 200% bonus up to KES 6,000 on first deposit.', isActive: true },
+    { title: '£30 free bet', cta: 'Join Bet365', destinationUrl: 'https://bet365.com/join?ref=overlay', description: 'Bet £10 and get £30 in free bets. New customers only.', isActive: true },
+    { title: '100% deposit bonus', cta: 'Claim bonus', destinationUrl: 'https://1xbet.com/registration?ref=overlay', description: 'Get a 100% bonus up to €100 with code OVERLAY100.', isActive: true },
+  ];
+
+  // Upsert bookmakers
+  const bookmakerRecords = [];
+  for (const bm of BOOKMAKERS) {
+    const record = await prisma.bookmaker.upsert({
+      where: { slug: bm.slug },
+      update: {
+        name: bm.name,
+        logo: bm.logo,
+        website: bm.website,
+        destinationUrl: bm.destinationUrl,
+        trackingParams: bm.trackingParams,
+        promoCode: bm.promoCode,
+        promoCodeDescription: bm.promoCodeDescription,
+        description: bm.description,
+        welcomeOffer: bm.welcomeOffer,
+        termsSummary: bm.termsSummary,
+        rating: bm.rating,
+        isFeatured: bm.isFeatured,
+        isActive: bm.isActive,
+        supportedCountries: bm.supportedCountries,
+        displayOrder: bm.displayOrder,
+      },
+      create: {
+        name: bm.name,
+        slug: bm.slug,
+        logo: bm.logo,
+        website: bm.website,
+        destinationUrl: bm.destinationUrl,
+        trackingParams: bm.trackingParams,
+        promoCode: bm.promoCode,
+        promoCodeDescription: bm.promoCodeDescription,
+        description: bm.description,
+        welcomeOffer: bm.welcomeOffer,
+        termsSummary: bm.termsSummary,
+        rating: bm.rating,
+        isFeatured: bm.isFeatured,
+        isActive: bm.isActive,
+        supportedCountries: bm.supportedCountries,
+        displayOrder: bm.displayOrder,
+      },
+    });
+    bookmakerRecords.push(record);
+    console.log(`Bookmaker: ${bm.name}`);
+  }
+
+  // Create offers for each bookmaker
+  let offerIndex = 0;
+  for (const bm of bookmakerRecords) {
+    // Each bookmaker gets 1-2 offers
+    const bmOffers = OFFERS.slice(offerIndex, offerIndex + (bm.name === 'Betway' || bm.name === 'SportPesa' ? 2 : 1));
+    for (const offer of bmOffers) {
+      await prisma.affiliateOffer.create({
+        data: {
+          bookmakerId: bm.id,
+          title: offer.title,
+          description: offer.description,
+          cta: offer.cta,
+          destinationUrl: offer.destinationUrl,
+          isActive: offer.isActive,
+        },
+      });
+      console.log(`  Offer: ${offer.title} (${bm.name})`);
+    }
+    offerIndex += bmOffers.length;
+  }
+
   // --- Free "Daily Tips" hub (OB-150): admin-curated bets of the day ---
   const utcMidnight = (offsetDays) => {
     const d = new Date();
