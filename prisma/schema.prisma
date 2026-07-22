@@ -563,3 +563,108 @@ model TipDropAnnouncement {
   @@index([tipsterId, status])
   @@index([status, nextDropAt])
 }
+
+
+// Bookmaker affiliate program
+
+model Bookmaker {
+  id                 String   @id @default(cuid())
+
+  name               String
+  slug               String   @unique
+
+  logo               String?
+  website            String
+
+  /// Base destination URL before tracking parameters are appended.
+  destinationUrl     String?
+
+  /// URL parameters used for affiliate attribution.
+  trackingParams     String?
+
+  /// Optional bookmaker promo code.
+  promoCode          String?
+
+  /// Short explanation of how to use the promo code.
+  promoCodeDescription String?
+
+  description        String?
+  welcomeOffer       String?
+  termsSummary       String?
+
+  rating             Float?
+
+  isFeatured         Boolean  @default(false)
+  isActive           Boolean  @default(true)
+
+  /// ISO country codes (KE, GB, UG...) where this bookmaker may be shown.
+  supportedCountries String[]
+
+  displayOrder       Int      @default(0)
+
+  offers             AffiliateOffer[]
+  clicks             AffiliateClick[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([isActive, displayOrder])
+}
+
+model AffiliateOffer {
+  id              String   @id @default(cuid())
+
+  bookmakerId     String
+  bookmaker       Bookmaker @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String?
+
+  cta             String?
+
+  destinationUrl  String
+
+  startsAt        DateTime?
+  endsAt          DateTime?
+
+  isActive        Boolean @default(true)
+
+  clicks          AffiliateClick[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bookmakerId])
+  @@index([isActive])
+}
+
+model AffiliateClick {
+  id             String   @id @default(cuid())
+
+  bookmakerId    String
+  bookmaker      Bookmaker @relation(fields: [bookmakerId], references: [id], onDelete: Cascade)
+
+  offerId        String?
+  offer          AffiliateOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  /// Optional signed-in user.
+  userId         String?
+
+  /// Where the affiliate link was rendered.
+  /// Examples:
+  /// FREE_BETS, TIP_PAGE, ARTICLE, FOOTER, HEADER, HOME
+  source         String
+
+  /// Actual page URL where the click originated.
+  page           String
+
+  /// ISO country code if available.
+  country        String?
+
+  clickedAt      DateTime @default(now())
+
+  @@index([bookmakerId])
+  @@index([offerId])
+  @@index([source])
+  @@index([clickedAt])
+}

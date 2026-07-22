@@ -23,6 +23,7 @@ import { AnnouncementsModule } from './modules/announcements/announcements.modul
 import { ArticlesModule } from './modules/articles/articles.module';
 import { FreeTipsModule } from './modules/free-tips/free-tips.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AffiliatesModule } from './modules/affiliates/affiliates.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { ExportsModule } from './modules/exports/exports.module';
@@ -59,6 +60,7 @@ import { SettlementModule } from './workers/settlement.module';
     ArticlesModule,
     FreeTipsModule,
     AdminModule,
+    AffiliatesModule,
     ReportsModule,
     FeedbackModule,
     ExportsModule,
