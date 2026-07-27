@@ -94,8 +94,8 @@ export default function PrivacyPage() {
         <h2>8. Contact</h2>
         <p>
           For privacy questions or requests, email{' '}
-          <a href="mailto:privacy@overlaybets.com" style={{ color: 'var(--accent)' }}>
-            privacy@overlaybets.com
+          <a href="mailto:hello@overlaypicks.com" style={{ color: 'var(--accent)' }}>
+            hello@overlaypicks.com
           </a>
           .
         </p>

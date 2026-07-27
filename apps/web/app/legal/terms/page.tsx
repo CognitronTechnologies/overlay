@@ -114,8 +114,8 @@ export default function TermsPage() {
         <h2>9. Contact</h2>
         <p>
           Questions about these terms can be sent to{' '}
-          <a href="mailto:legal@overlaybets.com" style={{ color: 'var(--accent)' }}>
-            legal@overlaybets.com
+          <a href="mailto:hello@overlaypicks.com" style={{ color: 'var(--accent)' }}>
+            hello@overlaypicks.com
           </a>
           .
         </p>

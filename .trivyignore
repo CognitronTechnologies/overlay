@@ -47,23 +47,20 @@ CVE-2026-44578
 GHSA-8h8q-6873-q5fj
 GHSA-h25m-26qc-wcjf
 GHSA-q4gf-8mx6-v5v3
-# 2026-07 advisory batch — Next.js server-side vectors (App Router Server
-# Actions DoS, SSRF in Server Actions on custom servers, SSRF in rewrites).
-# next.js is never started in the API image; fix needs a Next.js major bump
-# tracked with the web-app framework upgrade.
-GHSA-m99w-x7hq-7vfj
-GHSA-89xv-2m56-2m9x
-GHSA-p9j2-gv94-2wf4
+# NOTE: the 2026-07 Next.js server-side CVEs (CVE-2026-64641/64645/64649) were
+# FIXED by upgrading next to 15.5.22 — they are intentionally NOT ignored here.
 
 # ---------------------------------------------------------------------------
 # postcss / sharp — build-time and image-optimization tooling pulled in
-# transitively by Next.js. Present in workspace node_modules but the API
-# container never processes untrusted CSS or images. Fixes require major
-# transitive bumps via the Next.js upgrade tracked as a follow-up.
+# transitively by Next.js. postcss is exact-pinned by next (8.4.31) and sharp
+# is an optional major-version bump; neither can be overridden independently,
+# and the API container never processes untrusted CSS or images at runtime.
+# Fixes must arrive via a future Next.js dependency bump.
 # ---------------------------------------------------------------------------
-# postcss — arbitrary file read + path traversal via sourceMappingURL; fix: 8.5.18
+# postcss — arbitrary file read + path traversal via sourceMappingURL; fix: 8.5.12
 GHSA-6g55-p6wh-862q
 GHSA-r28c-9q8g-f849
+CVE-2026-45623
 # sharp — inherited libvips CVEs; fix: sharp 0.35 (major)
 GHSA-f88m-g3jw-g9cj
 CVE-2026-33327
@@ -77,6 +74,7 @@ CVE-2026-35591
 # fix: brace-expansion 5.0.8 (arrives with the next tooling bump).
 # ---------------------------------------------------------------------------
 GHSA-mh99-v99m-4gvg
+CVE-2026-14257
 
 # ---------------------------------------------------------------------------
 # @opentelemetry/propagator-jaeger — DoS in JaegerPropagator via a malformed

@@ -73,34 +73,16 @@
       "reason": "Next.js middleware/proxy bypass in Pages Router i18n apps (GHSA-8h8q-6873-q5fj). Tracked for a Next.js upgrade in the web app; accepted risk pending the framework bump.",
       "expires": "2026-12-31"
     },
-    "1124172": {
-      "name": "next",
-      "severity": "high",
-      "reason": "Next.js DoS in App Router Server Actions (GHSA-m99w-x7hq-7vfj). Fix requires a Next.js major (>=15.5 branch does not carry the patch); tracked for the framework upgrade in the web app. Accepted risk pending the bump.",
-      "expires": "2026-12-31"
-    },
-    "1124185": {
-      "name": "next",
-      "severity": "high",
-      "reason": "Next.js SSRF in Server Actions on custom servers (GHSA-89xv-2m56-2m9x). The web app runs on the default Next server (Vercel), not a custom server, so the vector is not reachable. Tracked for the Next.js upgrade; accepted risk pending the bump.",
-      "expires": "2026-12-31"
-    },
-    "1124193": {
-      "name": "next",
-      "severity": "high",
-      "reason": "Next.js SSRF in rewrites via attacker-controlled destination hostname (GHSA-p9j2-gv94-2wf4). No user-controlled rewrite destinations are configured. Tracked for the Next.js upgrade; accepted risk pending the bump.",
-      "expires": "2026-12-31"
-    },
     "1124252": {
       "name": "postcss",
       "severity": "high",
-      "reason": "PostCSS arbitrary file read via attacker-controlled sourceMappingURL (GHSA-6g55-p6wh-862q). Build-time CSS tooling only (transitive via Next.js); never processes untrusted CSS at runtime. Fix requires postcss 8.5.18 via a Next.js bump. Accepted risk pending upstream.",
+      "reason": "PostCSS arbitrary file read via attacker-controlled sourceMappingURL (GHSA-6g55-p6wh-862q). Build-time CSS tooling only, exact-pinned by Next.js (postcss@8.4.31) so it cannot be overridden independently; never processes untrusted CSS at runtime. Fix (postcss 8.5.12) must arrive via a Next.js dependency bump. Accepted risk pending upstream.",
       "expires": "2026-12-31"
     },
     "1124288": {
       "name": "postcss",
       "severity": "high",
-      "reason": "PostCSS path traversal via previous source-map auto-loading (GHSA-r28c-9q8g-f849). Build-time CSS tooling only (transitive via Next.js); not exposed to untrusted input at runtime. Fix requires postcss 8.5.18 via a Next.js bump. Accepted risk pending upstream.",
+      "reason": "PostCSS path traversal via previous source-map auto-loading (GHSA-r28c-9q8g-f849). Build-time CSS tooling only, exact-pinned by Next.js (postcss@8.4.31); not exposed to untrusted input at runtime. Fix (postcss 8.5.12) must arrive via a Next.js dependency bump. Accepted risk pending upstream.",
       "expires": "2026-12-31"
     },
     "1124066": {
