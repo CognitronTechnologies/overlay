@@ -116,7 +116,7 @@ export class MobileMoneyPaymentProvider implements PaymentProvider {
           email: params.customerEmail ?? `${params.userId}@users.overlay.bet`,
         },
         meta: { userId: params.userId, tipsterId: params.tipsterId },
-        customizations: { title: 'Overlay Bets subscription' },
+        customizations: { title: 'Overlay Picks subscription' },
       }),
     });
     if (!res.ok) {

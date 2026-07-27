@@ -1,4 +1,4 @@
-# Overlay Bets — System Architecture
+# Overlay Picks — System Architecture
 
 > **Status:** Live — walking skeleton implemented end-to-end; hardening for production (see `PROD-READINESS-BACKLOG.md`).
 > **Scope:** Verified tipster marketplace + free daily-tips hub. No bet placement, no wagering. Global reach via multi-currency pricing and card / crypto-stablecoin / mobile-money rails.

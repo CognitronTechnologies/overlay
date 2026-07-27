@@ -25,6 +25,37 @@ class IngestDto {
 export class EventsController {
   constructor(private readonly events: EventsService) {}
 
+  /**
+   * Bettor-facing event discovery (Phase 3). Public + DB-only (quota-free).
+   * Filters: sport, group (provider sport group), league, status
+   * (upcoming|live|completed|all), commence-time window, team/league search,
+   * with server-clamped pagination.
+   */
+  @Get()
+  discover(
+    @Query('sport') sport?: string,
+    @Query('group') group?: string,
+    @Query('league') league?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('startFrom') startFrom?: string,
+    @Query('startTo') startTo?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.events.listEvents({
+      sport,
+      group,
+      league,
+      status,
+      q,
+      startFrom,
+      startTo,
+      limit,
+      offset,
+    });
+  }
+
   @Get('upcoming')
   upcoming(
     @Query('sport') sport?: string,
@@ -45,6 +76,35 @@ export class EventsController {
   @Get('filters')
   filters() {
     return this.events.filters();
+  }
+
+  @Get('sports')
+  sports() {
+    return this.events.providerSports();
+  }
+
+  /**
+   * Bettor-facing event detail (Phase 3). Public, on-demand: normalized event
+   * summary + featured markets (best price + per-bookmaker offers), served from
+   * the shared odds cache to bound vendor credit spend.
+   */
+  @Get(':id/detail')
+  detail(
+    @Param('id') id: string,
+    @Query('bookmaker') bookmaker?: string,
+    @Query('market') market?: string,
+  ) {
+    return this.events.getEventDetail(id, { bookmaker, market });
+  }
+
+  /**
+   * On-demand market inventory for one event (Phase 3): every market on offer,
+   * classified (featured/props/period/alternate) with `pickable` flags. Public;
+   * cached to bound vendor credit spend.
+   */
+  @Get(':id/markets')
+  markets(@Param('id') id: string) {
+    return this.events.getEventMarketInventory(id);
   }
 
   /** Live markets/odds for one event (tipsters only — limits credit spend). */

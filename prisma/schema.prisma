@@ -1,4 +1,4 @@
-// Overlay Bets — Prisma schema (v1)
+// Overlay Picks — Prisma schema (v1)
 // See docs/ARCHITECTURE.md §4 for the data model and integrity rules.
 
 generator client {

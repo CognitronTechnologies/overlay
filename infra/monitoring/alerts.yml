@@ -1,4 +1,4 @@
-# Overlay Bets — SLO alert rules (OB-093).
+# Overlay Picks — SLO alert rules (OB-093).
 #
 # Load into Prometheus via `rule_files` (see prometheus.yml). Every alert carries
 # a `severity` label that Alertmanager routes to the on-call channel

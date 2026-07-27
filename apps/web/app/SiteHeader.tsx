@@ -22,7 +22,7 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="site-header__inner">
         <Link href="/" className="site-header__brand" onClick={closeMenu}>
-          Overlay Bets
+          Overlay Picks
         </Link>
 
         <button
@@ -45,7 +45,7 @@ export default function SiteHeader() {
             Tipsters
           </Link>
           <Link href="/tips" onClick={closeMenu}>
-            Free tips
+            Daily Picks
           </Link>
           <Link href="/tools/odds-calculator" onClick={closeMenu}>
             Betting Calculator

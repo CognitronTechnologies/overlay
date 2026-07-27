@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import NewsletterActionClient from '../NewsletterActionClient';
 
 export const metadata: Metadata = {
-  title: 'Unsubscribe · Overlay Bets',
+  title: 'Unsubscribe · Overlay Picks',
   robots: { index: false },
 };
 
@@ -15,7 +15,7 @@ export default function NewsletterUnsubscribePage() {
           action="unsubscribe"
           workingText="Unsubscribing you…"
           successTitle="You’ve been unsubscribed"
-          successText="You will no longer receive the Overlay Bets newsletter. Changed your mind? You can re-subscribe anytime from the newsletter page."
+          successText="You will no longer receive the Overlay Picks newsletter. Changed your mind? You can re-subscribe anytime from the newsletter page."
           errorText="This unsubscribe link is invalid. You may already be unsubscribed."
         />
       </Suspense>

@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 import {
   gradeFromScores,
   mapEvents,
+  mapMarketInventory,
   mapOdds,
   scoresOf,
+  scoreStateOf,
   selectionForOutcome,
+  type OddsApiEventMarkets,
   type OddsApiEventOdds,
   type OddsApiScoreEvent,
 } from './the-odds-api.mapper.ts';
@@ -198,4 +201,82 @@ test('scoresOf: null when scores are missing or unparseable', () => {
     }),
     null,
   );
+});
+
+const marketsPayload: OddsApiEventMarkets = {
+  id: 'evt1',
+  sport_key: 'americanfootball_nfl',
+  sport_title: 'NFL',
+  home_team: 'Home',
+  away_team: 'Away',
+  commence_time: '2030-01-01T00:00:00Z',
+  bookmakers: [
+    {
+      key: 'draftkings',
+      markets: [
+        { key: 'h2h', last_update: '2030-01-01T00:00:00Z' },
+        { key: 'player_pass_tds', last_update: '2030-01-01T00:05:00Z' },
+      ],
+    },
+    {
+      key: 'fanduel',
+      markets: [
+        { key: 'h2h', last_update: '2030-01-01T00:10:00Z' },
+        { key: 'spreads_q1', last_update: '2030-01-01T00:01:00Z' },
+      ],
+    },
+  ],
+};
+
+test('mapMarketInventory: classifies markets and aggregates bookmakers', () => {
+  const inv = mapMarketInventory(marketsPayload);
+  const h2h = inv.find((m) => m.key === 'h2h');
+  assert.ok(h2h);
+  assert.equal(h2h!.pickable, true);
+  assert.deepEqual(h2h!.bookmakers, ['draftkings', 'fanduel']);
+  // Latest update across the two books for h2h.
+  assert.equal(h2h!.lastUpdate, '2030-01-01T00:10:00Z');
+
+  const prop = inv.find((m) => m.key === 'player_pass_tds');
+  assert.equal(prop!.pickable, false);
+  assert.equal(prop!.group, 'player_prop');
+  assert.deepEqual(prop!.bookmakers, ['draftkings']);
+
+  const period = inv.find((m) => m.key === 'spreads_q1');
+  assert.equal(period!.pickable, false);
+  assert.equal(period!.group, 'period');
+});
+
+test('mapMarketInventory: pickable markets sort first', () => {
+  const inv = mapMarketInventory(marketsPayload);
+  assert.equal(inv[0].key, 'h2h'); // only pickable one, sorts first
+  assert.ok(inv.every((m, i) => i === 0 || !m.pickable || inv[i - 1].pickable));
+});
+
+test('mapMarketInventory: empty bookmakers → empty inventory', () => {
+  assert.deepEqual(mapMarketInventory({ ...marketsPayload, bookmakers: [] }), []);
+});
+
+test('scoreStateOf: normalizes a completed game with freshness', () => {
+  const state = scoreStateOf({
+    ...score(2, 1),
+    last_update: '2026-08-15T16:00:00Z',
+  });
+  assert.equal(state.vendorEventId, 'e');
+  assert.equal(state.completed, true);
+  assert.deepEqual(state.score, { home: 2, away: 1 });
+  assert.equal(state.lastUpdate, '2026-08-15T16:00:00Z');
+});
+
+test('scoreStateOf: in-play game carries a running score, not completed', () => {
+  const state = scoreStateOf(score(1, 0, false));
+  assert.equal(state.completed, false);
+  assert.deepEqual(state.score, { home: 1, away: 0 });
+});
+
+test('scoreStateOf: no score yet → null score and null freshness', () => {
+  const state = scoreStateOf({ ...score(0, 0, false), scores: null });
+  assert.equal(state.completed, false);
+  assert.equal(state.score, null);
+  assert.equal(state.lastUpdate, null);
 });

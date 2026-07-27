@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Monorepo-aware image for the Overlay Bets API + settlement worker.
+# Monorepo-aware image for the Overlay Picks API + settlement worker.
 # Build context MUST be the repo root (it needs prisma/, packages/shared, apps/api).
 #
 #   docker build -t overlay-api .

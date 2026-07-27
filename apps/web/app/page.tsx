@@ -2,10 +2,11 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import Flag from './Flag';
 import Avatar from './Avatar';
+import SportsDiscovery from './sports/SportsDiscovery';
 import { API_URL } from '../lib/api';
 
 export const metadata: Metadata = {
-  title: 'Overlay Bets — Verified tipsters, ranked by real edge',
+  title: 'Overlay Picks — Verified tipsters, ranked by real edge',
   description:
     'Hunt real edge. Every pick is hashed and locked before kickoff, then settled automatically from the results — ranked by verified yield and closing line value. No edits, no fake records.',
 };
@@ -47,100 +48,124 @@ export default async function Home() {
 
   return (
     <main style={{ maxWidth: 900, margin: '0 auto', padding: '3.5rem 1.5rem' }}>
-      {/* Hero */}
-      <section style={{ maxWidth: 700 }}>
-        <h1 style={{ fontSize: '2.3rem', lineHeight: 1.15, margin: '0 0 1.1rem', fontWeight: 600 }}>
-          Hunt real edge. Not screenshots.
-        </h1>
-        <p style={{ fontSize: '1.1rem', lineHeight: 1.65, margin: '0 0 1.5rem' }}>
-          Every pick is hashed and locked <strong style={{ color: 'var(--fg)' }}>before kickoff</strong>,
-          then settled automatically from the result. What you see is the real
-          record — closing line value, drawdowns and all. No edits. No fake wins.
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <Link href="/tipsters" className="btn btn--primary btn--lg">
-            Browse tipsters
-          </Link>
-          <Link href="/tips" className="btn btn--secondary btn--lg">
-            Today’s free tips
-          </Link>
-        </div>
-      </section>
-
-      {/* Live proof: real top tipsters from the leaderboard */}
-      {top.length > 0 ? (
-        <section style={{ marginTop: '3.5rem' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              gap: '1rem',
-              flexWrap: 'wrap',
-            }}
-          >
-            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>Top verified tipsters</h2>
-            <Link href="/tipsters" style={{ color: 'var(--accent)', fontSize: '0.9rem' }}>
-              Full leaderboard →
+      {/* Hero + clickable leaderboard preview */}
+      <section
+        style={{
+          display: 'flex',
+          gap: '2.5rem',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+        }}
+      >
+        <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+          <h1 style={{ fontSize: '2.3rem', lineHeight: 1.15, margin: '0 0 1.1rem', fontWeight: 600 }}>
+            Hunt real edge. Not screenshots.
+          </h1>
+          <p style={{ fontSize: '1.1rem', lineHeight: 1.65, margin: '0 0 1.5rem' }}>
+            Every pick is hashed and locked <strong style={{ color: 'var(--fg)' }}>before kickoff</strong>,
+            then settled automatically from the result. What you see is the real
+            record — closing line value, drawdowns and all. No edits. No fake wins.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <Link href="/tipsters" className="btn btn--primary btn--lg">
+              Browse tipsters
+            </Link>
+            <Link href="/tips" className="btn btn--secondary btn--lg">
+              Today’s free picks
             </Link>
           </div>
-          <ol style={{ listStyle: 'none', padding: 0, margin: '1rem 0 0' }}>
-            {top.map((r, i) => (
-              <li
-                key={r.tipsterId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.9rem',
-                  padding: '0.7rem 0',
-                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-                }}
-              >
-                <span
-                  aria-hidden
+        </div>
+
+        {top.length > 0 ? (
+          <Link
+            href="/tipsters"
+            aria-label="View the full leaderboard of verified tipsters"
+            style={{
+              flex: '1 1 300px',
+              minWidth: 0,
+              display: 'block',
+              textDecoration: 'none',
+              color: 'inherit',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '1.1rem 1.2rem',
+              background: 'var(--surface)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <h2 style={{ fontSize: '1.05rem', margin: 0 }}>Top verified tipsters</h2>
+              <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>View all →</span>
+            </div>
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {top.map((r, i) => (
+                <li
+                  key={r.tipsterId}
                   style={{
-                    width: 24,
-                    textAlign: 'right',
-                    color: 'var(--muted)',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.7rem',
+                    padding: '0.55rem 0',
+                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
                   }}
                 >
-                  {i + 1}
-                </span>
-                <Avatar src={r.avatarUrl} seed={r.name ?? r.tipsterId} size={32} />
-                <Link
-                  href={`/tipsters/${r.tipsterId}`}
-                  style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}
-                >
-                  {r.name ?? r.tipsterId}
-                  {r.country ? (
-                    <Flag code={r.country} style={{ marginLeft: '0.4rem', verticalAlign: 'middle' }} />
-                  ) : null}
-                </Link>
-                <span style={{ color: 'var(--muted)', fontSize: '0.85rem', width: 90, textAlign: 'right' }}>
-                  {(r.clvAvg * 100).toFixed(1)}% CLV
-                </span>
-                <span style={{ color: 'var(--muted)', fontSize: '0.85rem', width: 70, textAlign: 'right' }}>
-                  {r.sampleSize} picks
-                </span>
-                <span
-                  style={{
-                    color: r.yield >= 0 ? 'var(--success)' : 'var(--danger)',
-                    fontWeight: 700,
-                    width: 70,
-                    textAlign: 'right',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {r.yield >= 0 ? '+' : ''}
-                  {r.yield.toFixed(1)}%
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 18,
+                      textAlign: 'right',
+                      color: 'var(--muted)',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <Avatar src={r.avatarUrl} seed={r.name ?? r.tipsterId} size={30} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {r.name ?? r.tipsterId}
+                      {r.country ? (
+                        <Flag code={r.country} style={{ marginLeft: '0.4rem', verticalAlign: 'middle' }} />
+                      ) : null}
+                    </span>
+                    <span style={{ display: 'block', color: 'var(--muted)', fontSize: '0.75rem' }}>
+                      {(r.clvAvg * 100).toFixed(1)}% CLV · {r.sampleSize} picks
+                    </span>
+                  </span>
+                  <span
+                    style={{
+                      color: r.yield >= 0 ? 'var(--success)' : 'var(--danger)',
+                      fontWeight: 700,
+                      textAlign: 'right',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {r.yield >= 0 ? '+' : ''}
+                    {r.yield.toFixed(1)}%
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Link>
+        ) : null}
+      </section>
 
       {/* How it works */}
       <section style={{ marginTop: '3.5rem' }}>
@@ -167,6 +192,27 @@ export default async function Home() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section style={{ marginTop: '3.5rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            marginBottom: '1rem',
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>Browse events &amp; odds</h2>
+            <p style={{ color: 'var(--muted)', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
+              Pick a sport, compare bookmaker prices and see live scores — then find the tipsters on them.
+            </p>
+          </div>
+        </div>
+        <SportsDiscovery showTitle={false} />
       </section>
 
       <section style={{ marginTop: '3rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>

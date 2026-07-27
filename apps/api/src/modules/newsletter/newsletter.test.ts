@@ -81,7 +81,7 @@ test('newsletterConfirmRequestBody is a double opt-in request carrying the confi
 
 test('newsletterConfirmationBody is the post-confirm welcome and mentions the brand', () => {
   const body = newsletterConfirmationBody();
-  assert.match(body, /Overlay Bets newsletter/);
+  assert.match(body, /Overlay Picks newsletter/);
   assert.match(body, /Picks of the Week/);
 });
 

@@ -5,14 +5,14 @@
 # Prereqs: `gh auth login` completed with scopes: repo, project (read:project).
 # Usage:
 #   pwsh scripts/create-issues.ps1 -Repo CognitronTechnologies/overlay `
-#        -ProjectOwner CognitronTechnologies -ProjectTitle "Ship Overlay Bets V1"
+#        -ProjectOwner CognitronTechnologies -ProjectTitle "Ship Overlay Picks V1"
 #   Add -DryRun to preview without creating anything.
 
 [CmdletBinding()]
 param(
   [string]$Repo = 'CognitronTechnologies/overlay',
   [string]$ProjectOwner = 'CognitronTechnologies',
-  [string]$ProjectTitle = 'Ship Overlay Bets V1',
+  [string]$ProjectTitle = 'Ship Overlay Picks V1',
   [string]$BacklogPath = "$PSScriptRoot/../docs/PROD-READINESS-BACKLOG.md",
   [switch]$DryRun
 )

@@ -1,4 +1,4 @@
-/* Overlay Bets service worker — Web Push (VAPID) new-pick alerts (OB-031).
+/* Overlay Picks service worker — Web Push (VAPID) new-pick alerts (OB-031).
  *
  * Handles two events:
  *  - `push`: renders the notification pushed by the API (title/body/url).
@@ -10,10 +10,10 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data ? event.data.json() : {};
   } catch (err) {
-    payload = { title: 'Overlay Bets', body: event.data ? event.data.text() : '' };
+    payload = { title: 'Overlay Picks', body: event.data ? event.data.text() : '' };
   }
 
-  const title = payload.title || 'Overlay Bets';
+  const title = payload.title || 'Overlay Picks';
   const options = {
     body: payload.body || '',
     icon: '/icon-192.png',

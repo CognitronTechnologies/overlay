@@ -4,7 +4,7 @@ import Link from 'next/link';
 import OddsCalculator from './OddsCalculator';
 
 export const metadata: Metadata = {
-  title: 'Odds Converter & Bet Returns Calculator — Overlay Bets',
+  title: 'Odds Converter & Bet Returns Calculator — Overlay Picks',
   description:
     'Free odds calculator: convert decimal, fractional, American and implied-probability odds, and work out potential returns and profit from your stake in any currency.',
   alternates: { canonical: '/tools/odds-calculator' },
@@ -15,7 +15,7 @@ export default function OddsCalculatorPage() {
     <main style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
         <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Bets
+          ← Overlay Picks
         </Link>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>

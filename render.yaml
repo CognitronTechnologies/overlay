@@ -1,4 +1,4 @@
-# Render Blueprint for Overlay Bets staging (OB-101 / OB-105).
+# Render Blueprint for Overlay Picks staging (OB-101 / OB-105).
 # Deploy: Render Dashboard -> New -> Blueprint -> pick this repo/branch.
 # Provisions: Postgres + Redis + API (web) + settlement worker, all from the
 # root Dockerfile. Migrations run via preDeployCommand before each API deploy.

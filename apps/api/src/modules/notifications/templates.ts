@@ -7,7 +7,7 @@ import type { EmailMessage, Notifier } from './notifier.interface';
 /** An email template minus the recipient (filled in at send time). */
 export type EmailTemplate = Omit<EmailMessage, 'to'>;
 
-const APP_NAME = 'Overlay Bets';
+const APP_NAME = 'Overlay Picks';
 
 /** Payment receipt sent after a successful subscription charge. */
 export function receiptEmail(params: {

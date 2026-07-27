@@ -9,7 +9,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { EmailTemplate, NewPickNotification } from './templates';
 import type { Notifier } from './notifier.interface';
 
-const APP_NAME = 'Overlay Bets';
+const APP_NAME = 'Overlay Picks';
 
 /** Delivery cadence: fan out per pick, or batch into a daily digest email. */
 export type DigestFrequency = 'instant' | 'daily';

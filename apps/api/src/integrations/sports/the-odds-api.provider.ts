@@ -3,15 +3,20 @@ import type {
   EventResult,
   MarketOdds,
   ProviderEvent,
+  ProviderMarketInfo,
+  ProviderSport,
   SportsDataProvider,
 } from './sports-provider.interface';
 import { fetchJson } from './http';
+import { parseSportsConfig } from './sports-config';
 import {
   mapEvents,
+  mapMarketInventory,
   mapOdds,
-  scoresOf,
+  scoreStateOf,
   toEventResult,
   type OddsApiEvent,
+  type OddsApiEventMarkets,
   type OddsApiEventOdds,
   type OddsApiScoreEvent,
 } from './the-odds-api.mapper';
@@ -29,10 +34,20 @@ export class TheOddsApiProvider implements SportsDataProvider {
   readonly name = 'the-odds-api';
   private readonly base = 'https://api.the-odds-api.com/v4';
 
+  private get config() {
+    return parseSportsConfig(process.env);
+  }
+
   private get apiKey(): string {
     const key = process.env.SPORTS_API_KEY;
     if (!key) throw new Error('SPORTS_API_KEY is not set');
     return key;
+  }
+
+  async getSports(): Promise<ProviderSport[]> {
+    const url = `${this.base}/sports?apiKey=${this.apiKey}`;
+    const raw = await fetchJson<{ key: string; group: string; title: string; description?: string; active: boolean; has_outrights: boolean }[]>(url, undefined, { label: this.name });
+    return raw.map((sport) => ({ ...sport, hasOutrights: sport.has_outrights }));
   }
 
   async getUpcomingEvents(sport: string): Promise<ProviderEvent[]> {
@@ -49,8 +64,11 @@ export class TheOddsApiProvider implements SportsDataProvider {
 
   async getOdds(vendorEventId: string): Promise<MarketOdds[]> {
     const { sport, eventId } = this.splitId(vendorEventId);
-    // Pull h2h + spreads + totals (credits = regions × markets = 1 × 3).
-    const url = `${this.base}/sports/${sport}/odds?apiKey=${this.apiKey}&regions=eu&markets=h2h,spreads,totals&oddsFormat=decimal`;
+    // Featured markets across the configured region(s). Credit cost = regions ×
+    // markets; both are validated/clamped by parseSportsConfig (defaults: eu ×
+    // h2h,spreads,totals = 3).
+    const { regions, markets } = this.config;
+    const url = `${this.base}/sports/${sport}/odds?apiKey=${this.apiKey}&regions=${regions}&markets=${markets}&oddsFormat=decimal`;
     const raw = await fetchJson<OddsApiEventOdds[]>(url, undefined, {
       label: this.name,
     });
@@ -60,7 +78,9 @@ export class TheOddsApiProvider implements SportsDataProvider {
 
   async getResult(vendorEventId: string): Promise<EventResult | null> {
     const { sport, eventId } = this.splitId(vendorEventId);
-    const url = `${this.base}/sports/${sport}/scores?apiKey=${this.apiKey}&daysFrom=3`;
+    // Completed games require daysFrom (credit cost 2) — they aren't returned
+    // by the live/upcoming-only scores query.
+    const url = `${this.base}/sports/${sport}/scores?apiKey=${this.apiKey}&daysFrom=${this.config.scoresDaysFrom}`;
     const raw = await fetchJson<OddsApiScoreEvent[]>(url, undefined, {
       label: this.name,
     });
@@ -73,13 +93,27 @@ export class TheOddsApiProvider implements SportsDataProvider {
     vendorEventId: string,
   ): Promise<{ home: number; away: number } | null> {
     const { sport, eventId } = this.splitId(vendorEventId);
-    const url = `${this.base}/sports/${sport}/scores?apiKey=${this.apiKey}&daysFrom=3`;
+    // In-play gating only needs live/upcoming games, so omit daysFrom — that
+    // keeps the credit cost at 1 (daysFrom would double it to 2). A just-
+    // finished game simply won't appear here and is settled via getResult().
+    const url = `${this.base}/sports/${sport}/scores?apiKey=${this.apiKey}`;
     const raw = await fetchJson<OddsApiScoreEvent[]>(url, undefined, {
       label: this.name,
     });
     const event = raw.find((e) => e.id === eventId);
     if (!event) return null;
-    return scoresOf(event);
+    return scoreStateOf(event).score;
+  }
+
+  async getMarketInventory(vendorEventId: string): Promise<ProviderMarketInfo[]> {
+    const { sport, eventId } = this.splitId(vendorEventId);
+    // Available markets per bookmaker for one event (costs 1 credit). Featured +
+    // props + period + alternate keys, classified by the shared registry.
+    const url = `${this.base}/sports/${sport}/events/${eventId}/markets?apiKey=${this.apiKey}&regions=${this.config.regions}`;
+    const raw = await fetchJson<OddsApiEventMarkets>(url, undefined, {
+      label: this.name,
+    });
+    return mapMarketInventory(raw);
   }
 
   private splitId(vendorEventId: string): { sport: string; eventId: string } {

@@ -5,7 +5,7 @@ we escalate, and step-by-step runbooks for the four incidents most likely to
 wake someone — **settlement stuck**, **webhook backlog**, **vendor outage**, and
 **payout failure**.
 
-- **Scope:** production incidents for the Overlay Bets API + settlement worker
+- **Scope:** production incidents for the Overlay Picks API + settlement worker
   (Postgres source of truth, Redis/BullMQ queue, Stripe payments, a sports
   odds/results vendor).
 - **Owner:** whoever is on-call for ops.
