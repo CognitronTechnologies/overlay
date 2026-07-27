@@ -12,6 +12,7 @@ export * from './subscriptions.ts';
 export * from './countries.ts';
 export * from './currencies.ts';
 export * from './grading.ts';
+export * from './markets.ts';
 export * from './graduation.ts';
 export * from './daily-tips.ts';
 export * from './announcement-schedule.ts';

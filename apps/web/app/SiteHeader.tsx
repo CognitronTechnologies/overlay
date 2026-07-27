@@ -44,6 +44,9 @@ export default function SiteHeader() {
           <Link href="/tipsters" onClick={closeMenu}>
             Tipsters
           </Link>
+          <Link href="/sports" onClick={closeMenu}>
+            Sports
+          </Link>
           <Link href="/tips" onClick={closeMenu}>
             Free tips
           </Link>

@@ -149,6 +149,9 @@ export default function UserDashboard() {
         <Link href="/tipsters" className="btn btn--secondary btn--sm">
           Browse tipsters
         </Link>
+        <Link href="/sports" className="btn btn--secondary btn--sm">
+          Events &amp; odds
+        </Link>
         <Link href="/account" className="btn btn--secondary btn--sm">
           My account
         </Link>

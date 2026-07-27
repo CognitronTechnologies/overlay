@@ -9,6 +9,7 @@ import {
   hashPick,
   buildPerformanceDashboard,
   isLivePicksGated,
+  isPickableMarket,
   normalizeGraduationStatus,
   type PickPayload,
   type PickType,
@@ -61,6 +62,17 @@ export class PicksService {
       where: { id: dto.eventId },
     });
     if (!event) throw new NotFoundException('Event not found');
+
+    // Defense-in-depth (Phase 1 market registry): only markets classified as
+    // pickable+settleable may be locked. The DTO already restricts `market` to
+    // SUPPORTED_MARKETS, but gating here too means display-only provider markets
+    // (player props, period/alternate lines) can never lock a pick even if a
+    // future caller bypasses DTO validation.
+    if (!isPickableMarket(dto.market)) {
+      throw new BadRequestException(
+        `Market "${dto.market}" is not available for picks`,
+      );
+    }
 
     // Pre-match picks honour the OB-038 configurable kickoff cutoff; live/
     // in-play picks (OB-039) bypass it but are rejected once the event has

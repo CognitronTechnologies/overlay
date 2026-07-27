@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../lib/auth';
 import { roleHasPermission, type Role } from '@overlay/shared/rbac';
 import { downloadExport, type ExportFormat } from '../../lib/export';
+import { listProviderSports, type ProviderSport } from '../../lib/events';
 
 interface DashboardMetrics {
   users: number;
@@ -63,6 +64,7 @@ export default function AdminPage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [period, setPeriod] = useState(currentMonth);
   const [sport, setSport] = useState('');
+  const [sportsCatalog, setSportsCatalog] = useState<ProviderSport[]>([]);
   const [opMsg, setOpMsg] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
@@ -86,6 +88,13 @@ export default function AdminPage() {
       setMetrics((await res.json()) as DashboardMetrics);
     })();
   }, [router]);
+
+  // Provider sport catalog for the ingest picker (data:ingest only).
+  useEffect(() => {
+    if (role && roleHasPermission(role, 'data:ingest')) {
+      listProviderSports().then(setSportsCatalog);
+    }
+  }, [role]);
 
   async function runPayouts(e: React.FormEvent) {
     e.preventDefault();
@@ -202,6 +211,11 @@ export default function AdminPage() {
               href: '/admin/tips',
               label: 'Daily tips',
               perm: 'content:moderate',
+            },
+            {
+              href: '/admin/events',
+              label: 'Event inventory',
+              perm: 'data:ingest',
             },
           ] as const
         )
@@ -344,18 +358,47 @@ export default function AdminPage() {
             <label style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
               Ingest events (sport)
             </label>
-            <input
-              value={sport}
-              onChange={(e) => setSport(e.target.value)}
-              placeholder="soccer_epl"
-              style={{
-                background: '#0d1117',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: '0.5rem 0.7rem',
-                color: 'inherit',
-              }}
-            />
+            {sportsCatalog.length > 0 ? (
+              <select
+                value={sport}
+                onChange={(e) => setSport(e.target.value)}
+                style={{
+                  background: '#0d1117',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '0.5rem 0.7rem',
+                  color: 'inherit',
+                }}
+              >
+                <option value="">Choose a sport…</option>
+                {[...new Set(sportsCatalog.filter((s) => s.active).map((s) => s.group))]
+                  .sort()
+                  .map((group) => (
+                    <optgroup key={group} label={group}>
+                      {sportsCatalog
+                        .filter((s) => s.active && s.group === group)
+                        .map((s) => (
+                          <option key={s.key} value={s.key}>
+                            {s.title} ({s.key})
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+              </select>
+            ) : (
+              <input
+                value={sport}
+                onChange={(e) => setSport(e.target.value)}
+                placeholder="soccer_epl"
+                style={{
+                  background: '#0d1117',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '0.5rem 0.7rem',
+                  color: 'inherit',
+                }}
+              />
+            )}
             <button
               type="submit"
               disabled={running}

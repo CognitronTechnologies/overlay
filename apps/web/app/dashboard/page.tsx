@@ -32,6 +32,13 @@ type SettledOutcome = 'all' | 'won' | 'lost' | 'void';
 interface MarketOdds {
   market: string;
   prices: Record<string, number>;
+  offers?: {
+    bookmaker: string;
+    bookmakerTitle?: string;
+    selection: string;
+    price: number;
+    updatedAt?: string;
+  }[];
 }
 
 /** Compact earnings summary shown inline on the dashboard. */
@@ -586,6 +593,62 @@ export default function DashboardPage() {
             required
           />
         </label>
+        {(() => {
+          const market = eventOdds?.find((m) => m.market === form.market);
+          const offers = (market?.offers ?? []).filter(
+            (o) => !form.selection || o.selection === form.selection,
+          );
+          if (offers.length === 0) return null;
+          const sorted = [...offers].sort((a, b) => b.price - a.price);
+          const best = sorted[0].price;
+          return (
+            <div
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--muted)',
+                border: '1px solid var(--border, #262a38)',
+                borderRadius: 8,
+                padding: '0.5rem 0.6rem',
+              }}
+            >
+              <div style={{ marginBottom: '0.3rem' }}>
+                Compare books{form.selection ? ` · ${form.selection}` : ''}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                {sorted.slice(0, 8).map((o, i) => (
+                  <button
+                    key={`${o.bookmaker}-${o.selection}-${i}`}
+                    type="button"
+                    title={`Use ${o.price.toFixed(2)} from ${o.bookmakerTitle ?? o.bookmaker}`}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        selection: o.selection,
+                        oddsAtPick: String(o.price),
+                      }))
+                    }
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      background: 'var(--chip, #1b1f2b)',
+                      border:
+                        o.price === best
+                          ? '1px solid var(--success, #46a758)'
+                          : '1px solid var(--border, #33384a)',
+                      color: 'inherit',
+                    }}
+                  >
+                    {o.bookmakerTitle ?? o.bookmaker}{' '}
+                    <strong style={{ color: o.price === best ? 'var(--success, #46a758)' : 'inherit' }}>
+                      {o.price.toFixed(2)}
+                    </strong>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         <input
           style={formStyles.input}
           type="number"
