@@ -44,7 +44,7 @@ test('vapidConfig returns null without keys and defaults the subject', () => {
   assert.equal(vapidConfig({ VAPID_PUBLIC_KEY: 'pub' }), null);
   assert.deepEqual(
     vapidConfig({ VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' }),
-    { publicKey: 'pub', privateKey: 'priv', subject: 'mailto:no-reply@overlay.bet' },
+    { publicKey: 'pub', privateKey: 'priv', subject: 'mailto:no-reply@overlaypicks.com' },
   );
   assert.equal(
     vapidConfig({

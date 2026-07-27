@@ -1,4 +1,4 @@
-# Overlay Bets — Live / in‑play picks (OB‑039)
+# Overlay Picks — Live / in‑play picks (OB‑039)
 
 **Status:** design spike, then built · **Depends on:** OB‑038 (late‑pick & cutoff hardening)
 

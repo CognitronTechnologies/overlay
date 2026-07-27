@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Flag from '../Flag';
 import Avatar from '../Avatar';
 import FollowButton from '../FollowButton';
+import { SportChipLinks } from '../SportChips';
 import {
   listMarketplace,
   SITE_URL,
@@ -12,7 +13,7 @@ import {
 } from '../../lib/api';
 
 export const metadata: Metadata = {
-  title: 'Tipsters — Verified edge, ranked · Overlay Bets',
+  title: 'Tipsters — Verified edge, ranked · Overlay Picks',
   description:
     'Browse verified sports tipsters and see the leaderboard. Filter by sport, price and settled sample; sort by yield, closing line value or win rate. Every record is cryptographically locked before kickoff.',
   alternates: { canonical: `${SITE_URL}/tipsters` },
@@ -80,21 +81,32 @@ function pageHref(base: MarketplaceParams, page: number): string {
 export default async function TipstersPage({
   searchParams,
 }: {
-  searchParams: MarketplaceParams;
+  searchParams: Promise<MarketplaceParams>;
 }) {
+  const resolvedParams = await searchParams;
   const params: MarketplaceParams = {
-    sport: searchParams.sport,
-    maxPrice: searchParams.maxPrice,
-    minSample: searchParams.minSample,
-    sort: searchParams.sort,
-    page: searchParams.page,
+    sport: resolvedParams.sport,
+    maxPrice: resolvedParams.maxPrice,
+    minSample: resolvedParams.minSample,
+    sort: resolvedParams.sort,
+    page: resolvedParams.page,
   };
   const [data, leaderboard] = await Promise.all([
     listMarketplace(params),
     getLeaderboard(),
   ]);
-  const activeSort = (searchParams.sort as MarketplaceSort) ?? 'yield';
+  const activeSort = (resolvedParams.sort as MarketplaceSort) ?? 'yield';
   const topTipsters = leaderboard.slice(0, 8);
+
+  const chipHref = (sport?: string) => {
+    const qs = new URLSearchParams();
+    if (sport) qs.set('sport', sport);
+    if (params.maxPrice) qs.set('maxPrice', params.maxPrice);
+    if (params.minSample) qs.set('minSample', params.minSample);
+    if (params.sort) qs.set('sort', params.sort);
+    const s = qs.toString();
+    return s ? `/tipsters?${s}` : '/tipsters';
+  };
 
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '3rem 1.5rem' }}>
@@ -106,6 +118,13 @@ export default async function TipstersPage({
 
       <div className="tipsters-layout">
         <div>
+          <SportChipLinks
+            items={SPORTS.map((s) => ({ key: s, label: s[0].toUpperCase() + s.slice(1) }))}
+            activeKey={resolvedParams.sport ?? null}
+            hrefFor={(s) => chipHref(s)}
+            allHref={chipHref()}
+            ariaLabel="Filter tipsters by sport"
+          />
           <form
             method="get"
             style={{
@@ -119,17 +138,7 @@ export default async function TipstersPage({
               borderRadius: 12,
             }}
           >
-            <label style={labelStyle}>
-              Sport
-              <select name="sport" defaultValue={searchParams.sport ?? ''} style={inputStyle}>
-                <option value="">All sports</option>
-                {SPORTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <input type="hidden" name="sport" value={resolvedParams.sport ?? ''} />
 
             <label style={labelStyle}>
               Max price (¢/mo)
@@ -138,7 +147,7 @@ export default async function TipstersPage({
                 name="maxPrice"
                 min={0}
                 placeholder="Any"
-                defaultValue={searchParams.maxPrice ?? ''}
+                defaultValue={resolvedParams.maxPrice ?? ''}
                 style={{ ...inputStyle, width: 120 }}
               />
             </label>
@@ -150,7 +159,7 @@ export default async function TipstersPage({
                 name="minSample"
                 min={0}
                 placeholder="10"
-                defaultValue={searchParams.minSample ?? ''}
+                defaultValue={resolvedParams.minSample ?? ''}
                 style={{ ...inputStyle, width: 110 }}
               />
             </label>

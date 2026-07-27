@@ -5,9 +5,12 @@ import type {
   EventOutcome,
   EventResult,
   MarketOdds,
+  OddsOffer,
   ProviderEvent,
+  ProviderMarketInfo,
+  ScoreState,
 } from './sports-provider.interface';
-import { gradeMarket, spreadKey, totalKey } from '@overlay/shared';
+import { classifyProviderMarket, gradeMarket, spreadKey, totalKey } from '@overlay/shared';
 
 export interface OddsApiEvent {
   id: string;
@@ -23,13 +26,17 @@ export interface OddsApiOutcome {
   price: number;
   /** Handicap (spreads) or total (totals) line; absent for h2h. */
   point?: number;
+  description?: string;
 }
 export interface OddsApiMarket {
   key: string; // 'h2h' | 'spreads' | 'totals'
   outcomes: OddsApiOutcome[];
+  last_update?: string;
 }
 export interface OddsApiBookmaker {
   key: string;
+  title?: string;
+  last_update?: string;
   markets: OddsApiMarket[];
 }
 export interface OddsApiEventOdds extends OddsApiEvent {
@@ -46,6 +53,8 @@ export interface OddsApiScoreEvent {
   home_team: string;
   away_team: string;
   scores: OddsApiScore[] | null;
+  /** Provider's last score-update timestamp (ISO 8601), null before kickoff. */
+  last_update?: string | null;
 }
 
 export function mapEvents(raw: OddsApiEvent[]): ProviderEvent[] {
@@ -83,6 +92,7 @@ export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
   const h2h: Record<string, number> = {};
   const spreads: Record<string, number> = {};
   const totals: Record<string, number> = {};
+  const offers: Record<string, OddsOffer[]> = { h2h: [], spreads: [], totals: [] };
   let hasDraw = false;
 
   const better = (bag: Record<string, number>, key: string, price: number) => {
@@ -97,6 +107,7 @@ export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
           if (!sel) continue;
           if (sel === 'draw') hasDraw = true;
           better(h2h, sel, o.price);
+          offers.h2h.push({ bookmaker: bm.key, bookmakerTitle: bm.title, selection: sel, price: o.price, updatedAt: mk.last_update ?? bm.last_update });
         }
       } else if (mk.key === 'spreads') {
         for (const o of mk.outcomes) {
@@ -104,6 +115,7 @@ export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
           const sel = selectionForOutcome(o.name, raw.home_team, raw.away_team);
           if (sel !== 'home' && sel !== 'away') continue;
           better(spreads, spreadKey(sel, o.point), o.price);
+          offers.spreads.push({ bookmaker: bm.key, bookmakerTitle: bm.title, selection: spreadKey(sel, o.point), price: o.price, point: o.point, updatedAt: mk.last_update ?? bm.last_update });
         }
       } else if (mk.key === 'totals') {
         for (const o of mk.outcomes) {
@@ -111,6 +123,7 @@ export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
           const name = o.name.toLowerCase();
           if (name !== 'over' && name !== 'under') continue;
           better(totals, totalKey(name, o.point), o.price);
+          offers.totals.push({ bookmaker: bm.key, bookmakerTitle: bm.title, selection: totalKey(name, o.point), price: o.price, point: o.point, updatedAt: mk.last_update ?? bm.last_update });
         }
       }
     }
@@ -118,13 +131,13 @@ export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
 
   const out: MarketOdds[] = [];
   if (Object.keys(h2h).length > 0) {
-    out.push({ market: hasDraw ? '1X2' : 'moneyline', prices: h2h });
+    out.push({ market: hasDraw ? '1X2' : 'moneyline', prices: h2h, offers: offers.h2h });
   }
   if (Object.keys(spreads).length > 0) {
-    out.push({ market: 'spreads', prices: spreads });
+    out.push({ market: 'spreads', prices: spreads, offers: offers.spreads });
   }
   if (Object.keys(totals).length > 0) {
-    out.push({ market: 'totals', prices: totals });
+    out.push({ market: 'totals', prices: totals, offers: offers.totals });
   }
   return out;
 }
@@ -144,6 +157,21 @@ export function scoresOf(
     return null;
   }
   return { home, away };
+}
+
+/**
+ * Normalize a score event into our provider-agnostic {@link ScoreState},
+ * pairing the parsed score with the provider's completion flag and last-update
+ * timestamp so callers can reason about freshness (a stale in-play score must
+ * never be presented as current).
+ */
+export function scoreStateOf(raw: OddsApiScoreEvent): ScoreState {
+  return {
+    vendorEventId: raw.id,
+    completed: raw.completed,
+    score: scoresOf(raw),
+    lastUpdate: raw.last_update ?? null,
+  };
 }
 
 /** Grade a selection from final scores (delegates to the shared grader). */
@@ -173,4 +201,66 @@ export function toEventResult(raw: OddsApiScoreEvent): EventResult {
     raw: raw as unknown as Record<string, unknown>,
     grade: (market, selection) => gradeFromScores(raw, market, selection),
   };
+}
+
+/** A market entry in the `/events/{id}/markets` response (no outcomes). */
+export interface OddsApiMarketKey {
+  key: string;
+  last_update?: string;
+}
+export interface OddsApiMarketsBookmaker {
+  key: string;
+  title?: string;
+  markets: OddsApiMarketKey[];
+}
+export interface OddsApiEventMarkets extends OddsApiEvent {
+  bookmakers: OddsApiMarketsBookmaker[];
+}
+
+/** Latest of two ISO timestamps (either may be undefined). */
+function latestIso(a: string | null, b?: string): string | null {
+  if (!b) return a;
+  if (!a) return b;
+  return Date.parse(b) > Date.parse(a) ? b : a;
+}
+
+/**
+ * Normalize the event market-inventory response into per-market info,
+ * classified by the shared market registry. Aggregates the set of bookmakers
+ * offering each market and keeps the most recent update. Sorted featured/
+ * pickable markets first, then by key, for stable display.
+ */
+export function mapMarketInventory(raw: OddsApiEventMarkets): ProviderMarketInfo[] {
+  const byKey = new Map<
+    string,
+    { bookmakers: Set<string>; lastUpdate: string | null }
+  >();
+
+  for (const bm of raw.bookmakers ?? []) {
+    for (const mk of bm.markets ?? []) {
+      const entry = byKey.get(mk.key) ?? { bookmakers: new Set<string>(), lastUpdate: null };
+      entry.bookmakers.add(bm.key);
+      entry.lastUpdate = latestIso(entry.lastUpdate, mk.last_update);
+      byKey.set(mk.key, entry);
+    }
+  }
+
+  const items: ProviderMarketInfo[] = [];
+  for (const [key, entry] of byKey) {
+    const cls = classifyProviderMarket(key);
+    items.push({
+      key,
+      group: cls.group,
+      label: cls.label,
+      pickable: cls.canonicalMarkets.length > 0,
+      canonicalMarkets: [...cls.canonicalMarkets],
+      bookmakers: [...entry.bookmakers].sort(),
+      lastUpdate: entry.lastUpdate,
+    });
+  }
+
+  return items.sort((a, b) => {
+    if (a.pickable !== b.pickable) return a.pickable ? -1 : 1;
+    return a.key.localeCompare(b.key);
+  });
 }

@@ -2,9 +2,9 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About Us & How It Works — Overlay Bets',
+  title: 'About Us & How It Works — Overlay Picks',
   description:
-    'Overlay Bets is a verified tipster marketplace built on trust: locked and hashed picks, verified settled stats and closing-line value. Learn how bettors find tipsters and how tipsters get verified and paid.',
+    'Overlay Picks is a verified tipster marketplace built on trust: locked and hashed picks, verified settled stats and closing-line value. Learn how bettors find tipsters and how tipsters get verified and paid.',
   alternates: { canonical: '/about' },
 };
 
@@ -75,11 +75,11 @@ export default function AboutPage() {
     <main style={{ maxWidth: 820, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
         <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Bets
+          ← Overlay Picks
         </Link>
       </p>
       <h1 style={{ fontSize: '2.3rem', marginBottom: '0.25rem' }}>
-        About Overlay Bets
+        About Overlay Picks
       </h1>
       <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '1.05rem' }}>
         A verified tipster marketplace built on proof, not promises.
@@ -89,7 +89,7 @@ export default function AboutPage() {
         <h2>Our mission</h2>
         <p>
           Sports betting is drowning in noise — screenshots, deleted losers and
-          &ldquo;100% verified&rdquo; claims nobody can check. Overlay Bets
+          &ldquo;100% verified&rdquo; claims nobody can check. Overlay Picks
           exists to fix that. We give bettors an honest, evidence-first way to
           find genuinely skilled tipsters, and we give skilled tipsters a place
           where a real track record actually gets rewarded.
@@ -157,7 +157,7 @@ export default function AboutPage() {
             Information only — please gamble responsibly.
           </strong>
           <p style={{ margin: '0.5rem 0 0' }}>
-            Overlay Bets is a sports-information, analytics and
+            Overlay Picks is a sports-information, analytics and
             tipster-marketplace service. We take no bets, hold no stakes and are
             not a bookmaker. Picks and stats are for informational purposes only
             and are not betting or financial advice. 18+. If you choose to bet,

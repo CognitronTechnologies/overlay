@@ -45,7 +45,7 @@ export function vapidConfig(
   return {
     publicKey,
     privateKey,
-    subject: env.VAPID_SUBJECT ?? 'mailto:no-reply@overlay.bet',
+    subject: env.VAPID_SUBJECT ?? 'mailto:no-reply@overlaypicks.com',
   };
 }
 

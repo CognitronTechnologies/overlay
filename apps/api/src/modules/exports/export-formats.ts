@@ -11,7 +11,7 @@ export async function buildXlsx(
   rows: (string | number | boolean | null | undefined)[][],
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Overlay Bets';
+  wb.creator = 'Overlay Picks';
 
   // Excel sheet names are limited to 31 characters.
   const safeSheetName = sheetName.slice(0, 31);

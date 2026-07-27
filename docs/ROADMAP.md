@@ -1,4 +1,4 @@
-# Overlay Bets — Roadmap to Production
+# Overlay Picks — Roadmap to Production
 
 > Phased delivery plan. Each phase has explicit **exit criteria** — don't advance until they're met.
 >

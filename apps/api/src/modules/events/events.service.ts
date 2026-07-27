@@ -4,9 +4,19 @@ import { PrismaService } from '../../prisma.service';
 import { SPORTS_PROVIDER } from '../../integrations/sports/sports.module';
 import type {
   MarketOdds,
+  ProviderMarketInfo,
+  ProviderSport,
   SportsDataProvider,
 } from '../../integrations/sports/sports-provider.interface';
 import { isValidProviderEvent, parseIngestSports } from './ingestion';
+import {
+  normalizeEventQuery,
+  resolveSportKeysForGroup,
+  sportGroupIndex,
+  toEventSummary,
+  type EventSummary,
+  type RawEventQuery,
+} from './events.query';
 
 @Injectable()
 export class EventsService {
@@ -14,6 +24,9 @@ export class EventsService {
   /** In-process odds cache to limit vendor credit spend (OB-045). */
   private static readonly CACHE_TTL_MS = 60_000;
   private readonly oddsCache = new Map<string, { odds: MarketOdds[]; at: number }>();
+  private readonly inventoryCache = new Map<string, { markets: ProviderMarketInfo[]; at: number }>();
+  private sportsCache: { sports: ProviderSport[]; at: number } | null = null;
+  private static readonly SPORTS_CACHE_TTL_MS = 15 * 60_000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -121,7 +134,7 @@ export class EventsService {
    * Cached in-process for CACHE_TTL to avoid burning vendor credits on repeated
    * lookups while a tipster browses.
    */
-  async getEventOdds(eventId: string): Promise<{ market: string; prices: Record<string, number> }[]> {
+  async getEventOdds(eventId: string): Promise<MarketOdds[]> {
     const event = await this.prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Event not found');
 
@@ -132,5 +145,139 @@ export class EventsService {
     const odds = await this.provider.getOdds(event.vendorEventId);
     this.oddsCache.set(eventId, { odds, at: Date.now() });
     return odds;
+  }
+
+  async providerSports(): Promise<ProviderSport[]> {
+    if (this.sportsCache && Date.now() - this.sportsCache.at < EventsService.SPORTS_CACHE_TTL_MS) return this.sportsCache.sports;
+    const sports = this.provider.getSports ? await this.provider.getSports() : [];
+    this.sportsCache = { sports, at: Date.now() };
+    return sports;
+  }
+
+  /**
+   * Bettor-facing event discovery (Phase 3). DB-only (no vendor calls, so it is
+   * quota-free and paginatable) with generic multi-sport filtering: a `group`
+   * filter is resolved to concrete sport keys via the cached provider catalog,
+   * so it becomes an indexed `sport IN (...)` predicate. Odds/bookmaker
+   * comparison is deliberately NOT here — it is an on-demand, per-event detail
+   * call ({@link getEventDetail}) to keep vendor credit spend bounded.
+   */
+  async listEvents(
+    raw: RawEventQuery,
+  ): Promise<{ events: EventSummary[]; total: number; limit: number; offset: number }> {
+    const q = normalizeEventQuery(raw);
+    const now = Date.now();
+    const nowDate = new Date(now);
+
+    const where: Prisma.EventWhereInput = {};
+
+    // Lifecycle status → persisted predicates.
+    if (q.status === 'upcoming') {
+      where.status = 'scheduled';
+      where.startTime = { gt: nowDate };
+    } else if (q.status === 'live') {
+      where.status = { not: 'finished' };
+      where.startTime = { lte: nowDate };
+    } else if (q.status === 'completed') {
+      where.status = 'finished';
+    }
+
+    // Commence-time window (merged with any status-derived startTime bound).
+    if (q.startFrom || q.startTo) {
+      where.startTime = {
+        ...(typeof where.startTime === 'object' ? where.startTime : {}),
+        ...(q.startFrom ? { gte: q.startFrom } : {}),
+        ...(q.startTo ? { lte: q.startTo } : {}),
+      };
+    }
+
+    // Sport / group. `group` wins and expands to its sport keys via the catalog.
+    const catalog = await this.providerSports();
+    if (q.group) {
+      const keys = resolveSportKeysForGroup(q.group, catalog);
+      where.sport = { in: keys };
+    } else if (q.sport) {
+      where.sport = q.sport;
+    }
+    if (q.league) where.league = q.league;
+
+    if (q.q) {
+      where.OR = [
+        { home: { contains: q.q, mode: 'insensitive' } },
+        { away: { contains: q.q, mode: 'insensitive' } },
+        { league: { contains: q.q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [rows, total] = await Promise.all([
+      this.prisma.event.findMany({
+        where,
+        orderBy: { startTime: q.status === 'completed' ? 'desc' : 'asc' },
+        skip: q.offset,
+        take: q.limit,
+      }),
+      this.prisma.event.count({ where }),
+    ]);
+
+    const groups = sportGroupIndex(catalog);
+    return {
+      events: rows.map((r) => toEventSummary(r, now, groups)),
+      total,
+      limit: q.limit,
+      offset: q.offset,
+    };
+  }
+
+  /**
+   * On-demand bettor-facing event detail (Phase 3): the normalized event
+   * summary plus its featured markets (best price + per-bookmaker offers),
+   * served from the same in-process odds cache as the pick form to bound vendor
+   * credit spend. Optional `bookmaker` / `market` narrow the returned offers.
+   */
+  async getEventDetail(
+    id: string,
+    opts: { bookmaker?: string; market?: string } = {},
+  ): Promise<{ event: EventSummary; markets: MarketOdds[] }> {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const catalog = await this.providerSports();
+    const summary = toEventSummary(event, Date.now(), sportGroupIndex(catalog));
+
+    let markets = await this.getEventOdds(id);
+    if (opts.market) {
+      markets = markets.filter((m) => m.market === opts.market);
+    }
+    if (opts.bookmaker) {
+      const book = opts.bookmaker.toLowerCase();
+      markets = markets
+        .map((m) => ({
+          ...m,
+          offers: (m.offers ?? []).filter((o) => o.bookmaker.toLowerCase() === book),
+        }))
+        .filter((m) => (m.offers?.length ?? 0) > 0);
+    }
+    return { event: summary, markets };
+  }
+
+  /**
+   * On-demand market inventory for one event (Phase 3): every market on offer
+   * (featured + props + period + alternate), classified so the UI can show
+   * props read-only and mark which markets are pickable. Costs one vendor
+   * credit, so it is cached in-process like the odds lookup. Returns [] when the
+   * provider can't list per-event markets.
+   */
+  async getEventMarketInventory(id: string): Promise<ProviderMarketInfo[]> {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Event not found');
+    if (!this.provider.getMarketInventory) return [];
+
+    const cached = this.inventoryCache.get(id);
+    if (cached && Date.now() - cached.at < EventsService.CACHE_TTL_MS) {
+      return cached.markets;
+    }
+    const markets = await this.provider.getMarketInventory(event.vendorEventId);
+    this.inventoryCache.set(id, { markets, at: Date.now() });
+    return markets;
   }
 }

@@ -8,7 +8,7 @@ export default function SiteFooter() {
       <div className="site-footer__inner">
         {/* Brand */}
         <div className="site-footer__brand">
-          <strong>Overlay Bets</strong>
+          <strong>Overlay Picks</strong>
           <p>
             Verified tipsters, ranked by real edge. Every pick locked before
             kickoff.
@@ -19,7 +19,7 @@ export default function SiteFooter() {
         <nav className="site-footer__column" aria-label="Product">
           <h3>Product</h3>
           <Link href="/tipsters">Tipsters</Link>
-          <Link href="/tips">Free tips</Link>
+          <Link href="/tips">Daily Picks</Link>
           <Link href="/tools/odds-calculator">Betting Calculator</Link>
         </nav>
 
@@ -50,12 +50,12 @@ export default function SiteFooter() {
         {/* Disclaimer */}
         <div className="site-footer__bottom">
           <p>
-            Information only — Overlay Bets is a sports-information and analytics
+            Information only — Overlay Picks is a sports-information and analytics
             service. We do not accept bets, hold stakes, or operate as a
             bookmaker. Picks and statistics are informational only and are not
             betting or financial advice. 18+. Please gamble responsibly.
           </p>
-          <p>© {year} Overlay Bets. All rights reserved.</p>
+          <p>© {year} Overlay Picks. All rights reserved.</p>
         </div>
       </div>
     </footer>
