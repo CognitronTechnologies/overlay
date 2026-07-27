@@ -278,10 +278,10 @@ export default function AdminTipsPage() {
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
-        Free Daily Tips
+        Free Daily Picks
       </h1>
       <p style={{ color: MUTED, marginTop: 0 }}>
-        Curate the public “bets of the day” shown on{' '}
+        Curate the public “picks of the day” shown on{' '}
         <a href="/tips" style={{ color: 'var(--accent)' }}>
           /tips
         </a>

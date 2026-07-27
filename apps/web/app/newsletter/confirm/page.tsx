@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import NewsletterActionClient from '../NewsletterActionClient';
 
 export const metadata: Metadata = {
-  title: 'Confirm subscription · Overlay Bets',
+  title: 'Confirm subscription · Overlay Picks',
   robots: { index: false },
 };
 

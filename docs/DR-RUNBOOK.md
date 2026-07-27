@@ -1,6 +1,6 @@
 # Disaster Recovery Runbook (OB-094)
 
-How Overlay Bets backs up its Postgres database, how we prove those backups are
+How Overlay Picks backs up its Postgres database, how we prove those backups are
 restorable, and how to recover when the database is lost or corrupted.
 
 - **Scope:** the Postgres database (the source of truth). Redis is a disposable

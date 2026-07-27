@@ -2,9 +2,9 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'How it works · Overlay Bets',
+  title: 'How it works · Overlay Picks',
   description:
-    'How Overlay Bets keeps tipster records honest: every pick is hashed and locked before kickoff, settled automatically from the result, and ranked by verified yield and closing line value.',
+    'How Overlay Picks keeps tipster records honest: every pick is hashed and locked before kickoff, settled automatically from the result, and ranked by verified yield and closing line value.',
 };
 
 const STEPS: { n: string; title: string; body: string }[] = [
@@ -35,7 +35,7 @@ export default function HowItWorksPage() {
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '3.5rem 1.5rem' }}>
       <h1 style={{ marginBottom: '0.5rem' }}>How it works</h1>
       <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '1.05rem', lineHeight: 1.6 }}>
-        Overlay Bets exists to make a tipster’s track record impossible to fake.
+        Overlay Picks exists to make a tipster’s track record impossible to fake.
         Here’s the loop that keeps everyone honest.
       </p>
 

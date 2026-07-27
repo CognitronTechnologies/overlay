@@ -12,7 +12,7 @@ type FaqItem = { q: string; a: React.ReactNode };
 
 const GENERAL_FAQ: FaqItem[] = [
   {
-    q: 'What is Overlay Bets?',
+    q: 'What is Overlay Picks?',
     a: (
       <>
         A verified tipster marketplace. Tipsters post picks that are locked and
@@ -48,7 +48,7 @@ const GENERAL_FAQ: FaqItem[] = [
 const USER_FAQ: FaqItem[] = [
   {
     q: 'Is there a fee for bettors?',
-    a: 'No — browsing tipsters, viewing the leaderboard and reading the free daily tips are all free. You only pay when you subscribe to a tipster to see their live picks.',
+    a: 'No — browsing tipsters, viewing the leaderboard and reading the free daily picks are all free. You only pay when you subscribe to a tipster to see their live picks.',
   },
   {
     q: 'How do subscriptions and billing work?',
@@ -99,8 +99,8 @@ const TIPSTER_FAQ: FaqItem[] = [
     ),
   },
   {
-    q: 'What fees does Overlay Bets charge?',
-    a: 'Overlay Bets takes a platform fee on tipster subscription revenue (currently 25%). You keep the rest of what your subscribers pay.',
+    q: 'What fees does Overlay Picks charge?',
+    a: 'Overlay Picks takes a platform fee on tipster subscription revenue (currently 25%). You keep the rest of what your subscribers pay.',
   },
   {
     q: 'When and how do I get paid?',

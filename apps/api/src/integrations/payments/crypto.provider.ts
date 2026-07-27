@@ -91,7 +91,7 @@ export class CryptoPaymentProvider implements PaymentProvider {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        name: 'Overlay Bets subscription',
+        name: 'Overlay Picks subscription',
         description: `Subscription to tipster ${params.tipsterId}`,
         pricing_type: 'fixed_price',
         local_price: {

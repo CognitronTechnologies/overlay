@@ -312,7 +312,7 @@ private async build(
       }
 
       case 'pdf': {
-        const title = `Overlay Bets — ${slug.replace(/-/g, ' ')}`;
+        const title = `Overlay Picks — ${slug.replace(/-/g, ' ')}`;
 
         const buffer = await buildPdf(title, headers, data);
 

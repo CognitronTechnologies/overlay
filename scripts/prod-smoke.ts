@@ -1,5 +1,5 @@
 /**
- * Deployment smoke test for the Overlay Bets API (OB-101). Verifies that a
+ * Deployment smoke test for the Overlay Picks API (OB-101). Verifies that a
  * freshly deployed environment is actually serving traffic over HTTPS:
  *
  *   1. GET /api/health        — liveness (never touches a dependency)

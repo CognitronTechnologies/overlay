@@ -84,7 +84,7 @@ export default function ChooseUsernameClient() {
       <h1>Choose your username</h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
         Pick a public handle to finish setting up your account. You’ll appear as
-        this across Overlay Bets.
+        this across Overlay Picks.
       </p>
       <form onSubmit={save} style={formStyles.form}>
         <input

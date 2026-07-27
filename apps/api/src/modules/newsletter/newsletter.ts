@@ -6,7 +6,7 @@
 import { randomBytes } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
 
-const APP_NAME = 'Overlay Bets';
+const APP_NAME = 'Overlay Picks';
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -184,7 +184,7 @@ export async function subscribeFlow(
   try {
     await mailer.sendEmail(
       email,
-      'Confirm your Overlay Bets newsletter subscription',
+      'Confirm your Overlay Picks newsletter subscription',
       newsletterConfirmRequestBody(newsletterConfirmUrl(baseUrl, confirmToken)),
     );
   } catch (err) {
@@ -223,7 +223,7 @@ export async function confirmFlow(
   try {
     await mailer.sendEmail(
       row.email,
-      'Welcome to the Overlay Bets newsletter',
+      'Welcome to the Overlay Picks newsletter',
       newsletterConfirmationBody(),
     );
   } catch (err) {

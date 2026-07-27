@@ -1,8 +1,8 @@
 {
-  "name": "overlay-bets",
+  "name": "overlay-picks",
   "version": "0.1.0",
   "private": true,
-  "description": "Overlay Bets — verified sports tipster marketplace",
+  "description": "Overlay Picks — verified sports tipster marketplace",
   "workspaces": [
     "packages/*",
     "apps/*"

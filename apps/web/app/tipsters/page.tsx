@@ -12,7 +12,7 @@ import {
 } from '../../lib/api';
 
 export const metadata: Metadata = {
-  title: 'Tipsters — Verified edge, ranked · Overlay Bets',
+  title: 'Tipsters — Verified edge, ranked · Overlay Picks',
   description:
     'Browse verified sports tipsters and see the leaderboard. Filter by sport, price and settled sample; sort by yield, closing line value or win rate. Every record is cryptographically locked before kickoff.',
   alternates: { canonical: `${SITE_URL}/tipsters` },

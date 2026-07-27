@@ -25,11 +25,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const t = await getTipster(id);
-  if (!t) return { title: 'Tipster not found — Overlay Bets' };
+  if (!t) return { title: 'Tipster not found — Overlay Picks' };
   const name = t.displayName ?? t.username ?? t.tipsterId;
   const y = t.stats ? `${t.stats.yield.toFixed(1)}% yield` : 'verified picks';
   return {
-    title: `${name} — ${y} · Overlay Bets`,
+    title: `${name} — ${y} · Overlay Picks`,
     description:
       t.bio ??
       `Verified betting record for ${name}: ROI, closing line value and settled picks — all cryptographically locked before kickoff.`,

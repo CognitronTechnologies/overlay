@@ -209,7 +209,7 @@ export default function AdminPage() {
             },
             {
               href: '/admin/tips',
-              label: 'Daily tips',
+              label: 'Daily Picks',
               perm: 'content:moderate',
             },
             {

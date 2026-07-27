@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { listArticles } from '../../lib/api';
 
 export const metadata: Metadata = {
-  title: 'Betting Guides & Content — Overlay Bets',
+  title: 'Betting Guides & Content — Overlay Picks',
   description:
     'Guides and how-tos on closing line value, expected value, bankroll management, bookies and finding the overlay. Learn to bet like the sharps.',
   alternates: { canonical: '/content' },
@@ -23,7 +23,7 @@ export default async function ContentIndex({
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
         <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Bets
+          ← Overlay Picks
         </Link>
       </p>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>

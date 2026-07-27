@@ -1,4 +1,4 @@
-# Overlay Bets — Production-Readiness Backlog
+# Overlay Picks — Production-Readiness Backlog
 
 > A categorized, issue-ready backlog to take the platform from "mock-level MVP walking skeleton"
 > to production. Each item is written so it can be copy-pasted as a GitHub issue and assigned to

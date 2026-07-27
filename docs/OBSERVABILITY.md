@@ -109,7 +109,7 @@ keys are mounted from the secrets manager — never commit real keys.
 npm run build -w @overlay/api && npm run start -w @overlay/api
 
 # Point Prometheus + Alertmanager + Grafana at the config in infra/monitoring/.
-# Import infra/monitoring/grafana-dashboard.json for the "Overlay Bets — SLOs"
+# Import infra/monitoring/grafana-dashboard.json for the "Overlay Picks — SLOs"
 # dashboard.
 ```
 

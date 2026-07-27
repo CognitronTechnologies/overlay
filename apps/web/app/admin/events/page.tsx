@@ -47,7 +47,9 @@ export default function AdminEventsPage() {
           more sports.
         </p>
       </div>
-      <SportsDiscovery />
+      <div style={{ padding: '0 1.5rem 3rem' }}>
+        <SportsDiscovery />
+      </div>
     </div>
   );
 }

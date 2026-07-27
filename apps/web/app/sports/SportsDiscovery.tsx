@@ -222,7 +222,7 @@ function EventDetailPanel({ id }: { id: string }) {
   );
 }
 
-export default function SportsDiscovery() {
+export default function SportsDiscovery({ showTitle = true }: { showTitle?: boolean }) {
   const [catalog, setCatalog] = useState<ProviderSport[]>([]);
   const [group, setGroup] = useState('');
   const [status, setStatus] = useState<EventStatusFilter>('upcoming');
@@ -273,11 +273,15 @@ export default function SportsDiscovery() {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <main style={{ maxWidth: 820, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ marginBottom: '0.25rem' }}>Sports &amp; odds</h1>
-      <p style={{ color: 'var(--muted, #8b90a0)', marginTop: 0 }}>
-        Browse live and upcoming events, compare bookmaker prices, and see every market on offer.
-      </p>
+    <div style={{ maxWidth: 820, margin: '0 auto' }}>
+      {showTitle ? (
+        <>
+          <h1 style={{ marginBottom: '0.25rem' }}>Sports &amp; odds</h1>
+          <p style={{ color: 'var(--muted, #8b90a0)', marginTop: 0 }}>
+            Browse live and upcoming events, compare bookmaker prices, and see every market on offer.
+          </p>
+        </>
+      ) : null}
 
       <div
         style={{
@@ -420,6 +424,6 @@ export default function SportsDiscovery() {
           </button>
         </div>
       )}
-    </main>
+    </div>
   );
 }

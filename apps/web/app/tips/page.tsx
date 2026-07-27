@@ -29,8 +29,8 @@ export async function generateMetadata({
   const canonical =
     date === todayIsoDate() ? '/tips' : `/tips?date=${date}`;
   return {
-    title: `Free Daily Betting Tips — ${human} | Overlay Bets`,
-    description: `Free curated betting tips (bets of the day) for ${human}. Browse next and previous days. Information only — not betting advice.`,
+    title: `Free Daily Picks — Betting Tips for ${human} | Overlay Picks`,
+    description: `Free curated daily betting picks and tips (picks of the day) for ${human}. Browse next and previous days. Information only — not betting advice.`,
     alternates: { canonical },
   };
 }
@@ -100,15 +100,15 @@ export default async function FreeTipsPage({
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
         <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Bets
+          ← Overlay Picks
         </Link>
       </p>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>
-        Free Daily Tips
+        Free Daily Picks
       </h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Our curated free “bets of the day”, updated daily. Browse any date to see
-        that day’s tips.
+        Our curated free picks of the day, updated daily. Browse any date to see
+        that day’s picks.
       </p>
 
       {/* Date navigation: prev/next controls, a date strip and a calendar picker. */}

@@ -1,4 +1,4 @@
-# How to Run Overlay Bets
+# How to Run Overlay Picks
 
 A step-by-step guide to get the platform running locally, then push it to GitHub.
 Everything runs **offline with mock providers** — no Stripe or sports-data API
@@ -21,7 +21,7 @@ keys are required for a first test.
 
 ## 2. Install dependencies
 
-From the repository root (`overlay-bets/`):
+From the repository root (`overlay-picks/`):
 
 ```bash
 npm install
@@ -188,8 +188,8 @@ The project is already a git repo. To publish it:
 ```bash
 # 1. Create an EMPTY repo on GitHub (no README/license), copy its URL.
 
-# 2. From overlay-bets/:
-git remote add origin https://github.com/<you>/overlay-bets.git
+# 2. From overlay-picks/:
+git remote add origin https://github.com/<you>/overlay-picks.git
 git branch -M main
 git push -u origin main
 ```
