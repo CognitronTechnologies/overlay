@@ -326,7 +326,7 @@ export default function AdminPage() {
               placeholder="2026-07"
               pattern="\d{4}-\d{2}"
               style={{
-                background: '#0d1117',
+                background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '0.5rem 0.7rem',
@@ -337,11 +337,11 @@ export default function AdminPage() {
               type="submit"
               disabled={running}
               style={{
-                background: '#238636',
+                background: 'var(--accent)',
                 border: 'none',
                 borderRadius: 8,
                 padding: '0.55rem 0.95rem',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 cursor: running ? 'default' : 'pointer',
               }}
             >
@@ -363,7 +363,7 @@ export default function AdminPage() {
                 value={sport}
                 onChange={(e) => setSport(e.target.value)}
                 style={{
-                  background: '#0d1117',
+                  background: 'var(--surface)',
                   border: '1px solid var(--border)',
                   borderRadius: 8,
                   padding: '0.5rem 0.7rem',
@@ -391,7 +391,7 @@ export default function AdminPage() {
                 onChange={(e) => setSport(e.target.value)}
                 placeholder="soccer_epl"
                 style={{
-                  background: '#0d1117',
+                  background: 'var(--surface)',
                   border: '1px solid var(--border)',
                   borderRadius: 8,
                   padding: '0.5rem 0.7rem',
@@ -403,11 +403,11 @@ export default function AdminPage() {
               type="submit"
               disabled={running}
               style={{
-                background: '#1f6feb',
+                background: 'var(--accent)',
                 border: 'none',
                 borderRadius: 8,
                 padding: '0.55rem 0.95rem',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 cursor: running ? 'default' : 'pointer',
               }}
             >

@@ -9,36 +9,36 @@
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #06080c;
-  --surface: #0d1117;
-  --surface-2: #12181f;
-  --fg: #e8e8ea;
-  --muted: #97a1b0;
-  --border: #1a212c;
-  --accent: #6ea8fe;
-  --accent-hover: #8fbcff;
-  --on-accent: #06080c;
-  --danger: #ff6b8a;
-  --warning: #d29922;
-  --success: #3fb950;
-  --focus-ring: #8fbcff;
+  --bg: #0c0b0a;
+  --surface: #14120f;
+  --surface-2: #1d1a16;
+  --fg: #ece7dd;
+  --muted: #a69c8d;
+  --border: #2a251f;
+  --accent: #e3ac54;
+  --accent-hover: #f2be74;
+  --on-accent: #1a1409;
+  --danger: #f0656f;
+  --warning: #e0872f;
+  --success: #4cb96a;
+  --focus-ring: #f2be74;
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #ffffff;
-  --surface: #f7f8fa;
-  --surface-2: #eef0f4;
-  --fg: #0f141b;
-  --muted: #56606d;
-  --border: #e3e6ec;
-  --accent: #1d4ed8;
-  --accent-hover: #1e40af;
+  --bg: #fbf9f5;
+  --surface: #f3efe8;
+  --surface-2: #ebe4d9;
+  --fg: #1c1712;
+  --muted: #5f5648;
+  --border: #e5ddd0;
+  --accent: #9a6413;
+  --accent-hover: #7f520c;
   --on-accent: #ffffff;
-  --danger: #c2283a;
-  --warning: #8a6100;
+  --danger: #bf2a38;
+  --warning: #9a5a12;
   --success: #1a7f37;
-  --focus-ring: #1d4ed8;
+  --focus-ring: #9a6413;
 }
 
 /* Typography: a warm serif for display headings paired with a humanist sans
@@ -49,6 +49,12 @@
     sans-serif;
   --font-serif: Charter, 'Sitka Text', 'Iowan Old Style', Cambria, Georgia,
     'Times New Roman', serif;
+  /* Semantic surface aliases so every component shares one source of truth
+     for cards, chips and form fields (no off-palette one-off hex values). */
+  --card: var(--surface);
+  --chip: var(--surface-2);
+  --field-bg: var(--surface);
+  --field-border: var(--border);
 }
 
 * {
@@ -259,6 +265,97 @@ a {
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
+}
+
+/* Form controls -------------------------------------------------------- */
+/* One consistent look for every text box, search field, select and textarea
+   so inputs read uniformly with the button system. Components may still set
+   layout (width/margin) inline; colour + focus come from here. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+select,
+textarea,
+.field {
+  font: inherit;
+  color: var(--fg);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Uniform, modern focus: an accent border + soft ring. The ring (box-shadow)
+   applies even to inputs that set their own inline border, so focus always
+   reads the same across the app. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.field:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* Sport chips — "pick a sport" quick filter -------------------------------- */
+.sport-chips {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  margin: 0 0 0.25rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sport-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sport-chip:hover {
+  border-color: var(--accent);
+}
+
+.sport-chip.is-active,
+.sport-chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+
+.sport-chip__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.sport-chip__count {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.78rem;
 }
 
 /* Buttons -------------------------------------------------------------- */

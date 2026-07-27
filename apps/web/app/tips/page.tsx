@@ -9,6 +9,7 @@ import {
 } from '@overlay/shared/daily-tips';
 import { listFreeTips, type FreeTip } from '../../lib/api';
 import TipsDatePicker from './TipsDatePicker';
+import { SportChipLinks } from '../SportChips';
 
 // SSR/ISR: regenerate each date's listing periodically for SEO freshness.
 export const revalidate = 300;
@@ -86,15 +87,24 @@ function TipCard({ tip }: { tip: FreeTip }) {
 export default async function FreeTipsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; sport?: string }>;
 }) {
-  const { date: rawDate } = await searchParams;
+  const { date: rawDate, sport: rawSport } = await searchParams;
   const date = selectedDate(rawDate);
   const today = todayIsoDate();
   const strip = buildDateStrip(date, today);
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
   const { tips } = await listFreeTips(date);
+
+  // Sport chips derived from the sports actually present on this day's picks.
+  const sportParam = (rawSport ?? '').trim();
+  const sportsAvailable = [
+    ...new Map(tips.map((t) => [t.sport.toLowerCase(), t.sport])).values(),
+  ].sort((a, b) => a.localeCompare(b));
+  const visibleTips = sportParam
+    ? tips.filter((t) => t.sport.toLowerCase() === sportParam.toLowerCase())
+    : tips;
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
@@ -181,11 +191,32 @@ export default async function FreeTipsPage({
           or browse another day.
         </p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {tips.map((tip) => (
-            <TipCard key={tip.id} tip={tip} />
-          ))}
-        </ul>
+        <>
+          {sportsAvailable.length > 1 ? (
+            <SportChipLinks
+              items={sportsAvailable.map((s) => ({ key: s, label: s }))}
+              activeKey={sportParam || null}
+              hrefFor={(s) => `/tips?date=${date}&sport=${encodeURIComponent(s)}`}
+              allHref={`/tips?date=${date}`}
+              ariaLabel="Filter picks by sport"
+            />
+          ) : null}
+          {visibleTips.length === 0 ? (
+            <p style={{ color: 'var(--muted)', padding: '1.5rem 0' }}>
+              No {sportParam} picks for this date.{' '}
+              <Link href={`/tips?date=${date}`} style={{ color: 'var(--accent)' }}>
+                See all sports
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {visibleTips.map((tip) => (
+                <TipCard key={tip.id} tip={tip} />
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       <p

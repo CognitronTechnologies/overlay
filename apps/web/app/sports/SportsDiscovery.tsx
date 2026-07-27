@@ -15,6 +15,7 @@ import {
   type MarketOdds,
   type ProviderSport,
 } from '../../lib/events';
+import { sportIcon } from '../SportChips';
 
 const PAGE_SIZE = 20;
 const STATUSES: { value: EventStatusFilter; label: string }[] = [
@@ -283,59 +284,75 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
         </>
       ) : null}
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.6rem',
-          margin: '1.25rem 0',
-          alignItems: 'center',
-        }}
-      >
-        <select
-          aria-label="Sport group"
-          value={group}
-          onChange={(e) => setGroup(e.target.value)}
-          style={inputStyle}
-        >
-          <option value="">All sports</option>
+      <div style={{ margin: '1.25rem 0' }}>
+        <div className="sport-chips" role="group" aria-label="Filter by sport">
+          <button
+            type="button"
+            className={`sport-chip${!group ? ' is-active' : ''}`}
+            aria-pressed={!group}
+            onClick={() => setGroup('')}
+          >
+            <span className="sport-chip__icon" aria-hidden>
+              🏅
+            </span>
+            <span>All sports</span>
+          </button>
           {groups.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-
-        <div role="tablist" aria-label="Status" style={{ display: 'flex', gap: '0.25rem' }}>
-          {STATUSES.map((s) => (
             <button
-              key={s.value}
-              role="tab"
-              aria-selected={status === s.value}
-              onClick={() => setStatus(s.value)}
-              style={{
-                padding: '0.45rem 0.7rem',
-                borderRadius: 8,
-                border: '1px solid var(--border, #33384a)',
-                background: status === s.value ? 'var(--accent, #6e8bff)' : 'transparent',
-                color: status === s.value ? '#fff' : 'inherit',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-              }}
+              key={g}
+              type="button"
+              className={`sport-chip${group === g ? ' is-active' : ''}`}
+              aria-pressed={group === g}
+              onClick={() => setGroup(g)}
             >
-              {s.label}
+              <span className="sport-chip__icon" aria-hidden>
+                {sportIcon(g)}
+              </span>
+              <span>{g}</span>
             </button>
           ))}
         </div>
 
-        <input
-          type="search"
-          placeholder="Search team or league…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          style={{ ...inputStyle, flex: '1 1 180px', minWidth: 160 }}
-          aria-label="Search events"
-        />
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.6rem',
+            marginTop: '0.65rem',
+            alignItems: 'center',
+          }}
+        >
+          <div role="tablist" aria-label="Status" style={{ display: 'flex', gap: '0.25rem' }}>
+            {STATUSES.map((s) => (
+              <button
+                key={s.value}
+                role="tab"
+                aria-selected={status === s.value}
+                onClick={() => setStatus(s.value)}
+                style={{
+                  padding: '0.45rem 0.7rem',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: status === s.value ? 'var(--accent)' : 'transparent',
+                  color: status === s.value ? 'var(--on-accent)' : 'inherit',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="search"
+            placeholder="Search team or league…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{ ...inputStyle, flex: '1 1 180px', minWidth: 160 }}
+            aria-label="Search events"
+          />
+        </div>
       </div>
 
       {loading ? (

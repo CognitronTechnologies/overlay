@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Flag from '../Flag';
 import Avatar from '../Avatar';
 import FollowButton from '../FollowButton';
+import { SportChipLinks } from '../SportChips';
 import {
   listMarketplace,
   SITE_URL,
@@ -97,6 +98,16 @@ export default async function TipstersPage({
   const activeSort = (resolvedParams.sort as MarketplaceSort) ?? 'yield';
   const topTipsters = leaderboard.slice(0, 8);
 
+  const chipHref = (sport?: string) => {
+    const qs = new URLSearchParams();
+    if (sport) qs.set('sport', sport);
+    if (params.maxPrice) qs.set('maxPrice', params.maxPrice);
+    if (params.minSample) qs.set('minSample', params.minSample);
+    if (params.sort) qs.set('sort', params.sort);
+    const s = qs.toString();
+    return s ? `/tipsters?${s}` : '/tipsters';
+  };
+
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>Tipsters</h1>
@@ -107,6 +118,13 @@ export default async function TipstersPage({
 
       <div className="tipsters-layout">
         <div>
+          <SportChipLinks
+            items={SPORTS.map((s) => ({ key: s, label: s[0].toUpperCase() + s.slice(1) }))}
+            activeKey={resolvedParams.sport ?? null}
+            hrefFor={(s) => chipHref(s)}
+            allHref={chipHref()}
+            ariaLabel="Filter tipsters by sport"
+          />
           <form
             method="get"
             style={{
@@ -120,17 +138,7 @@ export default async function TipstersPage({
               borderRadius: 12,
             }}
           >
-            <label style={labelStyle}>
-              Sport
-              <select name="sport" defaultValue={resolvedParams.sport ?? ''} style={inputStyle}>
-                <option value="">All sports</option>
-                {SPORTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <input type="hidden" name="sport" value={resolvedParams.sport ?? ''} />
 
             <label style={labelStyle}>
               Max price (¢/mo)
