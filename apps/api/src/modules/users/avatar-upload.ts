@@ -10,9 +10,10 @@
  * used to stash arbitrary/oversized files.
  */
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import {
+  deletePublicObject,
   publicUrl,
   storageConfigured,
   uploadPublicObject,
@@ -54,6 +55,22 @@ function objectKey(originalName: string): string {
   return `${randomUUID()}${ext}`;
 }
 
+// Extract the storage object key from a public avatar URL.
+function storageKeyFromUrl(url: string): string | null {
+  const base = `${localBaseUrl()}/uploads/`;
+
+  if (url.startsWith(base)) {
+    return url.slice(base.length);
+  }
+
+  const marker = '/storage/v1/object/public/';
+  const index = url.indexOf(marker);
+
+  if (index === -1) return null;
+
+  return url.slice(index + marker.length);
+}
+
 /**
  * Validate and persist an avatar image, returning a full public URL. Throws
  * {@link InvalidAvatarError} for a missing, oversized or wrong-type file.
@@ -84,4 +101,24 @@ export async function storeAvatar(
   const fileName = key.slice('avatars/'.length);
   await writeFile(join(dir, fileName), file.buffer);
   return `${localBaseUrl()}/uploads/avatars/${fileName}`;
+}
+
+/** Delete a previously stored avatar. */
+export async function deleteAvatar(url: string): Promise<void> {
+  const key = storageKeyFromUrl(url);
+
+  if (!key) return;
+
+  if (storageConfigured()) {
+    // Delete the object from the configured storage provider.
+    await deletePublicObject(key);
+    return;
+  }
+
+  // Delete the local file if it still exists.
+  try {
+    await unlink(join(uploadDir(), key));
+  } catch {
+    // Ignore missing files.
+  }
 }

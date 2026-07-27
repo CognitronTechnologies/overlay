@@ -6,6 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import {
+  deleteAvatar,
+  InvalidAvatarError,
+  storeAvatar,
+  type UploadedImage,
+} from './avatar-upload';
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
@@ -46,13 +52,58 @@ export class UsersService {
   }
 
   /** Persist the user's uploaded avatar URL. */
-  async setAvatar(userId: string, url: string): Promise<{ avatarUrl: string | null }> {
+  async setAvatar(
+    userId: string,
+    url: string,
+  ): Promise<{ avatarUrl: string | null }> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: url },
       select: { avatarUrl: true },
     });
     return { avatarUrl: user.avatarUrl };
+  }
+
+  /** Upload / replace the user's avatar. */
+  async uploadAvatar(
+    userId: string,
+    file?: UploadedImage,
+  ): Promise<{ avatarUrl: string | null }> {
+    let newUrl: string;
+
+    try {
+      // Read the current avatar before replacing it.
+      const existing = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { avatarUrl: true },
+      });
+
+      // Upload the new avatar.
+      newUrl = await storeAvatar(file);
+
+      // Save the new avatar URL.
+      const updated = await this.prisma.user.update({
+        where: { id: userId },
+        data: { avatarUrl: newUrl },
+        select: { avatarUrl: true },
+      });
+
+      // Delete the previous avatar after the update succeeds.
+      if (existing?.avatarUrl) {
+        try {
+          await deleteAvatar(existing.avatarUrl);
+        } catch {
+          // Ignore cleanup failures.
+        }
+      }
+
+      return { avatarUrl: updated.avatarUrl };
+    } catch (err) {
+      if (err instanceof InvalidAvatarError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 
   /**
@@ -75,11 +126,27 @@ export class UsersService {
 
   /** Remove the user's avatar (revert to the generated fallback). */
   async clearAvatar(userId: string): Promise<{ avatarUrl: string | null }> {
+    // Read the current avatar before clearing it.
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: null },
       select: { avatarUrl: true },
     });
+
+    // Delete the previous avatar after clearing it.
+    if (existing?.avatarUrl) {
+      try {
+        await deleteAvatar(existing.avatarUrl);
+      } catch {
+        // Ignore cleanup failures.
+      }
+    }
+
     return { avatarUrl: user.avatarUrl };
   }
 
@@ -89,8 +156,13 @@ export class UsersService {
     if (!USERNAME_RE.test(username)) {
       return { available: false, valid: false };
     }
-    const existing = await this.prisma.user.findUnique({ where: { username } });
-    return { available: !existing || existing.id === excludeUserId, valid: true };
+    const existing = await this.prisma.user.findUnique({
+      where: { username },
+    });
+    return {
+      available: !existing || existing.id === excludeUserId,
+      valid: true,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

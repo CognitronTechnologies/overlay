@@ -164,6 +164,33 @@ export default function AdminPage() {
           margin: '0 0 1rem',
         }}
       >
+        {[
+          { href: '/admin/users', label: 'Users & roles' },
+          { href: '/admin/settlements', label: 'Settlements' },
+          { href: '/admin/reports', label: 'Tipster feedback' },
+          { href: '/admin/feedback', label: 'Support & feedback' },
+          { href: '/admin/newsletter', label: 'Newsletter subscribers' },
+          { href: '/admin/payouts', label: 'Payout approvals' },
+          { href: '/admin/audit-log', label: 'Audit log' },
+          { href: '/admin/blog', label: 'Blog authoring' },
+          { href: '/admin/authorship', label: 'Tipster authorship' }
+        ].map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              padding: '0.55rem 0.95rem',
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+            }}
+          >
+            {item.label} →
+          </Link>
+        ))}
         {(
           [
             { href: '/admin/users', label: 'Users & roles', perm: 'user:manage' },

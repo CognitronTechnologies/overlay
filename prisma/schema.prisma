@@ -1,6 +1,3 @@
-// Overlay Bets — Prisma schema (v1)
-// See docs/ARCHITECTURE.md §4 for the data model and integrity rules.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,6 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                     String                  @id @default(cuid())
+  role                   Role                    @default(user)
+  email                  String                  @unique
+  passwordHash           String?
+  createdAt              DateTime                @default(now())
+  supabaseUserId         String?                 @unique
+  username               String?                 @unique
+  avatarUrl              String?
+  articles               Article[]
+  follows                Follow[]
+  notificationPreference NotificationPreference?
+  subscriptions          Subscription[]
+  tipster                Tipster?
+  reportsMade            TipsterReport[]         @relation("ReportsMade")
+}
+
+model Tipster {
+  userId                 String              @id
+  bio                    String?
+  sports                 String[]
+  subscriptionPriceCents Int                 @default(0)
+  stripeAccountId        String?
+  status                 String              @default("active")
+  createdAt              DateTime            @default(now())
+  stripeOnboarded        Boolean             @default(false)
+  identityVerified       Boolean             @default(false)
 enum Role {
   user
   tipster
@@ -136,10 +160,9 @@ model Tipster {
   // Public identity (OB-020): shown on the profile / marketplace card.
   displayName            String?
   country                String?
-  // Preferred direct-contact channel captured at onboarding: one of
-  // `phone` | `telegram` | `whatsapp`, with the handle/number in contactValue.
   contactMethod          String?
   contactValue           String?
+  billingInterval        BillingInterval     @default(monthly)
   bio                    String?
   sports                 String[]
   subscriptionPriceCents Int             @default(0)
@@ -176,11 +199,22 @@ model Tipster {
   socialX                String?
   socialInstagram        String?
   socialTelegram         String?
-  // Uploaded official document (ID / passport / driver licence) backing the
-  // verification step. Path is storage-relative; name is the original filename.
   identityDocPath        String?
   identityDocName        String?
   identityDocSubmittedAt DateTime?
+  payoutMethod           String?
+  payoutWalletAddress    String?
+  payoutWalletChain      String?
+  payoutMobileNumber     String?
+  payoutMobileNetwork    String?
+  articleAuthorStatus    ArticleAuthorStatus @default(pending)
+  followers              Follow[]
+  payouts                Payout[]
+  picks                  Pick[]
+  subscriptions          Subscription[]
+  user                   User                @relation(fields: [userId], references: [id])
+  reports                TipsterReport[]
+  stats                  TipsterStats?
   status                 String          @default("active")
   createdAt              DateTime        @default(now())
 
@@ -203,6 +237,7 @@ model Event {
   startTime         DateTime
   status            String    @default("scheduled")
   closingCapturedAt DateTime?
+  picks             Pick[]
 
   // Latest known in-play score (OB-039). Populated from the provider score feed
   // while the game is live; `null` until a score is observed. Used by the
@@ -223,6 +258,16 @@ model Event {
 /// Append-only. Core fields are immutable after `lockedAt`.
 /// Only the settlement worker writes settlement fields (status/result/closingOdds/clv/settledAt).
 model Pick {
+  id          String     @id @default(cuid())
+  tipsterId   String
+  eventId     String
+  market      String
+  selection   String
+  oddsAtPick  Float
+  stakeUnits  Float      @default(1)
+  hash        String
+  nonce       String
+  lockedAt    DateTime   @default(now())
   id        String  @id @default(cuid())
   tipsterId String
   tipster   Tipster @relation(fields: [tipsterId], references: [userId])
@@ -251,6 +296,9 @@ model Pick {
   clv         Float?
   result      String?
   settledAt   DateTime?
+  note        String?
+  event       Event      @relation(fields: [eventId], references: [id])
+  tipster     Tipster    @relation(fields: [tipsterId], references: [userId])
 
   @@index([tipsterId, status])
   @@index([eventId, status])
@@ -263,14 +311,13 @@ model Pick {
 model Subscription {
   id                   String             @id @default(cuid())
   userId               String
-  user                 User               @relation(fields: [userId], references: [id])
   tipsterId            String
-  tipster              Tipster            @relation(fields: [tipsterId], references: [userId])
-  // Which payment provider settles this subscription (stripe, crypto, momo…).
-  provider             String             @default("stripe")
   stripeSubscriptionId String?            @unique
   status               SubscriptionStatus @default(active)
   currentPeriodEnd     DateTime?
+  provider             String             @default("stripe")
+  tipster              Tipster            @relation(fields: [tipsterId], references: [userId])
+  user                 User               @relation(fields: [userId], references: [id])
 
   @@unique([userId, tipsterId])
 }
@@ -281,10 +328,10 @@ model Subscription {
 model Follow {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   tipsterId String
-  tipster   Tipster  @relation(fields: [tipsterId], references: [userId])
   createdAt DateTime @default(now())
+  tipster   Tipster  @relation(fields: [tipsterId], references: [userId])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, tipsterId])
   @@index([tipsterId])
@@ -297,7 +344,6 @@ model Follow {
 /// distinctly, never blended (OB-039).
 model TipsterStats {
   tipsterId     String   @id
-  tipster       Tipster  @relation(fields: [tipsterId], references: [userId])
   roi           Float    @default(0)
   yield         Float    @default(0)
   clvAvg        Float    @default(0)
@@ -310,6 +356,7 @@ model TipsterStats {
   liveWinRate    Float   @default(0)
   liveSampleSize Int     @default(0)
   updatedAt     DateTime @updatedAt
+  tipster       Tipster  @relation(fields: [tipsterId], references: [userId])
 
   // OB-120: the public leaderboard ranks by yield then CLV (ORDER BY yield DESC,
   // clvAvg DESC). This composite lets Postgres return the top tipsters via an
@@ -320,19 +367,15 @@ model TipsterStats {
 model Payout {
   id               String       @id @default(cuid())
   tipsterId        String
-  tipster          Tipster      @relation(fields: [tipsterId], references: [userId])
   amountCents      Int
-  // Gross collected revenue this payout covers, and the platform fee taken.
-  // Balance accounting reserves grossCents so it can't be paid out twice.
-  grossCents       Int          @default(0)
-  feeCents         Int          @default(0)
-  // 'scheduled' (regular weekly run, auto) or 'on_demand' (tipster-requested,
-  // needs admin approval when off the regular schedule).
-  kind             String       @default("scheduled")
   period           String
   status           PayoutStatus @default(pending)
   stripeTransferId String?
   createdAt        DateTime     @default(now())
+  grossCents       Int          @default(0)
+  feeCents         Int          @default(0)
+  kind             String       @default("scheduled")
+  tipster          Tipster      @relation(fields: [tipsterId], references: [userId])
 
   @@index([status])
   @@index([tipsterId])
@@ -342,9 +385,9 @@ model Payout {
 /// Payouts are computed from summed collected revenue here — never from the raw
 /// active-subscriber count — so the platform can only pay out money it actually
 /// received. Written only from verified provider webhooks.
-///   amountCents  — USD minor units (platform accounting currency); negative for refunds.
-///   reference    — unique provider-side id (charge/session/invoice/event) for idempotent inserts.
-///   period       — YYYY-MM the payment is attributed to (drives the monthly payout).
+/// amountCents  — USD minor units (platform accounting currency); negative for refunds.
+/// reference    — unique provider-side id (charge/session/invoice/event) for idempotent inserts.
+/// period       — YYYY-MM the payment is attributed to (drives the monthly payout).
 model Payment {
   id          String   @id @default(cuid())
   userId      String
@@ -378,11 +421,7 @@ model AuditLog {
 model TipsterReport {
   id         String       @id @default(cuid())
   reporterId String
-  reporter   User         @relation("ReportsMade", fields: [reporterId], references: [id])
   tipsterId  String
-  tipster    Tipster      @relation(fields: [tipsterId], references: [userId])
-  /// 'positive' (praise) or 'negative' (complaint/report).
-  sentiment  String       @default("negative")
   /// Positive: accurate | communication | value | recommend | other.
   /// Negative: fake_record | scam | impersonation | spam | other.
   reason     String
@@ -391,6 +430,10 @@ model TipsterReport {
   reviewNote String?
   reviewedAt DateTime?
   createdAt  DateTime     @default(now())
+  /// 'positive' (praise) or 'negative' (complaint/report).
+  sentiment  String       @default("negative")
+  reporter   User         @relation("ReportsMade", fields: [reporterId], references: [id])
+  tipster    Tipster      @relation(fields: [tipsterId], references: [userId])
 
   @@index([status])
   @@index([tipsterId])
@@ -444,6 +487,20 @@ model Article {
   slug           String          @unique
   title          String
   excerpt        String
+  body           String
+  coverImage     String?
+  tags           String[]
+  status         ArticleStatus   @default(draft)
+  readingMinutes Int             @default(1)
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  authorId       String
+  publishedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  category       ArticleCategory @default(content)
+  author         User            @relation(fields: [authorId], references: [id])
   body           String // markdown
   coverImage     String?
   tags           String[]
@@ -473,12 +530,12 @@ model Article {
 /// `unsubscribeToken` backs CAN-SPAM one-click unsubscribe links in emails.
 model NotificationPreference {
   userId           String                @id
-  user             User                  @relation(fields: [userId], references: [id])
   emailEnabled     Boolean               @default(true)
   pushEnabled      Boolean               @default(true)
   frequency        NotificationFrequency @default(instant)
   unsubscribeToken String                @unique
   updatedAt        DateTime              @updatedAt
+  user             User                  @relation(fields: [userId], references: [id])
 }
 
 /// A browser Web Push (VAPID) subscription (OB-031). One row per browser/device
@@ -523,6 +580,82 @@ model FreeTip {
   @@index([tipDate])
 }
 
+enum Role {
+  user
+  tipster
+  admin
+}
+
+enum PickStatus {
+  pending
+  won
+  lost
+  void
+  half_won
+  half_lost
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+}
+
+enum PayoutStatus {
+  pending
+  paid
+  failed
+  awaiting_approval
+  rejected
+}
+
+/// Lifecycle of a user-submitted report about a tipster (OB-161).
+enum ReportStatus {
+  open
+  reviewing
+  resolved
+  dismissed
+}
+
+/// Lifecycle of a support / feedback submission (OB-162).
+enum FeedbackStatus {
+  new
+  reviewed
+  archived
+}
+
+enum ArticleStatus {
+  draft
+  pending
+  published
+  archived
+}
+
+enum ArticleAuthorStatus {
+  pending
+  approved
+  suspended
+}
+
+/// Editorial section an article belongs to (OB): `content` is evergreen guides
+/// and how-tos (CLV, bankroll, bookies); `news` is timely happenings in sport
+/// and betting.
+enum ArticleCategory {
+  content
+  news
+}
+
+/// Delivery cadence for a user's notifications (OB-033).
+/// `instant` fans out per pick; `daily` batches picks into one digest email.
+enum NotificationFrequency {
+  instant
+  daily
+}
+
+/// Subscription billing cadence a tipster offers (OB-020).
+enum BillingInterval {
+  weekly
+  monthly
 /// Tipster-authored tip-drop schedule announcement (OB-034): a lightweight,
 /// pick-free heads-up telling subscribers *when* tips will drop (e.g. "Daily
 /// tips at 18:00 EAT"). One-off or recurring, always with an explicit IANA

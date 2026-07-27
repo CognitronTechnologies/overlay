@@ -139,3 +139,28 @@ export function publicUrl(objectPath: string): string {
   return `${baseUrl()}/storage/v1/object/public/${publicBucket()}/${encodeObjectPath(objectPath)}`;
 }
 
+/**
+ * Delete an object from the PUBLIC bucket (avatars). Missing objects are treated
+ * as already deleted; any other non-2xx response is surfaced to the caller.
+ */
+export async function deletePublicObject(objectPath: string,): Promise<void> {
+  const res = await fetch(
+    `${baseUrl()}/storage/v1/object/${publicBucket()}/${encodeObjectPath(objectPath)}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+  );
+
+  // Ignore "not found" so cleanup is idempotent.
+  if (res.status === 404) {
+    return;
+  }
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(
+      `Supabase Storage delete failed (${res.status}): ${detail}`,
+    );
+  }
+}

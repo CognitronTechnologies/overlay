@@ -42,10 +42,13 @@ export async function authFetch(
   init: RequestInit = {},
 ): Promise<Response> {
   const token = await getAccessToken();
+
+  const isFormData = init.body instanceof FormData;
+
   return fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      'content-type': 'application/json',
+      ...(isFormData ? {} : { 'content-type': 'application/json' }),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },

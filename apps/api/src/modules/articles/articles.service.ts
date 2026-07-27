@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { storeCover, deleteCover, InvalidCoverError, type UploadedCover } from './cover-upload';
 import {
   slugify,
   dedupeSlug,
@@ -19,6 +20,7 @@ import {
 import { ARTICLE_LIST_CACHE } from '../../common/cache/cache.module';
 import type { CreateArticleDto } from './dto/create-article.dto';
 import type { UpdateArticleDto } from './dto/update-article.dto';
+import type { UpdateArticleAuthorStatusDto } from './dto/update-article-author-status.dto';
 import {
   canAuthorArticles,
   canManageArticle,
@@ -123,15 +125,22 @@ export class ArticlesService {
   /** Throw unless the actor is allowed to author articles (approved tipster/admin). */
   private async assertCanAuthor(actor: AuthoringActor) {
     if (actor.role === 'admin') return;
+
     const tipster =
       actor.role === 'tipster'
         ? await this.prisma.tipster.findUnique({
             where: { userId: actor.userId },
+            select: {
+              articleAuthorStatus: true,
+            },
           })
         : null;
-    if (!canAuthorArticles(actor, tipster)) {
-      throw new ForbiddenException('Not allowed to author articles');
+
+    if (canAuthorArticles(actor, tipster)) {
+      return;
     }
+
+    throw new ForbiddenException('Not allowed to author articles');
   }
 
   async create(actor: AuthoringActor, dto: CreateArticleDto) {
@@ -172,6 +181,35 @@ export class ArticlesService {
     // OB-130: a new article may appear in the public lists — retire the cache.
     await this.listCache.invalidate();
     return created;
+  }
+
+  async uploadCover(actor: AuthoringActor, file: UploadedCover | undefined): Promise<{ url: string }> {
+    await this.assertCanAuthor(actor);
+    try {
+      const url = await storeCover(file);
+      return { url };
+    } catch (err) {
+      if (err instanceof InvalidCoverError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
+  }
+
+  async removeCover(actor: AuthoringActor, id: string) {
+    const existing = await this.prisma.article.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Article not found');
+    if (!canManageArticle(actor, existing)) {
+      throw new ForbiddenException('Not allowed to edit this article');
+    }
+    if (existing.coverImage) {
+      await deleteCover(existing.coverImage);
+    }
+    await this.prisma.article.update({
+      where: { id },
+      data: { coverImage: null },
+    });
+    return { deleted: true };
   }
 
   async update(id: string, dto: UpdateArticleDto, actor: AuthoringActor) {
@@ -225,5 +263,40 @@ export class ArticlesService {
     // OB-130: a removed article must drop out of the public lists.
     await this.listCache.invalidate();
     return { deleted: true };
+  }
+
+  async listAuthors() {
+    return this.prisma.tipster.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        userId: true,
+        displayName: true,
+        status: true,
+        articleAuthorStatus: true,
+        identityVerified: true,
+        createdAt: true,
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateAuthorStatus(
+    userId: string,
+    dto: UpdateArticleAuthorStatusDto,
+  ) {
+    return this.prisma.tipster.update({
+      where: {
+        userId,
+      },
+      data: {
+        articleAuthorStatus: dto.articleAuthorStatus,
+      },
+    });
   }
 }
