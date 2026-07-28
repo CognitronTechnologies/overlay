@@ -11,6 +11,7 @@ import { fetchJson } from './http';
 import { parseSportsConfig } from './sports-config';
 import {
   mapEvents,
+  mapEventOdds,
   mapMarketInventory,
   mapOdds,
   scoreStateOf,
@@ -67,13 +68,29 @@ export class TheOddsApiProvider implements SportsDataProvider {
     // Featured markets across the configured region(s). Credit cost = regions ×
     // markets; both are validated/clamped by parseSportsConfig (defaults: eu ×
     // h2h,spreads,totals = 3).
-    const { regions, markets } = this.config;
+    const { regions, markets, eventMarkets } = this.config;
     const url = `${this.base}/sports/${sport}/odds?apiKey=${this.apiKey}&regions=${regions}&markets=${markets}&oddsFormat=decimal`;
     const raw = await fetchJson<OddsApiEventOdds[]>(url, undefined, {
       label: this.name,
     });
     const event = raw.find((e) => e.id === eventId);
-    return event ? mapOdds(event) : [];
+    let out = event ? mapOdds(event) : [];
+
+    // Extra gradeable markets (BTTS, draw-no-bet, team totals) live on the
+    // per-event odds endpoint, not the bulk call. Opt-in via SPORTS_EVENT_MARKETS
+    // (paid tier); non-fatal so a failure never drops the featured odds.
+    if (eventMarkets) {
+      try {
+        const evUrl = `${this.base}/sports/${sport}/events/${eventId}/odds?apiKey=${this.apiKey}&regions=${regions}&markets=${eventMarkets}&oddsFormat=decimal`;
+        const ev = await fetchJson<OddsApiEventOdds>(evUrl, undefined, {
+          label: this.name,
+        });
+        out = [...out, ...mapEventOdds(ev)];
+      } catch {
+        // Extended markets are best-effort; featured odds still returned.
+      }
+    }
+    return out;
   }
 
   async getResult(vendorEventId: string): Promise<EventResult | null> {

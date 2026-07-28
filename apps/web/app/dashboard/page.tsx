@@ -526,10 +526,7 @@ export default function DashboardPage() {
             value={form.market}
             onChange={(e) => selectMarket(e.target.value)}
           >
-            {(eventOdds && eventOdds.length > 0
-              ? eventOdds.map((m) => m.market)
-              : MARKETS
-            ).map((m) => (
+            {MARKETS.map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>

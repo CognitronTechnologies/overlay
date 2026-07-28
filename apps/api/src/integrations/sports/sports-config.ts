@@ -18,11 +18,25 @@ export const KNOWN_REGIONS = ['us', 'us2', 'uk', 'au', 'eu'] as const;
  */
 export const FEATURED_ODDS_MARKETS = ['h2h', 'spreads', 'totals'] as const;
 
+/**
+ * Extra **gradeable** markets fetched from the per-event odds endpoint
+ * (`/events/{id}/odds`) — settleable from the final score, so tipsters get live
+ * prices + closing odds + CLV on them. Restricted to the keys the mapper can
+ * encode unambiguously. Off by default (empty) since the per-event call costs
+ * additional credits; enable on a paid tier via SPORTS_EVENT_MARKETS.
+ */
+export const EVENT_ODDS_MARKETS = ['btts', 'draw_no_bet', 'team_totals'] as const;
+
 export interface SportsProviderConfig {
   /** Comma-joined region list for odds requests (e.g. "eu" or "eu,us"). */
   regions: string;
   /** Comma-joined featured market keys for odds requests. */
   markets: string;
+  /**
+   * Comma-joined extra gradeable markets fetched per-event (empty = off).
+   * Each adds a per-event odds call (credits = markets × regions).
+   */
+  eventMarkets: string;
   /** Completed-result window in days (1–3); larger costs 2 credits vs 1. */
   scoresDaysFrom: number;
   /** How long a score stays "fresh" before the UI marks it stale (ms). */
@@ -32,6 +46,7 @@ export interface SportsProviderConfig {
 export const DEFAULT_SPORTS_CONFIG: SportsProviderConfig = {
   regions: 'eu',
   markets: 'h2h,spreads,totals',
+  eventMarkets: '',
   scoresDaysFrom: 3,
   scoreStaleMs: 120_000,
 };
@@ -78,6 +93,7 @@ export function parseSportsConfig(
       FEATURED_ODDS_MARKETS,
       DEFAULT_SPORTS_CONFIG.markets,
     ),
+    eventMarkets: parseList(env.SPORTS_EVENT_MARKETS, EVENT_ODDS_MARKETS, ''),
     scoresDaysFrom: parseIntEnv(env.SPORTS_SCORES_DAYS_FROM, DEFAULT_SPORTS_CONFIG.scoresDaysFrom, 1, 3),
     scoreStaleMs: parseIntEnv(
       env.SPORTS_SCORE_STALE_MS,

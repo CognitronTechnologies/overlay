@@ -221,13 +221,6 @@ export async function exportMyData(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-/** Erase the caller's account (anonymizes PII), then sign out. */
-export async function deleteMyAccount(): Promise<void> {
-  const res = await authFetch('/api/privacy/me', { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete your account');
-  await signOut();
-}
-
 /** Feedback sentiment about a tipster. */
 export type FeedbackSentiment = 'positive' | 'negative';
 

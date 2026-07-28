@@ -8,7 +8,18 @@ export default function SiteFooter() {
       <div className="site-footer__inner">
         {/* Brand */}
         <div className="site-footer__brand">
-          <strong>Overlay Picks</strong>
+          <span className="site-footer__brand-lockup">
+            <img
+              src="/logo-mark.png"
+              alt=""
+              width={28}
+              height={28}
+              className="site-footer__mark"
+            />
+            <strong>
+              <span className="site-footer__wordmark-accent">Overlay</span> Picks
+            </strong>
+          </span>
           <p>
             Verified tipsters, ranked by real edge. Every pick locked before
             kickoff.
@@ -20,7 +31,7 @@ export default function SiteFooter() {
           <h3>Product</h3>
           <Link href="/tipsters">Tipsters</Link>
           <Link href="/tips">Daily Picks</Link>
-          <Link href="/tools/odds-calculator">Betting Calculator</Link>
+          <Link href="/tools/odds-calculator">Calculator</Link>
         </nav>
 
         {/* Company */}
