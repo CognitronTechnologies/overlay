@@ -142,6 +142,64 @@ export function mapOdds(raw: OddsApiEventOdds): MarketOdds[] {
   return out;
 }
 
+/**
+ * Map the per-event odds response (`/events/{id}/odds`) for the extra
+ * **gradeable** markets we can settle from the final score — BTTS, draw-no-bet
+ * and team totals. Only outcomes that map to an unambiguous canonical selection
+ * are kept; anything we can't confidently encode is dropped rather than risk a
+ * mis-settled pick. Featured markets (h2h/spreads/totals) stay on the cheaper
+ * bulk `/odds` call.
+ */
+export function mapEventOdds(raw: OddsApiEventOdds): MarketOdds[] {
+  const btts: Record<string, number> = {};
+  const dnb: Record<string, number> = {};
+  const teamTotals: Record<string, number> = {};
+  const offers: Record<string, OddsOffer[]> = { btts: [], dnb: [], team_totals: [] };
+
+  const better = (bag: Record<string, number>, key: string, price: number) => {
+    if (bag[key] === undefined || price > bag[key]) bag[key] = price;
+  };
+
+  for (const bm of raw.bookmakers ?? []) {
+    for (const mk of bm.markets ?? []) {
+      const updatedAt = mk.last_update ?? bm.last_update;
+      if (mk.key === 'btts') {
+        for (const o of mk.outcomes) {
+          const name = o.name.toLowerCase();
+          if (name !== 'yes' && name !== 'no') continue;
+          better(btts, name, o.price);
+          offers.btts.push({ bookmaker: bm.key, bookmakerTitle: bm.title, selection: name, price: o.price, updatedAt });
+        }
+      } else if (mk.key === 'draw_no_bet') {
+        for (const o of mk.outcomes) {
+          const sel = selectionForOutcome(o.name, raw.home_team, raw.away_team);
+          if (sel !== 'home' && sel !== 'away') continue;
+          better(dnb, sel, o.price);
+          offers.dnb.push({ bookmaker: bm.key, bookmakerTitle: bm.title, selection: sel, price: o.price, updatedAt });
+        }
+      } else if (mk.key === 'team_totals') {
+        for (const o of mk.outcomes) {
+          if (o.point === undefined || !o.description) continue;
+          const team = selectionForOutcome(o.description, raw.home_team, raw.away_team);
+          const side = o.name.toLowerCase();
+          if ((team !== 'home' && team !== 'away') || (side !== 'over' && side !== 'under')) continue;
+          const key = `${team} ${side} ${o.point}`;
+          better(teamTotals, key, o.price);
+          offers.team_totals.push({ bookmaker: bm.key, bookmakerTitle: bm.title, selection: key, price: o.price, point: o.point, updatedAt });
+        }
+      }
+    }
+  }
+
+  const out: MarketOdds[] = [];
+  if (Object.keys(btts).length > 0) out.push({ market: 'btts', prices: btts, offers: offers.btts });
+  if (Object.keys(dnb).length > 0) out.push({ market: 'dnb', prices: dnb, offers: offers.dnb });
+  if (Object.keys(teamTotals).length > 0) {
+    out.push({ market: 'team_totals', prices: teamTotals, offers: offers.team_totals });
+  }
+  return out;
+}
+
 /** Extract the current home/away score from a score event, or null if absent. */
 export function scoresOf(
   raw: OddsApiScoreEvent,

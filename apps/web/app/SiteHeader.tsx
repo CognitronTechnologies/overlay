@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getProfile } from '../lib/auth';
 import ThemeToggle from './ThemeToggle';
+import NotificationBell from './NotificationBell';
 
 export default function SiteHeader() {
   const [role, setRole] = useState<string | null>(null);
@@ -22,7 +23,19 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="site-header__inner">
         <Link href="/" className="site-header__brand" onClick={closeMenu}>
-          Overlay Picks
+          <img
+            src="/logo-mark.png"
+            alt=""
+            width={30}
+            height={30}
+            className="site-header__mark"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <span className="site-header__wordmark">
+            <span className="site-header__wordmark-accent">Overlay</span> Picks
+          </span>
         </Link>
 
         <button
@@ -48,7 +61,7 @@ export default function SiteHeader() {
             Daily Picks
           </Link>
           <Link href="/tools/odds-calculator" onClick={closeMenu}>
-            Betting Calculator
+            Calculator
           </Link>
           <div className="nav-dropdown">
             <button
@@ -56,7 +69,7 @@ export default function SiteHeader() {
               className="nav-dropdown__trigger"
               aria-haspopup="true"
             >
-              Content &amp; News <span aria-hidden="true">▾</span>
+              Content Hub <span aria-hidden="true">▾</span>
             </button>
             <div className="nav-dropdown__menu" role="menu">
               <Link href="/content" onClick={closeMenu} role="menuitem">
@@ -124,6 +137,7 @@ export default function SiteHeader() {
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </Link>
+          {ready && role ? <NotificationBell /> : null}
           {ready ? (
             role ? (
               <Link href="/account" onClick={closeMenu}>
