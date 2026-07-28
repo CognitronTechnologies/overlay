@@ -8,7 +8,7 @@ import type {
   ProviderSport,
   SportsDataProvider,
 } from '../../integrations/sports/sports-provider.interface';
-import { isValidProviderEvent, parseIngestSports } from './ingestion';
+import { isValidProviderEvent, isIngestAll, resolveIngestSports } from './ingestion';
 import {
   normalizeEventQuery,
   resolveSportKeysForGroup,
@@ -64,14 +64,52 @@ export class EventsService {
   }
 
   /**
-   * Ingest every sport configured via INGEST_SPORTS (comma-separated vendor
-   * sport keys). Per-sport failures are isolated so one bad vendor call doesn't
-   * abort the rest. Returns a per-sport summary for logging/observability.
+   * Ingest the configured sports. `INGEST_SPORTS` accepts an explicit
+   * comma-separated list, or `all`/`*` to ingest every in-season sport from the
+   * provider catalog (fixtures are quota-free, so this costs no vendor
+   * credits). Outright/futures sports are excluded unless
+   * `INGEST_INCLUDE_OUTRIGHTS=true`. Per-sport failures are isolated so one bad
+   * vendor call doesn't abort the rest. Returns a per-sport summary.
    */
   async ingestConfigured(): Promise<
     { sport: string; ingested?: number; error?: string }[]
   > {
-    const sports = parseIngestSports(process.env.INGEST_SPORTS);
+    const raw = process.env.INGEST_SPORTS;
+    const catalog =
+      isIngestAll(raw) && this.provider.getSports
+        ? await this.provider.getSports()
+        : [];
+    const sports = resolveIngestSports(raw, catalog, {
+      includeOutrights: process.env.INGEST_INCLUDE_OUTRIGHTS === 'true',
+    });
+    if (isIngestAll(raw)) {
+      this.log.log(`Ingest ALL: ${sports.length} in-season sport(s) from catalog`);
+    }
+    return this.ingestMany(sports);
+  }
+
+  /**
+   * Ingest fixtures for EVERY in-season sport from the provider catalog,
+   * regardless of `INGEST_SPORTS` — for the admin "ingest all now" action.
+   * Fixtures (`/events`) are quota-free, so this costs no vendor credits.
+   */
+  async ingestAll(
+    includeOutrights = process.env.INGEST_INCLUDE_OUTRIGHTS === 'true',
+  ): Promise<{ sports: number; ingested: number; errors: number }> {
+    const catalog = this.provider.getSports ? await this.provider.getSports() : [];
+    const sports = resolveIngestSports('all', catalog, { includeOutrights });
+    const summary = await this.ingestMany(sports);
+    return {
+      sports: summary.length,
+      ingested: summary.reduce((n, s) => n + (s.ingested ?? 0), 0),
+      errors: summary.filter((s) => s.error).length,
+    };
+  }
+
+  /** Ingest a list of sport keys, isolating per-sport failures. */
+  private async ingestMany(
+    sports: string[],
+  ): Promise<{ sport: string; ingested?: number; error?: string }[]> {
     const results: { sport: string; ingested?: number; error?: string }[] = [];
     for (const sport of sports) {
       try {
