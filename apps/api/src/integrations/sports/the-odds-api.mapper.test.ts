@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   gradeFromScores,
   mapEvents,
+  mapEventOdds,
   mapMarketInventory,
   mapOdds,
   scoresOf,
@@ -151,6 +152,97 @@ test('mapOdds emits spreads + totals keyed by their line', () => {
   assert.equal(spreads!.prices['away +1.5'], 1.95);
   assert.equal(totals!.prices['over 2.5'], 1.87);
   assert.equal(totals!.prices['under 2.5'], 1.95);
+});
+
+test('mapEventOdds: btts + draw_no_bet + team_totals with best price', () => {
+  const raw: OddsApiEventOdds = {
+    id: 'e',
+    sport_key: 'soccer_epl',
+    sport_title: 'EPL',
+    home_team: 'Home',
+    away_team: 'Away',
+    commence_time: '2030-01-01T00:00:00Z',
+    bookmakers: [
+      {
+        key: 'bookA',
+        title: 'Book A',
+        markets: [
+          {
+            key: 'btts',
+            outcomes: [
+              { name: 'Yes', price: 1.8 },
+              { name: 'No', price: 2.0 },
+            ],
+          },
+          {
+            key: 'draw_no_bet',
+            outcomes: [
+              { name: 'Home', price: 1.5 },
+              { name: 'Away', price: 2.4 },
+            ],
+          },
+          {
+            key: 'team_totals',
+            outcomes: [
+              { name: 'Over', price: 1.9, point: 1.5, description: 'Home' },
+              { name: 'Under', price: 1.85, point: 1.5, description: 'Home' },
+            ],
+          },
+        ],
+      },
+      {
+        key: 'bookB',
+        title: 'Book B',
+        markets: [
+          {
+            key: 'btts',
+            outcomes: [{ name: 'Yes', price: 1.95 }], // better Yes
+          },
+        ],
+      },
+    ],
+  };
+  const markets = mapEventOdds(raw);
+  const btts = markets.find((m) => m.market === 'btts');
+  const dnb = markets.find((m) => m.market === 'dnb');
+  const tt = markets.find((m) => m.market === 'team_totals');
+  assert.ok(btts && dnb && tt);
+  assert.equal(btts!.prices['yes'], 1.95); // best across books
+  assert.equal(btts!.prices['no'], 2.0);
+  assert.equal(dnb!.prices['home'], 1.5);
+  assert.equal(dnb!.prices['away'], 2.4);
+  assert.equal(tt!.prices['home over 1.5'], 1.9);
+  assert.equal(tt!.prices['home under 1.5'], 1.85);
+  // Offers carry bookmaker attribution for CLV/comparison.
+  assert.ok(btts!.offers!.some((o) => o.bookmaker === 'bookB'));
+});
+
+test('mapEventOdds: skips unmappable outcomes and ignores featured keys', () => {
+  const raw: OddsApiEventOdds = {
+    id: 'e',
+    sport_key: 'soccer_epl',
+    sport_title: 'EPL',
+    home_team: 'Home',
+    away_team: 'Away',
+    commence_time: '2030-01-01T00:00:00Z',
+    bookmakers: [
+      {
+        key: 'bookA',
+        markets: [
+          // Featured markets are handled by the bulk call, not here.
+          { key: 'h2h', outcomes: [{ name: 'Home', price: 2.0 }] },
+          // Ambiguous team on team_totals → dropped rather than mis-settled.
+          {
+            key: 'team_totals',
+            outcomes: [{ name: 'Over', price: 1.9, point: 1.5, description: 'Someone Else' }],
+          },
+          // draw_no_bet with an unknown team → dropped.
+          { key: 'draw_no_bet', outcomes: [{ name: 'Nobody', price: 1.5 }] },
+        ],
+      },
+    ],
+  };
+  assert.deepEqual(mapEventOdds(raw), []);
 });
 
 const score = (h: number, a: number, completed = true): OddsApiScoreEvent => ({

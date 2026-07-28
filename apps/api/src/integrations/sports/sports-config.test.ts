@@ -32,6 +32,17 @@ test('parseSportsConfig: markets restricted to featured allowlist', () => {
   );
 });
 
+test('parseSportsConfig: eventMarkets off by default, opt-in via allowlist', () => {
+  assert.equal(parseSportsConfig({}).eventMarkets, '');
+  assert.equal(
+    parseSportsConfig({ SPORTS_EVENT_MARKETS: 'btts,draw_no_bet,team_totals' }).eventMarkets,
+    'btts,draw_no_bet,team_totals',
+  );
+  // Unknown/featured keys are stripped; all-invalid → stays off (empty).
+  assert.equal(parseSportsConfig({ SPORTS_EVENT_MARKETS: 'btts,h2h' }).eventMarkets, 'btts');
+  assert.equal(parseSportsConfig({ SPORTS_EVENT_MARKETS: 'h2h,player_points' }).eventMarkets, '');
+});
+
 test('parseSportsConfig: scoresDaysFrom clamped to 1..3', () => {
   assert.equal(parseSportsConfig({ SPORTS_SCORES_DAYS_FROM: '0' }).scoresDaysFrom, 1);
   assert.equal(parseSportsConfig({ SPORTS_SCORES_DAYS_FROM: '9' }).scoresDaysFrom, 3);

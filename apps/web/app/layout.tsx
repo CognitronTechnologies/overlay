@@ -14,6 +14,25 @@ export const metadata = {
   title: 'Overlay Picks — Verified tipster marketplace',
   description:
     'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — picks locked before kickoff.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Overlay Picks',
+    title: 'Overlay Picks — Verified tipster marketplace',
+    description:
+      'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — picks locked before kickoff.',
+    images: [{ url: '/logo-full.png', width: 1200, height: 630, alt: 'Overlay Picks' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Overlay Picks — Verified tipster marketplace',
+    description:
+      'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value.',
+    images: ['/logo-full.png'],
+  },
+};
+
+export const viewport = {
+  themeColor: '#0c0b0a',
 };
 
 // Applied before paint to avoid a flash of the wrong theme.
