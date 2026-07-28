@@ -122,4 +122,12 @@ export class EventsController {
     const count = await this.events.ingest(dto.sport);
     return { ingested: count };
   }
+
+  /** Ingest fixtures for every in-season sport (quota-free). Admin/staff. */
+  @Post('ingest-all')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('data:ingest')
+  ingestAll() {
+    return this.events.ingestAll();
+  }
 }

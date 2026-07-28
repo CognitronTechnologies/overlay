@@ -158,6 +158,37 @@ export default function AdminPage() {
     }
   }
 
+  async function ingestAllEvents() {
+    setOpMsg(null);
+    setRunning(true);
+    try {
+      const res = await authFetch('/api/events/ingest-all', { method: 'POST' });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          message?: string | string[];
+        };
+        throw new Error(
+          (Array.isArray(body.message) ? body.message[0] : body.message) ??
+            `Failed (${res.status})`,
+        );
+      }
+      const data = (await res.json()) as {
+        sports?: number;
+        ingested?: number;
+        errors?: number;
+      };
+      setOpMsg(
+        `Ingested ${data.ingested ?? 0} fixture(s) across ${data.sports ?? 0} sport(s)` +
+          (data.errors ? ` · ${data.errors} sport(s) failed` : '') +
+          ' ✓',
+      );
+    } catch (err) {
+      setOpMsg(err instanceof Error ? err.message : 'Failed to ingest all sports');
+    } finally {
+      setRunning(false);
+    }
+  }
+
   return (
     <main style={{ maxWidth: 980, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1>Admin dashboard</h1>
@@ -412,6 +443,22 @@ export default function AdminPage() {
               }}
             >
               {running ? 'Working…' : 'Ingest events'}
+            </button>
+            <button
+              type="button"
+              onClick={ingestAllEvents}
+              disabled={running}
+              title="Pull fixtures for every in-season sport (quota-free)"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '0.55rem 0.95rem',
+                color: 'var(--fg)',
+                cursor: running ? 'default' : 'pointer',
+              }}
+            >
+              {running ? 'Working…' : 'Ingest all sports'}
             </button>
           </form>
           ) : null}
