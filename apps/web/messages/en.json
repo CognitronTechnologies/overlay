@@ -85,7 +85,11 @@
     "roleTipster": "Tipster — publish verified picks",
     "registrationFailed": "Registration failed",
     "confirmEmail": "Check your email to confirm your account, then sign in to finish setting up.",
-    "alreadyHaveAccount": "Already have an account?"
+    "alreadyHaveAccount": "Already have an account?",
+    "orContinueWith": "Or continue with",
+    "continueWithGoogle": "Continue with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "googleSignInFailed": "Google sign-in failed"
   },
   "about": {
     "metaTitle": "About Us & How It Works — Overlay Picks",

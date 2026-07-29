@@ -85,7 +85,11 @@
     "roleTipster": "Tipster — publique palpites verificados",
     "registrationFailed": "Falha no cadastro",
     "confirmEmail": "Verifique seu e-mail para confirmar sua conta e depois entre para concluir a configuração.",
-    "alreadyHaveAccount": "Já tem uma conta?"
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "orContinueWith": "Ou continue com",
+    "continueWithGoogle": "Continuar com o Google",
+    "signUpWithGoogle": "Cadastre-se com o Google",
+    "googleSignInFailed": "Falha ao entrar com o Google"
   },
   "about": {
     "metaTitle": "Sobre e como funciona — Overlay Picks",

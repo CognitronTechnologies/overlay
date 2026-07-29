@@ -85,7 +85,11 @@
     "roleTipster": "Pronostiqueur — publiez des pronos vérifiés",
     "registrationFailed": "Échec de l'inscription",
     "confirmEmail": "Vérifiez votre e-mail pour confirmer votre compte, puis connectez-vous pour terminer la configuration.",
-    "alreadyHaveAccount": "Vous avez déjà un compte ?"
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "orContinueWith": "Ou continuer avec",
+    "continueWithGoogle": "Continuer avec Google",
+    "signUpWithGoogle": "S'inscrire avec Google",
+    "googleSignInFailed": "Échec de la connexion Google"
   },
   "about": {
     "metaTitle": "À propos et fonctionnement — Overlay Picks",

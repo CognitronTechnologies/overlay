@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { signIn, getProfile } from '../../lib/auth';
 import { formStyles } from '../formStyles';
+import GoogleSignInButton, { SocialSignIn } from '../GoogleSignInButton';
 
 export default function LoginPage() {
   const t = useTranslations('auth');
@@ -69,6 +70,9 @@ export default function LoginPage() {
           {loading ? t('signingIn') : t('signIn')}
         </button>
       </form>
+      <SocialSignIn label={t('orContinueWith')}>
+        <GoogleSignInButton label={t('continueWithGoogle')} />
+      </SocialSignIn>
       <p style={{ color: 'var(--muted)' }}>
         {t('noAccount')}{' '}
         <Link href="/signup" style={{ color: 'var(--accent)' }}>

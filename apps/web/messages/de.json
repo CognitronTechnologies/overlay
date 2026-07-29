@@ -85,7 +85,11 @@
     "roleTipster": "Tippgeber — veröffentliche verifizierte Tipps",
     "registrationFailed": "Registrierung fehlgeschlagen",
     "confirmEmail": "Bitte bestätige dein Konto über die E-Mail und melde dich anschließend an, um die Einrichtung abzuschließen.",
-    "alreadyHaveAccount": "Hast du schon ein Konto?"
+    "alreadyHaveAccount": "Hast du schon ein Konto?",
+    "orContinueWith": "Oder weiter mit",
+    "continueWithGoogle": "Weiter mit Google",
+    "signUpWithGoogle": "Mit Google registrieren",
+    "googleSignInFailed": "Google-Anmeldung fehlgeschlagen"
   },
   "about": {
     "metaTitle": "Über uns & so funktioniert’s — Overlay Picks",

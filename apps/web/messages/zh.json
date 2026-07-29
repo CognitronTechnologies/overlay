@@ -85,7 +85,11 @@
     "roleTipster": "贴士专家 — 发布经过验证的精选",
     "registrationFailed": "注册失败",
     "confirmEmail": "请查收邮件以确认你的账户，然后登录以完成设置。",
-    "alreadyHaveAccount": "已有账户？"
+    "alreadyHaveAccount": "已有账户？",
+    "orContinueWith": "或使用以下方式继续",
+    "continueWithGoogle": "使用 Google 继续",
+    "signUpWithGoogle": "使用 Google 注册",
+    "googleSignInFailed": "Google 登录失败"
   },
   "about": {
     "metaTitle": "关于我们与运作方式 — Overlay Picks",
