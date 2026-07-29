@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import SportsDiscovery from './SportsDiscovery';
 
-export const metadata: Metadata = {
-  title: 'Sports & Odds — Overlay Picks',
-  description:
-    'Browse live and upcoming sports events, compare bookmaker odds across markets, and follow scores in real time.',
-  alternates: { canonical: '/sports' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('sports');
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    alternates: { canonical: '/sports' },
+  };
+}
 
 export default function SportsPage() {
   return (

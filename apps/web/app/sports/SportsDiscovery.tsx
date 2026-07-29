@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   buildEventsQuery,
   discoverEvents,
@@ -17,13 +18,10 @@ import {
 } from '../../lib/events';
 import { sportIcon } from '../SportChips';
 
+type Translate = (key: string, values?: Record<string, string | number>) => string;
+
 const PAGE_SIZE = 20;
-const STATUSES: { value: EventStatusFilter; label: string }[] = [
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'live', label: 'Live' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'all', label: 'All' },
-];
+const STATUS_VALUES: EventStatusFilter[] = ['upcoming', 'live', 'completed', 'all'];
 
 const inputStyle: React.CSSProperties = {
   padding: '0.5rem 0.6rem',
@@ -46,15 +44,15 @@ function startLabel(iso: string): string {
   });
 }
 
-function relTime(iso: string | null | undefined): string | null {
+function relTime(iso: string | null | undefined, t: Translate): string | null {
   if (!iso) return null;
   const ms = Date.parse(iso);
   if (!Number.isFinite(ms)) return null;
   const mins = Math.round((Date.now() - ms) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('justNow');
+  if (mins < 60) return t('minutesAgo', { mins });
   const hrs = Math.round(mins / 60);
-  return `${hrs}h ago`;
+  return t('hoursAgo', { hrs });
 }
 
 function isStale(iso: string | null | undefined): boolean {
@@ -64,10 +62,11 @@ function isStale(iso: string | null | undefined): boolean {
 }
 
 function StatusBadge({ status }: { status: EventSummary['status'] }) {
+  const t = useTranslations('sports');
   const map: Record<EventSummary['status'], { label: string; color: string }> = {
-    upcoming: { label: 'Upcoming', color: 'var(--muted, #8b90a0)' },
-    live: { label: '● Live', color: 'var(--danger, #e5484d)' },
-    completed: { label: 'Final', color: 'var(--success, #46a758)' },
+    upcoming: { label: t('badge_upcoming'), color: 'var(--muted, #8b90a0)' },
+    live: { label: t('badge_live'), color: 'var(--danger, #e5484d)' },
+    completed: { label: t('badge_completed'), color: 'var(--success, #46a758)' },
   };
   const s = map[status];
   return (
@@ -77,6 +76,7 @@ function StatusBadge({ status }: { status: EventSummary['status'] }) {
 
 /** Best price per selection + collapsible bookmaker comparison for one market. */
 function MarketRow({ market }: { market: MarketOdds }) {
+  const t = useTranslations('sports');
   const [open, setOpen] = useState(false);
   const selections = Object.entries(market.prices);
   const bookmakers = new Set((market.offers ?? []).map((o) => o.bookmaker));
@@ -97,7 +97,7 @@ function MarketRow({ market }: { market: MarketOdds }) {
             }}
             aria-expanded={open}
           >
-            {open ? 'Hide books' : `Compare ${bookmakers.size} book${bookmakers.size > 1 ? 's' : ''}`}
+            {open ? t('hideBooks') : t('compareBooks', { count: bookmakers.size })}
           </button>
         )}
       </div>
@@ -120,10 +120,10 @@ function MarketRow({ market }: { market: MarketOdds }) {
         <table style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ color: 'var(--muted, #8b90a0)', textAlign: 'left' }}>
-              <th style={{ padding: '0.2rem 0' }}>Book</th>
-              <th>Selection</th>
-              <th>Price</th>
-              <th>Updated</th>
+              <th style={{ padding: '0.2rem 0' }}>{t('colBook')}</th>
+              <th>{t('colSelection')}</th>
+              <th>{t('colPrice')}</th>
+              <th>{t('colUpdated')}</th>
             </tr>
           </thead>
           <tbody>
@@ -136,7 +136,7 @@ function MarketRow({ market }: { market: MarketOdds }) {
                   <td>{o.selection}</td>
                   <td style={{ fontWeight: 700 }}>{o.price.toFixed(2)}</td>
                   <td style={{ color: isStale(o.updatedAt) ? 'var(--danger, #e5484d)' : 'var(--muted, #8b90a0)' }}>
-                    {relTime(o.updatedAt) ?? '—'}
+                    {relTime(o.updatedAt, t) ?? t('dash')}
                   </td>
                 </tr>
               ))}
@@ -149,6 +149,7 @@ function MarketRow({ market }: { market: MarketOdds }) {
 
 /** Expanded detail for one event: featured odds + full market inventory. */
 function EventDetailPanel({ id }: { id: string }) {
+  const t = useTranslations('sports');
   const [detail, setDetail] = useState<EventDetail | null>(null);
   const [markets, setMarkets] = useState<MarketInfo[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,7 +168,7 @@ function EventDetailPanel({ id }: { id: string }) {
     };
   }, [id]);
 
-  if (loading) return <p style={{ color: 'var(--muted, #8b90a0)', padding: '0.6rem 0' }}>Loading odds…</p>;
+  if (loading) return <p style={{ color: 'var(--muted, #8b90a0)', padding: '0.6rem 0' }}>{t('loadingOdds')}</p>;
 
   const pickable = (markets ?? []).filter((m) => m.pickable);
   const viewOnly = (markets ?? []).filter((m) => !m.pickable);
@@ -177,19 +178,19 @@ function EventDetailPanel({ id }: { id: string }) {
       {detail && detail.markets.length > 0 ? (
         detail.markets.map((m) => <MarketRow key={m.market} market={m} />)
       ) : (
-        <p style={{ color: 'var(--muted, #8b90a0)' }}>No featured odds available right now.</p>
+        <p style={{ color: 'var(--muted, #8b90a0)' }}>{t('noFeaturedOdds')}</p>
       )}
 
       {markets && markets.length > 0 && (
         <div style={{ marginTop: '0.8rem' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--muted, #8b90a0)', marginBottom: '0.3rem' }}>
-            Markets on offer
+            {t('marketsOnOffer')}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
             {pickable.map((m) => (
               <span
                 key={m.key}
-                title={`${m.bookmakers.length} book(s)`}
+                title={t('bookCount', { count: m.bookmakers.length })}
                 style={{
                   padding: '0.25rem 0.5rem',
                   borderRadius: 6,
@@ -204,7 +205,7 @@ function EventDetailPanel({ id }: { id: string }) {
             {viewOnly.map((m) => (
               <span
                 key={m.key}
-                title="View only — not available for verified picks"
+                title={t('viewOnlyTitle')}
                 style={{
                   padding: '0.25rem 0.5rem',
                   borderRadius: 6,
@@ -213,7 +214,7 @@ function EventDetailPanel({ id }: { id: string }) {
                   color: 'var(--muted, #8b90a0)',
                 }}
               >
-                {m.label} · view only
+                {m.label}{t('viewOnlySuffix')}
               </span>
             ))}
           </div>
@@ -224,6 +225,7 @@ function EventDetailPanel({ id }: { id: string }) {
 }
 
 export default function SportsDiscovery({ showTitle = true }: { showTitle?: boolean }) {
+  const t = useTranslations('sports');
   const [catalog, setCatalog] = useState<ProviderSport[]>([]);
   const [group, setGroup] = useState('');
   const [status, setStatus] = useState<EventStatusFilter>('upcoming');
@@ -277,15 +279,15 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
     <div style={{ maxWidth: 820, margin: '0 auto' }}>
       {showTitle ? (
         <>
-          <h1 style={{ marginBottom: '0.25rem' }}>Sports &amp; odds</h1>
+          <h1 style={{ marginBottom: '0.25rem' }}>{t('title')}</h1>
           <p style={{ color: 'var(--muted, #8b90a0)', marginTop: 0 }}>
-            Browse live and upcoming events, compare bookmaker prices, and see every market on offer.
+            {t('intro')}
           </p>
         </>
       ) : null}
 
       <div style={{ margin: '1.25rem 0' }}>
-        <div className="sport-chips" role="group" aria-label="Filter by sport">
+        <div className="sport-chips" role="group" aria-label={t('filterBySport')}>
           <button
             type="button"
             className={`sport-chip${!group ? ' is-active' : ''}`}
@@ -295,7 +297,7 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
             <span className="sport-chip__icon" aria-hidden>
               🏅
             </span>
-            <span>All sports</span>
+            <span>{t('allSports')}</span>
           </button>
           {groups.map((g) => (
             <button
@@ -322,44 +324,44 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
             alignItems: 'center',
           }}
         >
-          <div role="tablist" aria-label="Status" style={{ display: 'flex', gap: '0.25rem' }}>
-            {STATUSES.map((s) => (
+          <div role="tablist" aria-label={t('statusAria')} style={{ display: 'flex', gap: '0.25rem' }}>
+            {STATUS_VALUES.map((value) => (
               <button
-                key={s.value}
+                key={value}
                 role="tab"
-                aria-selected={status === s.value}
-                onClick={() => setStatus(s.value)}
+                aria-selected={status === value}
+                onClick={() => setStatus(value)}
                 style={{
                   padding: '0.45rem 0.7rem',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
-                  background: status === s.value ? 'var(--accent)' : 'transparent',
-                  color: status === s.value ? 'var(--on-accent)' : 'inherit',
+                  background: status === value ? 'var(--accent)' : 'transparent',
+                  color: status === value ? 'var(--on-accent)' : 'inherit',
                   cursor: 'pointer',
                   fontSize: '0.85rem',
                 }}
               >
-                {s.label}
+                {t(`status_${value}`)}
               </button>
             ))}
           </div>
 
           <input
             type="search"
-            placeholder="Search team or league…"
+            placeholder={t('searchPlaceholder')}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             style={{ ...inputStyle, flex: '1 1 180px', minWidth: 160 }}
-            aria-label="Search events"
+            aria-label={t('searchAria')}
           />
         </div>
       </div>
 
       {loading ? (
-        <p style={{ color: 'var(--muted, #8b90a0)' }}>Loading events…</p>
+        <p style={{ color: 'var(--muted, #8b90a0)' }}>{t('loadingEvents')}</p>
       ) : events.length === 0 ? (
         <p style={{ color: 'var(--muted, #8b90a0)' }}>
-          No events match these filters. Try a different sport or status.
+          {t('noEvents')}
         </p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -394,7 +396,7 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
                 >
                   <div>
                     <div style={{ fontWeight: 700 }}>
-                      {ev.home} <span style={{ color: 'var(--muted, #8b90a0)' }}>v</span> {ev.away}
+                      {ev.home} <span style={{ color: 'var(--muted, #8b90a0)' }}>{t('versus')}</span> {ev.away}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--muted, #8b90a0)', marginTop: '0.2rem' }}>
                       {[ev.sportGroup, ev.league].filter(Boolean).join(' · ') || ev.sport}
@@ -426,10 +428,10 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
             disabled={offset === 0}
             style={{ ...inputStyle, cursor: offset === 0 ? 'default' : 'pointer', opacity: offset === 0 ? 0.5 : 1 }}
           >
-            ← Prev
+            {t('prev')}
           </button>
           <span style={{ color: 'var(--muted, #8b90a0)', fontSize: '0.85rem' }}>
-            Page {page} of {pages}
+            {t('pageOf', { page, pages })}
           </span>
           <button
             type="button"
@@ -437,7 +439,7 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
             disabled={page >= pages}
             style={{ ...inputStyle, cursor: page >= pages ? 'default' : 'pointer', opacity: page >= pages ? 0.5 : 1 }}
           >
-            Next →
+            {t('next')}
           </button>
         </div>
       )}

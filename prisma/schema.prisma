@@ -441,7 +441,14 @@ model NewsletterSubscriber {
 /// Slug is immutable-by-convention once published so external links don't rot.
 model Article {
   id             String          @id @default(cuid())
-  slug           String          @unique
+  slug           String
+  // Localization: each post can have one row per language, all sharing a
+  // `translationGroupId`. `en` is the authored source; other locales are
+  // translations (machine-drafted then reviewed). Serving falls back to `en`.
+  locale             String  @default("en")
+  translationGroupId String  @default(cuid())
+  machineTranslated  Boolean @default(false)
+  translationReviewed Boolean @default(true)
   title          String
   excerpt        String
   body           String // markdown
@@ -463,8 +470,11 @@ model Article {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@unique([slug, locale])
   @@index([status, publishedAt])
+  @@index([status, locale, publishedAt])
   @@index([category, status, publishedAt])
+  @@index([translationGroupId])
   @@index([tags])
 }
 

@@ -34,13 +34,17 @@ export class ArticlesController {
     @Query('category') category?: string,
     @Query('take') take?: string,
     @Query('skip') skip?: string,
+    @Query('locale') locale?: string,
   ) {
-    return this.articles.listPublished({
-      tag,
-      category: category === 'news' ? 'news' : category === 'content' ? 'content' : undefined,
-      take: take ? Number(take) : undefined,
-      skip: skip ? Number(skip) : undefined,
-    });
+    return this.articles.listPublished(
+      {
+        tag,
+        category: category === 'news' ? 'news' : category === 'content' ? 'content' : undefined,
+        take: take ? Number(take) : undefined,
+        skip: skip ? Number(skip) : undefined,
+      },
+      locale ?? 'en',
+    );
   }
 
   @Get('tags')
@@ -54,8 +58,8 @@ export class ArticlesController {
   }
 
   @Get(':slug')
-  bySlug(@Param('slug') slug: string) {
-    return this.articles.getPublishedBySlug(slug);
+  bySlug(@Param('slug') slug: string, @Query('locale') locale?: string) {
+    return this.articles.getPublishedBySlug(slug, locale ?? 'en');
   }
 
   // ---- authoring (admin + approved tipsters) ----

@@ -26,6 +26,7 @@ import {
   resolveArticleStatus,
   type AuthoringActor,
 } from './authoring';
+import { overlayTranslations, needsTranslation } from './articles.i18n';
 
 @Injectable()
 export class ArticlesService {
@@ -42,16 +43,20 @@ export class ArticlesService {
       take?: number;
       skip?: number;
     } = {},
+    locale = 'en',
   ) {
     const take = Math.min(opts.take ?? 20, 50);
     const skip = opts.skip ?? 0;
     // OB-130: hot, public SEO read served through the Redis cache. Keyed by the
-    // normalized query shape; invalidated globally on any article write below.
-    const key = `published:t=${opts.tag ?? ''}:c=${opts.category ?? ''}:k=${take}:s=${skip}`;
-    return readThroughCache(this.listCache, key, () =>
-      this.prisma.article.findMany({
+    // normalized query shape (incl. locale); invalidated globally on any write.
+    const key = `published:l=${locale}:t=${opts.tag ?? ''}:c=${opts.category ?? ''}:k=${take}:s=${skip}`;
+    return readThroughCache(this.listCache, key, async () => {
+      // English is the canonical set that defines which posts exist and their
+      // order/metadata; translations only overlay display text.
+      const base = await this.prisma.article.findMany({
         where: {
           status: 'published',
+          locale: 'en',
           ...(opts.tag ? { tags: { has: opts.tag } } : {}),
           ...(opts.category ? { category: opts.category } : {}),
         },
@@ -68,14 +73,30 @@ export class ArticlesService {
           readingMinutes: true,
           publishedAt: true,
         },
-      }),
-    );
+      });
+      if (!needsTranslation(locale) || base.length === 0) return base;
+      const translations = await this.prisma.article.findMany({
+        where: {
+          status: 'published',
+          locale,
+          slug: { in: base.map((a) => a.slug) },
+        },
+        select: { slug: true, title: true, excerpt: true, coverImage: true },
+      });
+      return overlayTranslations(base, translations);
+    });
   }
 
-  /** Public single article by slug (published only). */
-  async getPublishedBySlug(slug: string) {
+  /** Public single article by slug in the given locale, falling back to English. */
+  async getPublishedBySlug(slug: string, locale = 'en') {
+    if (needsTranslation(locale)) {
+      const localized = await this.prisma.article.findFirst({
+        where: { slug, locale, status: 'published' },
+      });
+      if (localized) return localized;
+    }
     const article = await this.prisma.article.findFirst({
-      where: { slug, status: 'published' },
+      where: { slug, locale: 'en', status: 'published' },
     });
     if (!article) throw new NotFoundException('Article not found');
     return article;
@@ -87,7 +108,7 @@ export class ArticlesService {
     // write invalidates the whole namespace, so tags stay in sync.
     return readThroughCache(this.listCache, 'tags', async () => {
       const rows = await this.prisma.article.findMany({
-        where: { status: 'published' },
+        where: { status: 'published', locale: 'en' },
         select: { tags: true },
       });
       const set = new Set<string>();
@@ -99,7 +120,7 @@ export class ArticlesService {
   /** Slugs + timestamps for sitemap generation. */
   listPublishedSlugs() {
     return this.prisma.article.findMany({
-      where: { status: 'published' },
+      where: { status: 'published', locale: 'en' },
       select: { slug: true, updatedAt: true, publishedAt: true },
       orderBy: { publishedAt: 'desc' },
     });
@@ -141,7 +162,7 @@ export class ArticlesService {
     const taken = new Set(
       (
         await this.prisma.article.findMany({
-          where: { slug: { startsWith: base } },
+          where: { slug: { startsWith: base }, locale: 'en' },
           select: { slug: true },
         })
       ).map((a) => a.slug),

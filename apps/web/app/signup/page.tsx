@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { signUp } from '../../lib/auth';
 import { formStyles } from '../formStyles';
 
 export default function SignupPage() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,9 +26,7 @@ export default function SignupPage() {
     try {
       const { needsConfirmation } = await signUp(email, password, role);
       if (needsConfirmation) {
-        setInfo(
-          'Check your email to confirm your account, then sign in to finish setting up.',
-        );
+        setInfo(t('confirmEmail'));
         return;
       }
 
@@ -40,7 +40,7 @@ export default function SignupPage() {
       const dest = role === 'tipster' ? '/onboarding' : next || '/account';
       router.push(`/choose-username?next=${encodeURIComponent(dest)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : t('registrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -48,12 +48,12 @@ export default function SignupPage() {
 
   return (
     <main style={formStyles.wrap}>
-      <h1>Create your account</h1>
+      <h1>{t('createAccountTitle')}</h1>
       <form onSubmit={onSubmit} style={formStyles.form}>
         <input
           style={formStyles.input}
           type="email"
-          placeholder="Email"
+          placeholder={t('email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -61,34 +61,32 @@ export default function SignupPage() {
         <input
           style={formStyles.input}
           type="password"
-          placeholder="Password (min 8 chars)"
+          placeholder={t('passwordMin')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
         <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Account type
+          {t('accountType')}
           <select
             style={{ ...formStyles.input, marginTop: '0.35rem' }}
             value={role}
             onChange={(e) => setRole(e.target.value as 'user' | 'tipster')}
           >
-            <option value="user">
-              Bettor — follow &amp; subscribe to tipsters
-            </option>
-            <option value="tipster">Tipster — publish verified picks</option>
+            <option value="user">{t('roleBettor')}</option>
+            <option value="tipster">{t('roleTipster')}</option>
           </select>
         </label>
         {error ? <p style={formStyles.error}>{error}</p> : null}
         {info ? <p style={{ color: 'var(--success)' }}>{info}</p> : null}
         <button style={formStyles.button} disabled={loading}>
-          {loading ? 'Creating…' : 'Create account'}
+          {loading ? t('creating') : t('createAccount')}
         </button>
       </form>
       <p style={{ color: 'var(--muted)' }}>
-        Already have an account?{' '}
+        {t('alreadyHaveAccount')}{' '}
         <Link href="/login" style={{ color: 'var(--accent)' }}>
-          Sign in
+          {t('signIn')}
         </Link>
       </p>
     </main>
