@@ -84,6 +84,16 @@ export class TipstersController {
     return this.tipsters.listPublicTipsterIds();
   }
 
+  /** Side-by-side comparison for up to three tipsters (OB-160). */
+  @Get('compare')
+  compare(@Query('ids') ids?: string) {
+    const list = (ids ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return this.tipsters.compareProfiles(list);
+  }
+
   @Get(':id')
   getProfile(@Param('id') id: string) {
     return this.tipsters.getProfile(id);

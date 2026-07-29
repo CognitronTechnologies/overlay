@@ -83,6 +83,27 @@ export class EventsController {
     return this.events.providerSports();
   }
 
+  /** Fixtures ranked by how many tipsters have picks on them (OB-161). */
+  @Get('fixtures')
+  fixtures(
+    @Query('sport') sport?: string,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parsed = limit ? Number(limit) : undefined;
+    return this.events.listFixturesWithPicks({
+      sport,
+      status,
+      limit: Number.isFinite(parsed) ? parsed : undefined,
+    });
+  }
+
+  /** Verified tipsters with picks on one fixture (OB-161). */
+  @Get('fixtures/:id')
+  fixture(@Param('id') id: string) {
+    return this.events.getFixturePicksSummary(id);
+  }
+
   /**
    * Bettor-facing event detail (Phase 3). Public, on-demand: normalized event
    * summary + featured markets (best price + per-bookmaker offers), served from

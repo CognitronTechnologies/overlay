@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import Flag from './Flag';
 import Avatar from './Avatar';
 import SportsDiscovery from './sports/SportsDiscovery';
-import { API_URL } from '../lib/api';
+import { API_URL, listFreeTips } from '../lib/api';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('home');
@@ -41,7 +41,13 @@ async function getLeaderboard(): Promise<LeaderboardRow[]> {
 
 export default async function Home() {
   const t = await getTranslations('home');
-  const top = (await getLeaderboard()).slice(0, 5);
+  const tFixtures = await getTranslations('fixtures');
+  const [leaderboard, freeTips] = await Promise.all([
+    getLeaderboard(),
+    listFreeTips(),
+  ]);
+  const top = leaderboard.slice(0, 5);
+  const topPick = freeTips.tips[0] ?? null;
   const steps = [
     { n: '01', title: t('stepPostTitle'), body: t('stepPostBody') },
     { n: '02', title: t('stepLockedTitle'), body: t('stepLockedBody') },
@@ -175,6 +181,84 @@ export default async function Home() {
         ) : null}
       </section>
 
+      {/* Free pick of the day — a public taster that funnels to the newsletter */}
+      {topPick ? (
+        <section
+          style={{
+            marginTop: '3.5rem',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: '1.4rem 1.5rem',
+            background: 'var(--surface)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+              marginBottom: '0.35rem',
+            }}
+          >
+            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>{t('freePickTitle')}</h2>
+            <Link href="/tips" style={{ color: 'var(--accent)', fontSize: '0.9rem' }}>
+              {t('freePickSeeAll')}
+            </Link>
+          </div>
+          <p style={{ color: 'var(--muted)', margin: '0 0 1rem', fontSize: '0.9rem' }}>
+            {t('freePickTagline')}
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              alignItems: 'flex-start',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: '1.05rem' }}>{topPick.match}</div>
+              <div style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                {topPick.sport}
+                {topPick.league ? ` · ${topPick.league}` : ''}
+              </div>
+              <div style={{ marginTop: '0.6rem' }}>
+                <span style={{ color: 'var(--muted)' }}>{topPick.market}: </span>
+                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                  {topPick.selection}
+                </span>
+              </div>
+            </div>
+            {topPick.odds != null ? (
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>
+                  {t('freePickOddsLabel')}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>
+                  {topPick.odds.toFixed(2)}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {topPick.analysis ? (
+            <p style={{ margin: '0.9rem 0 0', color: 'var(--muted)', lineHeight: 1.5 }}>
+              {topPick.analysis}
+            </p>
+          ) : null}
+
+          <div style={{ marginTop: '1.1rem' }}>
+            <Link href="/newsletter" className="btn btn--secondary">
+              {t('freePickEmailCta')}
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       {/* How it works */}
       <section style={{ marginTop: '3.5rem' }}>
         <h2 style={{ fontSize: '1.3rem', margin: '0 0 1.25rem' }}>{t('howItWorks')}</h2>
@@ -219,6 +303,9 @@ export default async function Home() {
               {t('browseEventsBody')}
             </p>
           </div>
+          <Link href="/fixtures" style={{ color: 'var(--accent)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+            {tFixtures('title')} →
+          </Link>
         </div>
         <SportsDiscovery showTitle={false} />
       </section>
