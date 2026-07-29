@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { getLocale } from 'next-intl/server';
 import { listArticles } from '../../lib/api';
 
 export const metadata: Metadata = {
@@ -17,7 +18,8 @@ export default async function NewsIndex({
   searchParams: Promise<{ tag?: string }>;
 }) {
   const { tag } = await searchParams;
-  const articles = await listArticles({ tag, category: 'news' });
+  const locale = await getLocale();
+  const articles = await listArticles({ tag, category: 'news', locale });
 
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 1.5rem' }}>

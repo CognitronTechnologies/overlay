@@ -113,16 +113,25 @@ async function getJson<T>(path: string, revalidate = 300): Promise<T | null> {
 export async function listArticles(params?: {
   tag?: string;
   category?: 'content' | 'news';
+  locale?: string;
 }): Promise<ArticleCard[]> {
   const qs = new URLSearchParams();
   if (params?.tag) qs.set('tag', params.tag);
   if (params?.category) qs.set('category', params.category);
+  if (params?.locale && params.locale !== 'en') qs.set('locale', params.locale);
   const suffix = qs.toString() ? `?${qs.toString()}` : '';
   return (await getJson<ArticleCard[]>(`/api/articles${suffix}`)) ?? [];
 }
 
-export async function getArticle(slug: string): Promise<Article | null> {
-  return getJson<Article>(`/api/articles/${encodeURIComponent(slug)}`);
+export async function getArticle(
+  slug: string,
+  locale = 'en',
+): Promise<Article | null> {
+  const suffix =
+    locale && locale !== 'en' ? `?locale=${encodeURIComponent(locale)}` : '';
+  return getJson<Article>(
+    `/api/articles/${encodeURIComponent(slug)}${suffix}`,
+  );
 }
 
 // --- Global search ----------------------------------------------------------

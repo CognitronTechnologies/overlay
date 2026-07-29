@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { signIn, getProfile } from '../../lib/auth';
 import { formStyles } from '../formStyles';
 
 export default function LoginPage() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +38,7 @@ export default function LoginPage() {
             : '/account',
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t('loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -44,12 +46,12 @@ export default function LoginPage() {
 
   return (
     <main style={formStyles.wrap}>
-      <h1>Sign in</h1>
+      <h1>{t('signIn')}</h1>
       <form onSubmit={onSubmit} style={formStyles.form}>
         <input
           style={formStyles.input}
           type="email"
-          placeholder="Email"
+          placeholder={t('email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -57,25 +59,25 @@ export default function LoginPage() {
         <input
           style={formStyles.input}
           type="password"
-          placeholder="Password"
+          placeholder={t('password')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
         {error ? <p style={formStyles.error}>{error}</p> : null}
         <button style={formStyles.button} disabled={loading}>
-          {loading ? 'Signing in…' : 'Sign in'}
+          {loading ? t('signingIn') : t('signIn')}
         </button>
       </form>
       <p style={{ color: 'var(--muted)' }}>
-        No account?{' '}
+        {t('noAccount')}{' '}
         <Link href="/signup" style={{ color: 'var(--accent)' }}>
-          Create one
+          {t('createOne')}
         </Link>
       </p>
       <p style={{ color: 'var(--muted)' }}>
         <Link href="/forgot-password" style={{ color: 'var(--accent)' }}>
-          Forgot your password?
+          {t('forgotPassword')}
         </Link>
       </p>
     </main>

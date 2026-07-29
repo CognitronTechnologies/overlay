@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function SiteFooter() {
+  const t = useTranslations('footer');
   const year = new Date().getFullYear();
 
   return (
@@ -20,53 +22,47 @@ export default function SiteFooter() {
               <span className="site-footer__wordmark-accent">Overlay</span> Picks
             </strong>
           </span>
-          <p>
-            Verified tipsters, ranked by real edge. Every pick locked before
-            kickoff.
-          </p>
+          <p>{t('tagline')}</p>
         </div>
 
         {/* Product */}
-        <nav className="site-footer__column" aria-label="Product">
-          <h3>Product</h3>
-          <Link href="/tipsters">Tipsters</Link>
-          <Link href="/tips">Daily Picks</Link>
-          <Link href="/tools/odds-calculator">Calculator</Link>
+        <nav className="site-footer__column" aria-label={t('product')}>
+          <h3>{t('product')}</h3>
+          <Link href="/tipsters">{t('tipsters')}</Link>
+          <Link href="/tips">{t('dailyPicks')}</Link>
+          <Link href="/tools/odds-calculator">{t('calculator')}</Link>
         </nav>
 
         {/* Company */}
-        <nav className="site-footer__column" aria-label="Company">
-          <h3>Company</h3>
-          <Link href="/about">About</Link>
-          <Link href="/how-it-works">How it works</Link>
-          <Link href="/newsletter">Newsletter</Link>
+        <nav className="site-footer__column" aria-label={t('company')}>
+          <h3>{t('company')}</h3>
+          <Link href="/about">{t('about')}</Link>
+          <Link href="/how-it-works">{t('howItWorks')}</Link>
+          <Link href="/newsletter">{t('newsletter')}</Link>
         </nav>
 
         {/* Resources */}
-        <nav className="site-footer__column" aria-label="Resources">
-          <h3>Resources</h3>
-          <Link href="/support">Support Center</Link>
-          <Link href="/content">Content</Link>
-          <Link href="/news">News</Link>
+        <nav className="site-footer__column" aria-label={t('resources')}>
+          <h3>{t('resources')}</h3>
+          <Link href="/support">{t('supportCenter')}</Link>
+          <Link href="/content">{t('content')}</Link>
+          <Link href="/news">{t('news')}</Link>
         </nav>
 
         {/* Legal */}
-        <nav className="site-footer__column" aria-label="Legal">
-          <h3>Legal</h3>
-          <Link href="/legal/terms">Terms of Service</Link>
-          <Link href="/legal/privacy">Privacy Policy</Link>
-          <Link href="/legal/responsible-gambling">Responsible Gambling</Link>
+        <nav className="site-footer__column" aria-label={t('legal')}>
+          <h3>{t('legal')}</h3>
+          <Link href="/legal/terms">{t('terms')}</Link>
+          <Link href="/legal/privacy">{t('privacy')}</Link>
+          <Link href="/legal/responsible-gambling">
+            {t('responsibleGambling')}
+          </Link>
         </nav>
 
         {/* Disclaimer */}
         <div className="site-footer__bottom">
-          <p>
-            Information only — Overlay Picks is a sports-information and analytics
-            service. We do not accept bets, hold stakes, or operate as a
-            bookmaker. Picks and statistics are informational only and are not
-            betting or financial advice. 18+. Please gamble responsibly.
-          </p>
-          <p>© {year} Overlay Picks. All rights reserved.</p>
+          <p>{t('disclaimer')}</p>
+          <p>{t('copyright', { year })}</p>
         </div>
       </div>
     </footer>
