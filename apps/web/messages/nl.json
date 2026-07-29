@@ -85,7 +85,11 @@
     "roleTipster": "Tipgever — publiceer geverifieerde tips",
     "registrationFailed": "Registratie mislukt",
     "confirmEmail": "Controleer je e-mail om je account te bevestigen en log daarna in om de installatie te voltooien.",
-    "alreadyHaveAccount": "Heb je al een account?"
+    "alreadyHaveAccount": "Heb je al een account?",
+    "orContinueWith": "Of ga verder met",
+    "continueWithGoogle": "Doorgaan met Google",
+    "signUpWithGoogle": "Aanmelden met Google",
+    "googleSignInFailed": "Google-aanmelding mislukt"
   },
   "about": {
     "metaTitle": "Over ons & hoe het werkt — Overlay Picks",

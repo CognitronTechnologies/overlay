@@ -1,20 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { signInWithOAuth } from '../lib/auth';
+import { formStyles } from './formStyles';
 
 /**
- * "Continue with Google" button. Kicks off the Supabase OAuth redirect flow;
- * the browser returns to /auth/callback, which establishes the session and
- * routes the user by role. Shared by the login and signup pages.
+ * A single social sign-in provider button. Uses the same visual format as the
+ * primary "Sign in" button so every provider stacks consistently below the
+ * email/password form. Kicks off the Supabase OAuth redirect; the browser
+ * returns to /auth/callback, which establishes the session and routes by role.
  */
 export default function GoogleSignInButton({
-  label = 'Continue with Google',
+  label,
   role,
 }: {
-  label?: string;
+  /** Button text, e.g. t('continueWithGoogle') or t('signUpWithGoogle'). */
+  label: string;
+  /** Role chosen on the signup page, applied to brand-new accounts. */
   role?: 'user' | 'tipster';
 }) {
+  const t = useTranslations('auth');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +32,7 @@ export default function GoogleSignInButton({
       // only once the redirect is initiated.
       await signInWithOAuth('google', role);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+      setError(err instanceof Error ? err.message : t('googleSignInFailed'));
       setLoading(false);
     }
   }
@@ -38,27 +44,18 @@ export default function GoogleSignInButton({
         onClick={onClick}
         disabled={loading}
         style={{
+          ...formStyles.button,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '0.6rem',
-          background: 'var(--surface)',
-          color: 'var(--fg)',
-          border: '1px solid var(--border)',
-          borderRadius: 8,
-          padding: '0.7rem 1.4rem',
-          fontSize: '1rem',
-          fontWeight: 600,
-          cursor: loading ? 'default' : 'pointer',
-          width: '100%',
+          opacity: loading ? 0.7 : 1,
         }}
       >
         <GoogleGlyph />
-        {loading ? 'Redirecting…' : label}
+        {label}
       </button>
-      {error ? (
-        <p style={{ color: 'var(--danger)', margin: 0 }}>{error}</p>
-      ) : null}
+      {error ? <p style={formStyles.error}>{error}</p> : null}
     </>
   );
 }
@@ -88,21 +85,33 @@ function GoogleGlyph() {
 }
 
 /** Small "or" divider used between the OAuth button and the email form. */
-export function OrDivider() {
+export function SocialSignIn({
+  label,
+  children,
+}: {
+  /** Divider caption, e.g. t('orContinueWith'). */
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        color: 'var(--muted)',
-        fontSize: '0.85rem',
-        margin: '0.25rem 0',
-      }}
-    >
-      <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-      or
-      <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+    <div style={{ marginTop: '1.25rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          color: 'var(--muted)',
+          fontSize: '0.85rem',
+          marginBottom: '0.85rem',
+        }}
+      >
+        <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        {label}
+        <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        {children}
+      </div>
     </div>
   );
 }

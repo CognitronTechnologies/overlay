@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { signIn, getProfile } from '../../lib/auth';
 import { formStyles } from '../formStyles';
-import GoogleSignInButton, { OrDivider } from '../GoogleSignInButton';
+import GoogleSignInButton, { SocialSignIn } from '../GoogleSignInButton';
 
 export default function LoginPage() {
   const t = useTranslations('auth');
@@ -47,15 +47,7 @@ export default function LoginPage() {
 
   return (
     <main style={formStyles.wrap}>
-<<<<<<< HEAD
-      <h1>Sign in</h1>
-      <div style={{ marginBottom: '0.85rem' }}>
-        <GoogleSignInButton />
-      </div>
-      <OrDivider />
-=======
       <h1>{t('signIn')}</h1>
->>>>>>> origin/dev
       <form onSubmit={onSubmit} style={formStyles.form}>
         <input
           style={formStyles.input}
@@ -78,6 +70,9 @@ export default function LoginPage() {
           {loading ? t('signingIn') : t('signIn')}
         </button>
       </form>
+      <SocialSignIn label={t('orContinueWith')}>
+        <GoogleSignInButton label={t('continueWithGoogle')} />
+      </SocialSignIn>
       <p style={{ color: 'var(--muted)' }}>
         {t('noAccount')}{' '}
         <Link href="/signup" style={{ color: 'var(--accent)' }}>

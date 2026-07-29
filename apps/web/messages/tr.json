@@ -85,7 +85,11 @@
     "roleTipster": "Tahminci — doğrulanmış tahminler yayınla",
     "registrationFailed": "Kayıt başarısız",
     "confirmEmail": "Hesabını onaylamak için e-postanı kontrol et, ardından kurulumu tamamlamak için giriş yap.",
-    "alreadyHaveAccount": "Zaten bir hesabın var mı?"
+    "alreadyHaveAccount": "Zaten bir hesabın var mı?",
+    "orContinueWith": "Veya şununla devam et",
+    "continueWithGoogle": "Google ile devam et",
+    "signUpWithGoogle": "Google ile kaydol",
+    "googleSignInFailed": "Google ile giriş başarısız"
   },
   "about": {
     "metaTitle": "Hakkımızda ve Nasıl Çalışır — Overlay Picks",

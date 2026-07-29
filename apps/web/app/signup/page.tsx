@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { signUp } from '../../lib/auth';
 import { formStyles } from '../formStyles';
-import GoogleSignInButton, { OrDivider } from '../GoogleSignInButton';
+import GoogleSignInButton, { SocialSignIn } from '../GoogleSignInButton';
 
 export default function SignupPage() {
   const t = useTranslations('auth');
@@ -49,35 +49,7 @@ export default function SignupPage() {
 
   return (
     <main style={formStyles.wrap}>
-<<<<<<< HEAD
-      <h1>Create your account</h1>
-      <label
-        style={{
-          color: 'var(--muted)',
-          fontSize: '0.9rem',
-          display: 'block',
-          marginBottom: '0.85rem',
-        }}
-      >
-        Account type
-        <select
-          style={{ ...formStyles.input, marginTop: '0.35rem' }}
-          value={role}
-          onChange={(e) => setRole(e.target.value as 'user' | 'tipster')}
-        >
-          <option value="user">
-            Bettor — follow &amp; subscribe to tipsters
-          </option>
-          <option value="tipster">Tipster — publish verified picks</option>
-        </select>
-      </label>
-      <div style={{ marginBottom: '0.85rem' }}>
-        <GoogleSignInButton label="Sign up with Google" role={role} />
-      </div>
-      <OrDivider />
-=======
       <h1>{t('createAccountTitle')}</h1>
->>>>>>> origin/dev
       <form onSubmit={onSubmit} style={formStyles.form}>
         <input
           style={formStyles.input}
@@ -95,8 +67,6 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-<<<<<<< HEAD
-=======
         <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
           {t('accountType')}
           <select
@@ -108,13 +78,15 @@ export default function SignupPage() {
             <option value="tipster">{t('roleTipster')}</option>
           </select>
         </label>
->>>>>>> origin/dev
         {error ? <p style={formStyles.error}>{error}</p> : null}
         {info ? <p style={{ color: 'var(--success)' }}>{info}</p> : null}
         <button style={formStyles.button} disabled={loading}>
           {loading ? t('creating') : t('createAccount')}
         </button>
       </form>
+      <SocialSignIn label={t('orContinueWith')}>
+        <GoogleSignInButton label={t('signUpWithGoogle')} role={role} />
+      </SocialSignIn>
       <p style={{ color: 'var(--muted)' }}>
         {t('alreadyHaveAccount')}{' '}
         <Link href="/login" style={{ color: 'var(--accent)' }}>
