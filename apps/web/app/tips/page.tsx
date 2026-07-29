@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import {
   addDays,
   buildDateStrip,
@@ -29,9 +31,10 @@ export async function generateMetadata({
   const human = formatLongDate(date);
   const canonical =
     date === todayIsoDate() ? '/tips' : `/tips?date=${date}`;
+  const t = await getTranslations('tips');
   return {
-    title: `Free Daily Picks — Betting Tips for ${human} | Overlay Picks`,
-    description: `Free curated daily betting picks and tips (picks of the day) for ${human}. Browse next and previous days. Information only — not betting advice.`,
+    title: t('metaTitle', { date: human }),
+    description: t('metaDescription', { date: human }),
     alternates: { canonical },
   };
 }
@@ -45,6 +48,7 @@ const CARD: React.CSSProperties = {
 };
 
 function TipCard({ tip }: { tip: FreeTip }) {
+  const t = useTranslations('tips');
   return (
     <li style={CARD}>
       <div
@@ -64,7 +68,7 @@ function TipCard({ tip }: { tip: FreeTip }) {
         </div>
         {tip.odds != null ? (
           <div style={{ textAlign: 'right' }}>
-            <div style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>Odds</div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>{t('odds')}</div>
             <div style={{ fontWeight: 700 }}>{tip.odds.toFixed(2)}</div>
           </div>
         ) : null}
@@ -96,6 +100,7 @@ export default async function FreeTipsPage({
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
   const { tips } = await listFreeTips(date);
+  const t = await getTranslations('tips');
 
   // Sport chips derived from the sports actually present on this day's picks.
   const sportParam = (rawSport ?? '').trim();
@@ -110,20 +115,19 @@ export default async function FreeTipsPage({
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
         <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Picks
+          {t('backHome')}
         </Link>
       </p>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>
-        Free Daily Picks
+        {t('title')}
       </h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Our curated free picks of the day, updated daily. Browse any date to see
-        that day’s picks.
+        {t('subtitle')}
       </p>
 
       {/* Date navigation: prev/next controls, a date strip and a calendar picker. */}
       <nav
-        aria-label="Date navigation"
+        aria-label={t('dateNav')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -135,10 +139,10 @@ export default async function FreeTipsPage({
         <Link
           href={`/tips?date=${prev}`}
           rel="prev"
-          aria-label="Previous day"
+          aria-label={t('prevDay')}
           style={navBtn}
         >
-          ← Prev
+          {t('prev')}
         </Link>
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
           {strip.map((day) => (
@@ -160,10 +164,10 @@ export default async function FreeTipsPage({
         <Link
           href={`/tips?date=${next}`}
           rel="next"
-          aria-label="Next day"
+          aria-label={t('nextDay')}
           style={navBtn}
         >
-          Next →
+          {t('next')}
         </Link>
         <span style={{ marginLeft: 'auto' }}>
           <TipsDatePicker value={date} />
@@ -184,11 +188,13 @@ export default async function FreeTipsPage({
             textAlign: 'center',
           }}
         >
-          No free tips published for this date yet. Check{' '}
-          <Link href={`/tips?date=${today}`} style={{ color: 'var(--accent)' }}>
-            today’s tips
-          </Link>{' '}
-          or browse another day.
+          {t.rich('noTipsYet', {
+            link: (chunks) => (
+              <Link href={`/tips?date=${today}`} style={{ color: 'var(--accent)' }}>
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       ) : (
         <>
@@ -198,16 +204,19 @@ export default async function FreeTipsPage({
               activeKey={sportParam || null}
               hrefFor={(s) => `/tips?date=${date}&sport=${encodeURIComponent(s)}`}
               allHref={`/tips?date=${date}`}
-              ariaLabel="Filter picks by sport"
+              ariaLabel={t('filterBySport')}
             />
           ) : null}
           {visibleTips.length === 0 ? (
             <p style={{ color: 'var(--muted)', padding: '1.5rem 0' }}>
-              No {sportParam} picks for this date.{' '}
-              <Link href={`/tips?date=${date}`} style={{ color: 'var(--accent)' }}>
-                See all sports
-              </Link>
-              .
+              {t.rich('noSportPicks', {
+                sport: sportParam,
+                link: (chunks) => (
+                  <Link href={`/tips?date=${date}`} style={{ color: 'var(--accent)' }}>
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -230,10 +239,7 @@ export default async function FreeTipsPage({
           background: 'var(--surface)',
         }}
       >
-        <strong>Information only.</strong> These free tips are provided for
-        informational purposes and are not betting advice or a guarantee of any
-        outcome. They are separate from tipsters’ paid live picks. 18+. Please
-        gamble responsibly.
+        <strong>{t('disclaimerLabel')}</strong> {t('disclaimerBody')}
       </p>
     </main>
   );

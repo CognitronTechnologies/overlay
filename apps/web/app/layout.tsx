@@ -1,5 +1,7 @@
 import './globals.css';
 import 'flag-icons/css/flag-icons.min.css';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale } from 'next-intl/server';
 import SiteHeader from './SiteHeader';
 import SiteFooter from './SiteFooter';
 import CookieConsent from './CookieConsent';
@@ -38,28 +40,31 @@ export const viewport = {
 // Applied before paint to avoid a flash of the wrong theme.
 const themeScript = `(function(){try{var t=localStorage.getItem('overlay-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
   return (
-    <html lang="en" data-theme="dark">
+    <html lang={locale} data-theme="dark">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
-        <SiteHeader />
-        <div id="main-content" tabIndex={-1}>
-          <FollowProvider>{children}</FollowProvider>
-        </div>
-        <SiteFooter />
-        <CookieConsent />
-        <UsernameGate />
-        <WhatsAppFloat />
+        <NextIntlClientProvider>
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          <SiteHeader />
+          <div id="main-content" tabIndex={-1}>
+            <FollowProvider>{children}</FollowProvider>
+          </div>
+          <SiteFooter />
+          <CookieConsent />
+          <UsernameGate />
+          <WhatsAppFloat />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

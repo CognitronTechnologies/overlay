@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import Flag from './Flag';
 import Avatar from './Avatar';
 import SportsDiscovery from './sports/SportsDiscovery';
 import { API_URL } from '../lib/api';
 
-export const metadata: Metadata = {
-  title: 'Overlay Picks — Verified tipsters, ranked by real edge',
-  description:
-    'Hunt real edge. Every pick is hashed and locked before kickoff, then settled automatically from the results — ranked by verified yield and closing line value. No edits, no fake records.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('home');
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+  };
+}
 
 export const revalidate = 60;
 
@@ -36,15 +39,15 @@ async function getLeaderboard(): Promise<LeaderboardRow[]> {
   }
 }
 
-const STEPS: { n: string; title: string; body: string }[] = [
-  { n: '01', title: 'Post', body: 'A tipster submits a pick with the odds they took.' },
-  { n: '02', title: 'Locked', body: 'It’s hashed and timestamped before kickoff. No edits, ever.' },
-  { n: '03', title: 'Settled', body: 'Graded automatically from the official result.' },
-  { n: '04', title: 'Ranked', body: 'Verified yield and closing line value move them up the board.' },
-];
-
 export default async function Home() {
+  const t = await getTranslations('home');
   const top = (await getLeaderboard()).slice(0, 5);
+  const steps = [
+    { n: '01', title: t('stepPostTitle'), body: t('stepPostBody') },
+    { n: '02', title: t('stepLockedTitle'), body: t('stepLockedBody') },
+    { n: '03', title: t('stepSettledTitle'), body: t('stepSettledBody') },
+    { n: '04', title: t('stepRankedTitle'), body: t('stepRankedBody') },
+  ];
 
   return (
     <main style={{ maxWidth: 900, margin: '0 auto', padding: '3.5rem 1.5rem' }}>
@@ -59,19 +62,21 @@ export default async function Home() {
       >
         <div style={{ flex: '1 1 360px', minWidth: 0 }}>
           <h1 style={{ fontSize: '2.3rem', lineHeight: 1.15, margin: '0 0 1.1rem', fontWeight: 600 }}>
-            Hunt real edge. Not screenshots.
+            {t('heroTitle')}
           </h1>
           <p style={{ fontSize: '1.1rem', lineHeight: 1.65, margin: '0 0 1.5rem' }}>
-            Every pick is hashed and locked <strong style={{ color: 'var(--fg)' }}>before kickoff</strong>,
-            then settled automatically from the result. What you see is the real
-            record — closing line value, drawdowns and all. No edits. No fake wins.
+            {t.rich('heroBody', {
+              b: (chunks) => (
+                <strong style={{ color: 'var(--fg)' }}>{chunks}</strong>
+              ),
+            })}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             <Link href="/tipsters" className="btn btn--primary btn--lg">
-              Browse tipsters
+              {t('browseTipsters')}
             </Link>
             <Link href="/tips" className="btn btn--secondary btn--lg">
-              Today’s free picks
+              {t('todaysFreePicks')}
             </Link>
           </div>
         </div>
@@ -101,8 +106,8 @@ export default async function Home() {
                 marginBottom: '0.5rem',
               }}
             >
-              <h2 style={{ fontSize: '1.05rem', margin: 0 }}>Top verified tipsters</h2>
-              <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>View all →</span>
+              <h2 style={{ fontSize: '1.05rem', margin: 0 }}>{t('topTipsters')}</h2>
+              <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>{t('viewAll')}</span>
             </div>
             <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {top.map((r, i) => (
@@ -146,7 +151,10 @@ export default async function Home() {
                       ) : null}
                     </span>
                     <span style={{ display: 'block', color: 'var(--muted)', fontSize: '0.75rem' }}>
-                      {(r.clvAvg * 100).toFixed(1)}% CLV · {r.sampleSize} picks
+                      {t('clvPicks', {
+                        clv: (r.clvAvg * 100).toFixed(1),
+                        count: r.sampleSize,
+                      })}
                     </span>
                   </span>
                   <span
@@ -169,7 +177,7 @@ export default async function Home() {
 
       {/* How it works */}
       <section style={{ marginTop: '3.5rem' }}>
-        <h2 style={{ fontSize: '1.3rem', margin: '0 0 1.25rem' }}>How it works</h2>
+        <h2 style={{ fontSize: '1.3rem', margin: '0 0 1.25rem' }}>{t('howItWorks')}</h2>
         <ol
           style={{
             listStyle: 'none',
@@ -180,7 +188,7 @@ export default async function Home() {
             gap: '1.5rem',
           }}
         >
-          {STEPS.map((s) => (
+          {steps.map((s) => (
             <li key={s.n}>
               <div style={{ color: 'var(--accent)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                 {s.n}
@@ -206,9 +214,9 @@ export default async function Home() {
           }}
         >
           <div>
-            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>Browse events &amp; odds</h2>
+            <h2 style={{ fontSize: '1.3rem', margin: 0 }}>{t('browseEvents')}</h2>
             <p style={{ color: 'var(--muted)', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
-              Pick a sport, compare bookmaker prices and see live scores — then find the tipsters on them.
+              {t('browseEventsBody')}
             </p>
           </div>
         </div>
@@ -217,9 +225,9 @@ export default async function Home() {
 
       <section style={{ marginTop: '3rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
         <p style={{ color: 'var(--muted)', margin: 0 }}>
-          Run your own picks?{' '}
+          {t('ctaQuestion')}{' '}
           <Link href="/signup" style={{ color: 'var(--accent)' }}>
-            Get verified and start earning →
+            {t('ctaLink')}
           </Link>
         </p>
       </section>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { getLocale } from 'next-intl/server';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@overlay/shared/markdown';
 import { getArticle, listArticleSlugs, SITE_URL } from '../../../lib/api';
@@ -19,7 +20,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticle(slug);
+  const locale = await getLocale();
+  const article = await getArticle(slug, locale);
   if (!article) return { title: 'Not found — Overlay Picks' };
 
   const title = article.seoTitle ?? article.title;
@@ -54,7 +56,8 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = await getArticle(slug);
+  const locale = await getLocale();
+  const article = await getArticle(slug, locale);
   if (!article) notFound();
 
   const html = sanitizeHtml(await marked.parse(article.body));
