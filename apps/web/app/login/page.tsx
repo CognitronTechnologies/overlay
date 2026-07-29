@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getProfile } from '../../lib/auth';
 import { formStyles } from '../formStyles';
+import GoogleSignInButton, { OrDivider } from '../GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,6 +46,10 @@ export default function LoginPage() {
   return (
     <main style={formStyles.wrap}>
       <h1>Sign in</h1>
+      <div style={{ marginBottom: '0.85rem' }}>
+        <GoogleSignInButton />
+      </div>
+      <OrDivider />
       <form onSubmit={onSubmit} style={formStyles.form}>
         <input
           style={formStyles.input}

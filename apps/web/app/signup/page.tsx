@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signUp } from '../../lib/auth';
 import { formStyles } from '../formStyles';
+import GoogleSignInButton, { OrDivider } from '../GoogleSignInButton';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -49,6 +50,30 @@ export default function SignupPage() {
   return (
     <main style={formStyles.wrap}>
       <h1>Create your account</h1>
+      <label
+        style={{
+          color: 'var(--muted)',
+          fontSize: '0.9rem',
+          display: 'block',
+          marginBottom: '0.85rem',
+        }}
+      >
+        Account type
+        <select
+          style={{ ...formStyles.input, marginTop: '0.35rem' }}
+          value={role}
+          onChange={(e) => setRole(e.target.value as 'user' | 'tipster')}
+        >
+          <option value="user">
+            Bettor — follow &amp; subscribe to tipsters
+          </option>
+          <option value="tipster">Tipster — publish verified picks</option>
+        </select>
+      </label>
+      <div style={{ marginBottom: '0.85rem' }}>
+        <GoogleSignInButton label="Sign up with Google" role={role} />
+      </div>
+      <OrDivider />
       <form onSubmit={onSubmit} style={formStyles.form}>
         <input
           style={formStyles.input}
@@ -66,19 +91,6 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Account type
-          <select
-            style={{ ...formStyles.input, marginTop: '0.35rem' }}
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'user' | 'tipster')}
-          >
-            <option value="user">
-              Bettor — follow &amp; subscribe to tipsters
-            </option>
-            <option value="tipster">Tipster — publish verified picks</option>
-          </select>
-        </label>
         {error ? <p style={formStyles.error}>{error}</p> : null}
         {info ? <p style={{ color: 'var(--success)' }}>{info}</p> : null}
         <button style={formStyles.button} disabled={loading}>

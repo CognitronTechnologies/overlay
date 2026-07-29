@@ -72,6 +72,31 @@ local + deployed origins under **Auth → URL Configuration → Redirect URLs**.
 For quick local testing, turn **"Confirm email" off** so signup logs you in
 immediately (otherwise you must confirm via the emailed link first).
 
+Include the auth-callback route in your redirect allow-list (one entry per
+origin), e.g. `http://localhost:3000/auth/callback` and
+`https://your-domain.com/auth/callback`.
+
+#### Google social sign-in (optional)
+
+The login and signup pages show a **Continue with Google** button
+(`signInWithOAuth('google')`). To enable it:
+
+1. **Google Cloud Console** → create/select a project → **APIs & Services →
+   OAuth consent screen**, configure it (External, add the app name, support
+   email, and your domain under Authorized domains).
+2. **APIs & Services → Credentials → Create Credentials → OAuth client ID** →
+   type **Web application**. Under **Authorized redirect URIs** add your
+   Supabase callback:
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+   (copy the exact value from the Supabase provider page below).
+3. Copy the generated **Client ID** and **Client secret**.
+4. **Supabase dashboard → Auth → Providers → Google** → enable it, paste the
+   Client ID + secret, and save.
+
+No app env vars are needed — the OAuth secret lives in Supabase. New Google
+accounts are provisioned as bettors (role `user`) on first sign-in; promote to
+tipster later if required.
+
 ### Storage (Supabase — identity documents)
 
 Tipster identity documents (ID / passport / driver licence) uploaded during
