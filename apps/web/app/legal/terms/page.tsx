@@ -36,7 +36,7 @@ export default function TermsPage() {
           Information only — we take no bets.
         </strong>
         <p style={{ color: 'var(--fg)', margin: '0.5rem 0 0' }}>
-          Overlay Picks is an information, analytics and tipster-marketplace
+          Overlay Picks is an information, analytics and tipster-platform
           service. We do not accept, place, broker or settle wagers of any kind,
           we do not hold betting stakes, and we are not a bookmaker, sportsbook
           or gambling operator. Nothing on this platform is a solicitation to

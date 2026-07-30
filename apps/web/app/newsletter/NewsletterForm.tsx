@@ -93,7 +93,7 @@ export default function NewsletterForm() {
             margin: 0,
           }}
         >
-          <li>Verified tipster marketplace updates</li>
+          <li>Verified tipster platform updates</li>
           <li>Platform feature announcements</li>
           <li>Closing line value (CLV) education</li>
           <li>Sports betting analytics articles</li>

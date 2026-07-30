@@ -13,20 +13,20 @@ export const metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   ),
-  title: 'Overlay Picks — Verified tipster marketplace',
+  title: 'Overlay Picks — Verified tipster platform',
   description:
     'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — picks locked before kickoff.',
   openGraph: {
     type: 'website',
     siteName: 'Overlay Picks',
-    title: 'Overlay Picks — Verified tipster marketplace',
+    title: 'Overlay Picks — Verified tipster platform',
     description:
       'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — picks locked before kickoff.',
     images: [{ url: '/logo-full.png', width: 1200, height: 630, alt: 'Overlay Picks' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Overlay Picks — Verified tipster marketplace',
+    title: 'Overlay Picks — Verified tipster platform',
     description:
       'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value.',
     images: ['/logo-full.png'],

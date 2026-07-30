@@ -129,6 +129,9 @@ export default async function CompareTipstersPage({
   );
 
   if (tipsters.length < 2) {
+    // Distinguish "you haven't picked two yet" from "we couldn't load the ones
+    // you picked" (e.g. an unavailable tipster or a transient API error).
+    const message = ids.length < 2 ? t('needMore') : t('loadError');
     return (
       <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
         {backLink}
@@ -142,7 +145,7 @@ export default async function CompareTipstersPage({
             textAlign: 'center',
           }}
         >
-          {t('needMore')}
+          {message}
         </p>
         <p style={{ marginTop: '1.25rem' }}>
           <Link href="/tipsters" className="btn btn--primary">

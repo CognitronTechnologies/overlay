@@ -1,11 +1,12 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useFollow } from './FollowProvider';
 
 /**
- * Follow / Following toggle for a tipster. Reads shared state from
+ * Watchlist toggle for a tipster. Reads shared state from
  * {@link FollowProvider} so many buttons cost one request. Free action —
- * following tracks public performance without unlocking gated picks.
+ * the watchlist tracks public performance without unlocking gated picks.
  */
 export default function FollowButton({
   tipsterId,
@@ -18,12 +19,12 @@ export default function FollowButton({
   block?: boolean;
   iconOnly?: boolean;
 }) {
+  const t = useTranslations('watchlist');
   const { ready, isFollowing, toggle } = useFollow();
   const following = isFollowing(tipsterId);
 
-  const title = following
-    ? 'Following — tracking this tipster’s performance record for free. Click to stop. (Doesn’t unlock premium picks — subscribe for those.)'
-    : 'Follow to track this tipster’s performance record for free. Doesn’t unlock premium picks — subscribe for those.';
+  const title = following ? t('tooltipAdded') : t('tooltipAdd');
+  const ariaLabel = following ? t('removeAria') : t('addAria');
 
   if (iconOnly) {
     return (
@@ -31,7 +32,7 @@ export default function FollowButton({
         type="button"
         className="btn btn--secondary btn--sm"
         aria-pressed={following}
-        aria-label={following ? 'Following (click to unfollow)' : 'Follow to track for free'}
+        aria-label={ariaLabel}
         disabled={!ready}
         onClick={() => toggle(tipsterId)}
         title={title}
@@ -65,12 +66,13 @@ export default function FollowButton({
       type="button"
       className={className}
       aria-pressed={following}
+      aria-label={ariaLabel}
       disabled={!ready}
       onClick={() => toggle(tipsterId)}
       style={block ? { width: '100%' } : undefined}
       title={title}
     >
-      {following ? '✓ Following' : '+ Follow'}
+      {following ? `✓ ${t('added')}` : `+ ${t('add')}`}
     </button>
   );
 }
