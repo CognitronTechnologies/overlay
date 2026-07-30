@@ -4,7 +4,7 @@ import NewsletterForm from './NewsletterForm';
 export const metadata: Metadata = {
   title: 'Newsletter · Overlay Picks',
   description:
-    'Subscribe to the Overlay Picks newsletter for marketplace updates, sports betting analytics, verified tipster insights, and closing line value education.',
+    'Subscribe to the Overlay Picks newsletter for platform updates, sports betting analytics, verified tipster insights, and closing line value education.',
   alternates: {
     canonical: '/newsletter',
   },

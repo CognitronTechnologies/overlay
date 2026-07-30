@@ -113,16 +113,25 @@ async function getJson<T>(path: string, revalidate = 300): Promise<T | null> {
 export async function listArticles(params?: {
   tag?: string;
   category?: 'content' | 'news';
+  locale?: string;
 }): Promise<ArticleCard[]> {
   const qs = new URLSearchParams();
   if (params?.tag) qs.set('tag', params.tag);
   if (params?.category) qs.set('category', params.category);
+  if (params?.locale && params.locale !== 'en') qs.set('locale', params.locale);
   const suffix = qs.toString() ? `?${qs.toString()}` : '';
   return (await getJson<ArticleCard[]>(`/api/articles${suffix}`)) ?? [];
 }
 
-export async function getArticle(slug: string): Promise<Article | null> {
-  return getJson<Article>(`/api/articles/${encodeURIComponent(slug)}`);
+export async function getArticle(
+  slug: string,
+  locale = 'en',
+): Promise<Article | null> {
+  const suffix =
+    locale && locale !== 'en' ? `?locale=${encodeURIComponent(locale)}` : '';
+  return getJson<Article>(
+    `/api/articles/${encodeURIComponent(slug)}${suffix}`,
+  );
 }
 
 // --- Global search ----------------------------------------------------------
@@ -379,6 +388,94 @@ export interface TipsterProfile {
 
 export async function getTipster(id: string): Promise<TipsterProfile | null> {
   return getJson<TipsterProfile>(`/api/tipsters/${encodeURIComponent(id)}`, 60);
+}
+
+/**
+ * Side-by-side data for up to three tipsters (OB-160). Fans out to the existing
+ * per-tipster profile endpoint (`/api/tipsters/:id`) rather than a bespoke
+ * compare route, so it works against any deployed API. Ids that don't resolve
+ * are dropped; order follows the request and duplicates are collapsed.
+ */
+export async function compareTipsters(
+  ids: string[],
+): Promise<TipsterProfile[]> {
+  const clean = [...new Set(ids.map((s) => s.trim()).filter(Boolean))].slice(
+    0,
+    3,
+  );
+  if (clean.length === 0) return [];
+  const results = await Promise.all(clean.map((id) => getTipster(id)));
+  return results.filter((p): p is TipsterProfile => p !== null);
+}
+
+/** A fixture that has tipster picks on it (OB-161), for the /fixtures browse. */
+export interface FixtureWithPicks {
+  id: string;
+  sport: string;
+  league: string | null;
+  home: string;
+  away: string;
+  startTime: string;
+  status: string;
+  liveHomeScore: number | null;
+  liveAwayScore: number | null;
+  pickCount: number;
+  tipsterCount: number;
+}
+
+/** Fixtures ranked by how many tipsters have picks on them. */
+export async function listFixturesWithPicks(
+  params: { sport?: string; status?: string; limit?: number } = {},
+): Promise<FixtureWithPicks[]> {
+  const qs = new URLSearchParams();
+  if (params.sport) qs.set('sport', params.sport);
+  if (params.status) qs.set('status', params.status);
+  if (params.limit) qs.set('limit', String(params.limit));
+  const s = qs.toString();
+  const data = await getJson<{ fixtures: FixtureWithPicks[] }>(
+    `/api/events/fixtures${s ? `?${s}` : ''}`,
+    60,
+  );
+  return data?.fixtures ?? [];
+}
+
+/** A verified tipster with picks on a fixture (selections are never exposed). */
+export interface FixtureTipster {
+  tipsterId: string;
+  name: string;
+  avatarUrl: string | null;
+  country: string | null;
+  verified: boolean;
+  yield: number | null;
+  clvAvg: number | null;
+  sampleSize: number | null;
+  pickCount: number;
+}
+
+export interface FixturePicksSummary {
+  event: {
+    id: string;
+    sport: string;
+    league: string | null;
+    home: string;
+    away: string;
+    startTime: string;
+    status: string;
+    liveHomeScore: number | null;
+    liveAwayScore: number | null;
+  };
+  tipsters: FixtureTipster[];
+  pickCount: number;
+  tipsterCount: number;
+}
+
+export async function getFixturePicks(
+  id: string,
+): Promise<FixturePicksSummary | null> {
+  return getJson<FixturePicksSummary>(
+    `/api/events/fixtures/${encodeURIComponent(id)}`,
+    60,
+  );
 }
 
 /**

@@ -14,6 +14,9 @@ export interface Profile {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
+/** localStorage key holding the role a user picked just before an OAuth redirect. */
+const PENDING_OAUTH_ROLE_KEY = 'overlay.pendingOAuthRole';
+
 let client: SupabaseClient | null = null;
 
 export function supabase(): SupabaseClient {
@@ -57,6 +60,50 @@ export async function signIn(email: string, password: string): Promise<void> {
     email,
     password,
   });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Start a social sign-in (e.g. Google). Redirects the browser to the provider
+ * and back to `/auth/callback`, which consumes the session and routes by role.
+ * A `role` chosen on the signup page is stashed locally and applied to the new
+ * account in the callback (before the API first provisions it); returning users
+ * keep their existing role regardless.
+ */
+export async function signInWithOAuth(
+  provider: 'google',
+  role?: 'user' | 'tipster',
+): Promise<void> {
+  if (role && typeof window !== 'undefined') {
+    window.localStorage.setItem(PENDING_OAUTH_ROLE_KEY, role);
+  }
+  const { error } = await supabase().auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo:
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : undefined,
+    },
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Read and clear the role stashed before an OAuth redirect, if any. */
+export function takePendingOAuthRole(): 'user' | 'tipster' | null {
+  if (typeof window === 'undefined') return null;
+  const v = window.localStorage.getItem(PENDING_OAUTH_ROLE_KEY);
+  window.localStorage.removeItem(PENDING_OAUTH_ROLE_KEY);
+  return v === 'tipster' || v === 'user' ? v : null;
+}
+
+/**
+ * Persist the self-selected role into Supabase `user_metadata`. The API reads
+ * this only when it first provisions a new account, so call it in the OAuth
+ * callback before resolving the profile. No-op for the role of existing users.
+ */
+export async function setSelfRole(role: 'user' | 'tipster'): Promise<void> {
+  const { error } = await supabase().auth.updateUser({ data: { role } });
   if (error) throw new Error(error.message);
 }
 

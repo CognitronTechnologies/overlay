@@ -148,6 +148,26 @@ export class TipstersService {
     );
   }
 
+  /**
+   * Side-by-side comparison payload for up to three tipsters (OB-160). Reuses
+   * the cached public profile per id and silently drops ids that don't resolve
+   * (deleted / never existed / suspended), so a partly-stale compare link still
+   * renders. Order follows the requested ids; duplicates are collapsed.
+   */
+  async compareProfiles(ids: string[]) {
+    const unique = [...new Set(ids.map((s) => s.trim()).filter(Boolean))].slice(
+      0,
+      3,
+    );
+    const settled = await Promise.all(
+      unique.map((id) => this.getProfile(id).catch(() => null)),
+    );
+    const tipsters = settled.filter(
+      (p): p is NonNullable<typeof p> => p !== null,
+    );
+    return { tipsters };
+  }
+
   /** The uncached profile aggregate: bio, verified stats, and recent settled picks. */
   private async computeProfile(tipsterId: string) {
     const tipster = await this.prisma.tipster.findUnique({

@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { getProfile } from '../lib/auth';
 import ThemeToggle from './ThemeToggle';
 import NotificationBell from './NotificationBell';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function SiteHeader() {
+  const t = useTranslations('nav');
   const [role, setRole] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,7 +46,7 @@ export default function SiteHeader() {
           className="nav-toggle"
           aria-expanded={menuOpen}
           aria-controls="primary-navigation"
-          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-label={menuOpen ? t('closeMenu') : t('openMenu')}
           onClick={() => setMenuOpen((open) => !open)}
         >
           <span aria-hidden="true">{menuOpen ? '\u2715' : '\u2630'}</span>
@@ -55,13 +58,13 @@ export default function SiteHeader() {
           className={menuOpen ? 'site-nav is-open' : 'site-nav'}
         >
           <Link href="/tipsters" onClick={closeMenu}>
-            Tipsters
+            {t('tipsters')}
           </Link>
           <Link href="/tips" onClick={closeMenu}>
-            Daily Picks
+            {t('dailyPicks')}
           </Link>
           <Link href="/tools/odds-calculator" onClick={closeMenu}>
-            Calculator
+            {t('calculator')}
           </Link>
           <div className="nav-dropdown">
             <button
@@ -69,14 +72,14 @@ export default function SiteHeader() {
               className="nav-dropdown__trigger"
               aria-haspopup="true"
             >
-              Content Hub <span aria-hidden="true">▾</span>
+              {t('contentHub')} <span aria-hidden="true">▾</span>
             </button>
             <div className="nav-dropdown__menu" role="menu">
               <Link href="/content" onClick={closeMenu} role="menuitem">
-                Content
+                {t('content')}
               </Link>
               <Link href="/news" onClick={closeMenu} role="menuitem">
-                News
+                {t('news')}
               </Link>
             </div>
           </div>
@@ -86,30 +89,30 @@ export default function SiteHeader() {
               className="nav-dropdown__trigger"
               aria-haspopup="true"
             >
-              About <span aria-hidden="true">▾</span>
+              {t('about')} <span aria-hidden="true">▾</span>
             </button>
             <div className="nav-dropdown__menu" role="menu">
               <Link href="/about" onClick={closeMenu} role="menuitem">
-                How it works
+                {t('howItWorks')}
               </Link>
               <Link href="/support" onClick={closeMenu} role="menuitem">
-                Support Center
+                {t('supportCenter')}
               </Link>
             </div>
           </div>
           {role === 'user' ? (
             <Link href="/dashboard" onClick={closeMenu}>
-              Dashboard
+              {t('dashboard')}
             </Link>
           ) : null}
           {role === 'tipster' ? (
             <Link href="/dashboard" onClick={closeMenu}>
-              Dashboard
+              {t('dashboard')}
             </Link>
           ) : null}
           {role === 'admin' || role === 'staff' ? (
             <Link href="/admin" onClick={closeMenu}>
-              Admin
+              {t('admin')}
             </Link>
           ) : null}
         </nav>
@@ -118,8 +121,8 @@ export default function SiteHeader() {
           <Link
             href="/search"
             onClick={closeMenu}
-            aria-label="Search"
-            title="Search"
+            aria-label={t('search')}
+            title={t('search')}
             className="header-search-link"
           >
             <svg
@@ -141,23 +144,20 @@ export default function SiteHeader() {
           {ready ? (
             role ? (
               <Link href="/account" onClick={closeMenu}>
-                My Account
+                {t('myAccount')}
               </Link>
             ) : (
               <>
                 <Link href="/login" onClick={closeMenu}>
-                  Sign in
+                  {t('signIn')}
                 </Link>
-                <Link
-                  href="/signup"
-                  className="btn btn--primary"
-                  onClick={closeMenu}
-                >
-                  Get started
+                <Link href="/signup" onClick={closeMenu}>
+                  {t('getStarted')}
                 </Link>
               </>
             )
           ) : null}
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </div>

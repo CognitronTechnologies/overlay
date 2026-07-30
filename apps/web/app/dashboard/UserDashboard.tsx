@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   authFetch,
   getFullProfile,
@@ -35,34 +36,11 @@ interface Sub {
   } | null;
 }
 
-function statusLabel(status: string): string {
-  if (status === 'pending') return 'Live';
-  if (status === 'half_won') return '½ won';
-  if (status === 'half_lost') return '½ lost';
-  return status;
-}
-
-/** Human label + colour for a subscription's billing status. */
-function subStatus(status: string): { label: string; color: string } {
-  if (status === 'active') return { label: 'Active', color: 'var(--success)' };
-  if (status === 'past_due')
-    return { label: 'Past due', color: 'var(--danger)' };
-  if (status === 'canceled')
-    return { label: 'Canceled', color: 'var(--muted)' };
-  return { label: status, color: 'var(--muted)' };
-}
-
-/** "Renews 12 Aug" / "Ends 12 Aug" line for a subscription row. */
-function renewalLine(status: string, iso: string | null): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  const when = d.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-  return status === 'canceled' ? `Access until ${when}` : `Renews ${when}`;
+/** Colour for a subscription's billing status. */
+function subStatusColor(status: string): string {
+  if (status === 'active') return 'var(--success)';
+  if (status === 'past_due') return 'var(--danger)';
+  return 'var(--muted)';
 }
 
 /**
@@ -71,6 +49,36 @@ function renewalLine(status: string, iso: string | null): string | null {
  * /dashboard for `user` accounts (tipsters get the tipster dashboard there).
  */
 export default function UserDashboard() {
+  const t = useTranslations('userDashboard');
+  const statusLabel = (status: string): string =>
+    status === 'pending'
+      ? t('statusLive')
+      : status === 'half_won'
+        ? t('halfWon')
+        : status === 'half_lost'
+          ? t('halfLost')
+          : status;
+  const subStatusLabel = (status: string): string =>
+    status === 'active'
+      ? t('subActive')
+      : status === 'past_due'
+        ? t('subPastDue')
+        : status === 'canceled'
+          ? t('subCanceled')
+          : status;
+  const renewalLine = (status: string, iso: string | null): string | null => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    const when = d.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return status === 'canceled'
+      ? t('accessUntil', { date: when })
+      : t('renews', { date: when });
+  };
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [subs, setSubs] = useState<Sub[] | null>(null);
@@ -131,29 +139,29 @@ export default function UserDashboard() {
         <Avatar src={avatarUrl} seed={username ?? 'me'} size={56} />
         <div>
           <h1 style={{ margin: '0 0 0.15rem' }}>
-            Welcome{username ? `, ${username}` : ''}
+            {username ? t('welcomeNamed', { name: username }) : t('welcome')}
           </h1>
           <p style={{ color: 'var(--muted)', margin: 0 }}>
-            Your subscriptions and live picks, all in one place.
+            {t('subtitle')}
           </p>
         </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', margin: '1.25rem 0' }}>
         <Link href="/feed" className="btn btn--primary btn--sm">
-          My feed
+          {t('btnFeed')}
         </Link>
         <Link href="/account/subscriptions" className="btn btn--secondary btn--sm">
-          My subscriptions
+          {t('btnSubs')}
         </Link>
         <Link href="/tipsters" className="btn btn--secondary btn--sm">
-          Browse tipsters
+          {t('btnBrowse')}
         </Link>
         <Link href="/sports" className="btn btn--secondary btn--sm">
-          Events &amp; odds
+          {t('btnEvents')}
         </Link>
         <Link href="/account" className="btn btn--secondary btn--sm">
-          My account
+          {t('btnAccount')}
         </Link>
         <button
           type="button"
@@ -164,22 +172,22 @@ export default function UserDashboard() {
               'xlsx',
               'my-subscriptions.xlsx',
             ).catch((e) =>
-              alert(e instanceof Error ? e.message : 'Export failed'),
+              alert(e instanceof Error ? e.message : t('exportFailed')),
             )
           }
         >
-          Export subscriptions
+          {t('btnExportSubs')}
         </button>
         <button
           type="button"
           className="btn btn--secondary btn--sm"
           onClick={() =>
             downloadExport('/api/exports/users/feed', 'xlsx', 'my-feed.xlsx').catch(
-              (e) => alert(e instanceof Error ? e.message : 'Export failed'),
+              (e) => alert(e instanceof Error ? e.message : t('exportFailed')),
             )
           }
         >
-          Export feed
+          {t('btnExportFeed')}
         </button>
       </div>
 
@@ -192,7 +200,7 @@ export default function UserDashboard() {
       >
         <div style={cardStyle}>
           <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            Active subscriptions
+            {t('statActiveSubs')}
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
             {subs === null ? '—' : activeCount}
@@ -200,7 +208,7 @@ export default function UserDashboard() {
         </div>
         <div style={cardStyle}>
           <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            Live picks right now
+            {t('statLivePicks')}
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
             {picks === null
@@ -210,7 +218,7 @@ export default function UserDashboard() {
         </div>
         <div style={cardStyle}>
           <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            Following
+            {t('statFollowing')}
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
             {shownFollowing === null ? '—' : shownFollowing.length}
@@ -218,16 +226,16 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>Latest from your feed</h2>
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('latestFeed')}</h2>
       {picks === null ? (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
       ) : recent.length === 0 ? (
         <div style={{ marginTop: '0.75rem' }}>
           <EmptyState
             icon="📭"
-            title="No picks yet"
-            description="Once you subscribe to a tipster, their latest picks land here."
-            actions={[{ href: '/tipsters', label: 'Find a tipster' }]}
+            title={t('noPicksTitle')}
+            description={t('noPicksBody')}
+            actions={[{ href: '/tipsters', label: t('findTipster') }]}
           />
         </div>
       ) : (
@@ -258,32 +266,32 @@ export default function UserDashboard() {
           ))}
           <li style={{ marginTop: '0.25rem' }}>
             <Link href="/feed" style={{ color: 'var(--accent)' }}>
-              View all in My feed →
+              {t('viewAllFeed')}
             </Link>
           </li>
         </ul>
       )}
 
-      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>Subscribed</h2>
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('subscribed')}</h2>
       <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
-        Tipsters you pay for — their live picks unlock the moment they’re locked,
-        before kickoff.
+        {t('subscribedSub')}
       </p>
       {subs === null ? (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
       ) : subs.length === 0 ? (
         <div style={{ marginTop: '0.75rem' }}>
           <EmptyState
             icon="🎟️"
-            title="You’re not subscribed to anyone yet"
-            description="Subscribe to a tipster to unlock their live picks the moment they lock, before kickoff."
-            actions={[{ href: '/tipsters', label: 'Browse tipsters' }]}
+            title={t('noSubsTitle')}
+            description={t('noSubsBody')}
+            actions={[{ href: '/tipsters', label: t('browseTipsters') }]}
           />
         </div>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0 0' }}>
           {subs.map((s) => {
-            const st = subStatus(s.status);
+            const stColor = subStatusColor(s.status);
+            const stLabel = subStatusLabel(s.status);
             const renews = renewalLine(s.status, s.currentPeriodEnd);
             return (
               <li
@@ -313,10 +321,10 @@ export default function UserDashboard() {
                       <Flag code={s.country} style={{ marginLeft: '0.4rem', verticalAlign: 'middle' }} />
                     ) : null}
                     <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-                      <span style={{ color: st.color, fontWeight: 600 }}>{st.label}</span>
+                      <span style={{ color: stColor, fontWeight: 600 }}>{stLabel}</span>
                       {renews ? ` · ${renews}` : ''}
                       {s.stats
-                        ? ` · ${s.stats.yield.toFixed(1)}% yield · ${s.stats.sampleSize} picks`
+                        ? ` · ${t('subStatLine', { yield: s.stats.yield.toFixed(1), count: s.stats.sampleSize })}`
                         : ''}
                     </div>
                   </div>
@@ -326,7 +334,7 @@ export default function UserDashboard() {
                     href="/account/subscriptions"
                     className="btn btn--secondary btn--sm"
                   >
-                    Manage
+                    {t('manage')}
                   </Link>
                   <FollowButton tipsterId={s.tipsterId} size="sm" />
                 </div>
@@ -336,28 +344,27 @@ export default function UserDashboard() {
         </ul>
       )}
 
-      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>Following</h2>
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('following')}</h2>
       <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
-        Tipsters you track for free. Following surfaces their public record only —
-        subscribe to unlock their live picks.
+        {t('followingSub')}
       </p>
       {following === null ? (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
       ) : followingOnly && followingOnly.length === 0 ? (
         <div style={{ marginTop: '0.75rem' }}>
           <EmptyState
             icon="👀"
             title={
               shownFollowing && shownFollowing.length > 0
-                ? 'Everyone you follow is also subscribed'
-                : 'You’re not following anyone yet'
+                ? t('allAlsoSubscribedTitle')
+                : t('notFollowingTitle')
             }
             description={
               shownFollowing && shownFollowing.length > 0
-                ? 'See them in Subscribed above. Follow more tipsters to track their record for free.'
-                : 'Follow a few tipsters to track their public record for free — no subscription needed.'
+                ? t('allAlsoSubscribedBody')
+                : t('notFollowingBody')
             }
-            actions={[{ href: '/tipsters', label: 'Browse tipsters' }]}
+            actions={[{ href: '/tipsters', label: t('browseTipsters') }]}
           />
         </div>
       ) : (
@@ -391,8 +398,12 @@ export default function UserDashboard() {
                   ) : null}
                   <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
                     {f.stats
-                      ? `${f.stats.yield.toFixed(1)}% yield · ${(f.stats.clvAvg * 100).toFixed(1)}% CLV · ${f.stats.sampleSize} picks`
-                      : 'No settled picks yet'}
+                      ? t('followStatLine', {
+                          yield: f.stats.yield.toFixed(1),
+                          clv: (f.stats.clvAvg * 100).toFixed(1),
+                          count: f.stats.sampleSize,
+                        })
+                      : t('noSettled')}
                   </div>
                 </div>
               </div>
@@ -401,7 +412,7 @@ export default function UserDashboard() {
                   href={`/tipsters/${f.tipsterId}`}
                   className="btn btn--primary btn--sm"
                 >
-                  Subscribe
+                  {t('subscribe')}
                 </Link>
                 <FollowButton tipsterId={f.tipsterId} size="sm" />
               </div>

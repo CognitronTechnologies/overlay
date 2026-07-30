@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { authFetch, getProfile, requestPayout } from '../../lib/auth';
 import { API_URL } from '../../lib/api';
 import { downloadExport } from '../../lib/export';
@@ -60,21 +61,22 @@ function money(cents: number): string {
 const MARKETS = SUPPORTED_MARKETS;
 
 // Per-market guidance for the selection field so picks match the grader's
-// expected format (see packages/shared/src/grading.ts).
-const SELECTION_HINTS: Record<string, string> = {
-  '1X2': 'home, draw or away',
-  moneyline: 'home or away',
-  dnb: 'home or away (draw no bet)',
-  double_chance: '1X, 12 or X2',
-  btts: 'yes or no (both teams to score)',
-  spreads: 'e.g. home -1.5, away +0.25 (Asian OK)',
-  totals: 'e.g. over 2.5 or under 3',
-  team_totals: 'e.g. home over 1.5',
-  odd_even: 'odd or even',
-  correct_score: 'e.g. 2-1',
+// expected format (see packages/shared/src/grading.ts). Values are message keys.
+const SELECTION_HINT_KEYS: Record<string, string> = {
+  '1X2': 'hint1X2',
+  moneyline: 'hintMoneyline',
+  dnb: 'hintDnb',
+  double_chance: 'hintDoubleChance',
+  btts: 'hintBtts',
+  spreads: 'hintSpreads',
+  totals: 'hintTotals',
+  team_totals: 'hintTeamTotals',
+  odd_even: 'hintOddEven',
+  correct_score: 'hintCorrectScore',
 };
 
 export default function DashboardPage() {
+  const t = useTranslations('tipsterDashboard');
   const router = useRouter();
   const [viewRole, setViewRole] = useState<'user' | 'tipster' | null>(null);
   const [tipsterId, setTipsterId] = useState<string | null>(null);
@@ -300,7 +302,7 @@ export default function DashboardPage() {
     e.preventDefault();
     setMsg(null);
     if (!form.eventId) {
-      setMsg('Pick an event first.');
+      setMsg(t('pickEventFirst'));
       return;
     }
     setSubmitting(true);
@@ -323,12 +325,12 @@ export default function DashboardPage() {
         };
         throw new Error(body.message ?? `Failed (${res.status})`);
       }
-      setMsg('Pick locked ✓');
+      setMsg(t('pickLocked'));
       setForm((f) => ({ ...f, selection: '', note: '' }));
       await loadMyTips();
       await loadPerformance();
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'Failed to submit');
+      setMsg(err instanceof Error ? err.message : t('failedToSubmit'));
     } finally {
       setSubmitting(false);
     }
@@ -340,11 +342,11 @@ export default function DashboardPage() {
     try {
       const { amountCents } = await requestPayout();
       setPayoutMsg(
-        `Requested $${(amountCents / 100).toFixed(2)} — awaiting admin approval.`,
+        t('payoutRequested', { amount: (amountCents / 100).toFixed(2) }),
       );
       await loadEarnings();
     } catch (e) {
-      setPayoutMsg(e instanceof Error ? e.message : 'Could not request payout.');
+      setPayoutMsg(e instanceof Error ? e.message : t('payoutFailed'));
     } finally {
       setPayoutBusy(false);
     }
@@ -355,10 +357,9 @@ export default function DashboardPage() {
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ marginBottom: '0.25rem' }}>Tipster dashboard</h1>
+      <h1 style={{ marginBottom: '0.25rem' }}>{t('title')}</h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Picks are hash-locked and timestamped the moment you submit — before
-        kickoff. That’s what makes your record verifiable.
+        {t('subtitle')}
       </p>
 
       <div
@@ -386,22 +387,22 @@ export default function DashboardPage() {
             {subscriberCount ?? '—'}
           </span>
           <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-            Active subscriber{subscriberCount === 1 ? '' : 's'}
+            {t('activeSubscribers', { count: subscriberCount ?? 0 })}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
           <a href="#my-tips" className="btn btn--primary btn--sm">
-            My tips
+            {t('navMyTips')}
           </a>
           <a href="#earnings" className="btn btn--secondary btn--sm">
-            Earnings &amp; payouts
+            {t('navEarnings')}
           </a>
           <Link href="/dashboard/profile" className="btn btn--secondary btn--sm">
-            Edit public profile
+            {t('editProfile')}
           </Link>
           <Link href="/admin/blog" className="btn btn--secondary btn--sm">
-            Write an article
+            {t('writeArticle')}
           </Link>
           <button
             type="button"
@@ -412,11 +413,11 @@ export default function DashboardPage() {
                 'xlsx',
                 'my-picks.xlsx',
               ).catch((e) =>
-                alert(e instanceof Error ? e.message : 'Export failed'),
+                alert(e instanceof Error ? e.message : t('exportFailed')),
               )
             }
           >
-            Export picks
+            {t('exportPicks')}
           </button>
           <button
             type="button"
@@ -427,16 +428,16 @@ export default function DashboardPage() {
                 'xlsx',
                 'my-earnings.xlsx',
               ).catch((e) =>
-                alert(e instanceof Error ? e.message : 'Export failed'),
+                alert(e instanceof Error ? e.message : t('exportFailed')),
               )
             }
           >
-            Export earnings
+            {t('exportEarnings')}
           </button>
         </div>
       </div>
 
-      <h2 style={{ marginTop: '2rem' }}>Submit a pick</h2>
+      <h2 style={{ marginTop: '2rem' }}>{t('submitPick')}</h2>
       {onboarding && !onboarding.canPublish ? (
         <div
           style={{
@@ -447,11 +448,13 @@ export default function DashboardPage() {
           }}
         >
           <p style={{ margin: '0 0 0.5rem' }}>
-            Finish onboarding ({onboarding.completedSteps}/
-            {onboarding.totalSteps} steps) to unlock pick publishing.
+            {t('finishOnboarding', {
+              completed: onboarding.completedSteps,
+              total: onboarding.totalSteps,
+            })}
           </p>
           <Link href="/onboarding" style={{ color: 'var(--accent)' }}>
-            → Complete onboarding
+            {t('completeOnboarding')}
           </Link>
         </div>
       ) : (
@@ -462,7 +465,7 @@ export default function DashboardPage() {
         {/* Narrow down: sport → league → search by team. */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <select
-            aria-label="Filter by sport"
+            aria-label={t('filterBySport')}
             style={{ ...formStyles.input, flex: '1 1 140px' }}
             value={fSport}
             onChange={(e) => {
@@ -470,7 +473,7 @@ export default function DashboardPage() {
               setFLeague('');
             }}
           >
-            <option value="">All sports</option>
+            <option value="">{t('allSports')}</option>
             {filters.sports.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -478,13 +481,13 @@ export default function DashboardPage() {
             ))}
           </select>
           <select
-            aria-label="Filter by league"
+            aria-label={t('filterByLeague')}
             style={{ ...formStyles.input, flex: '1 1 140px' }}
             value={fLeague}
             onChange={(e) => setFLeague(e.target.value)}
             disabled={!fSport || !(filters.leagues[fSport]?.length)}
           >
-            <option value="">All leagues</option>
+            <option value="">{t('allLeagues')}</option>
             {(filters.leagues[fSport] ?? []).map((l) => (
               <option key={l} value={l}>
                 {l}
@@ -494,22 +497,20 @@ export default function DashboardPage() {
         </div>
         <input
           style={formStyles.input}
-          placeholder="Search teams…"
+          placeholder={t('searchTeams')}
           value={fQuery}
           onChange={(e) => setFQuery(e.target.value)}
         />
 
         <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Event
+          {t('event')}
           <select
             style={{ ...formStyles.input, marginTop: '0.35rem' }}
             value={form.eventId}
             onChange={(e) => selectEvent(e.target.value)}
           >
             <option value="">
-              {events.length
-                ? 'Select an event…'
-                : 'No matching events'}
+              {events.length ? t('selectEvent') : t('noMatchingEvents')}
             </option>
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
@@ -520,7 +521,7 @@ export default function DashboardPage() {
         </label>
 
         <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Market
+          {t('market')}
           <select
             style={{ ...formStyles.input, marginTop: '0.35rem' }}
             value={form.market}
@@ -539,9 +540,9 @@ export default function DashboardPage() {
           const hasLiveOdds = !!prices && Object.keys(prices).length > 0;
           return (
             <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-              Selection
+              {t('selection')}
               {oddsLoading ? (
-                <span style={{ marginLeft: '0.5rem' }}>· loading odds…</span>
+                <span style={{ marginLeft: '0.5rem' }}>{t('loadingOdds')}</span>
               ) : null}
               {hasLiveOdds ? (
                 <select
@@ -550,7 +551,7 @@ export default function DashboardPage() {
                   onChange={(e) => selectSelection(e.target.value)}
                   required
                 >
-                  <option value="">Choose a line…</option>
+                  <option value="">{t('chooseLine')}</option>
                   {Object.entries(prices!).map(([sel, price]) => (
                     <option key={sel} value={sel}>
                       {sel} @ {price.toFixed(2)}
@@ -560,7 +561,11 @@ export default function DashboardPage() {
               ) : (
                 <input
                   style={{ ...formStyles.input, marginTop: '0.35rem' }}
-                  placeholder={SELECTION_HINTS[form.market] ?? 'Selection'}
+                  placeholder={
+                    SELECTION_HINT_KEYS[form.market]
+                      ? t(SELECTION_HINT_KEYS[form.market])
+                      : t('selectionFallback')
+                  }
                   value={form.selection}
                   onChange={(e) =>
                     setForm({ ...form, selection: e.target.value })
@@ -573,10 +578,10 @@ export default function DashboardPage() {
         })()}
 
         <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Odds{' '}
+          {t('odds')}{' '}
           {eventOdds && eventOdds.length > 0 ? (
             <span style={{ fontSize: '0.8rem' }}>
-              (auto-filled from the live line — editable)
+              {t('oddsAutofilled')}
             </span>
           ) : null}
           <input
@@ -584,7 +589,7 @@ export default function DashboardPage() {
             type="number"
             step="0.01"
             min="1.01"
-            placeholder="Odds"
+            placeholder={t('odds')}
             value={form.oddsAtPick}
             onChange={(e) => setForm({ ...form, oddsAtPick: e.target.value })}
             required
@@ -609,14 +614,14 @@ export default function DashboardPage() {
               }}
             >
               <div style={{ marginBottom: '0.3rem' }}>
-                Compare books{form.selection ? ` · ${form.selection}` : ''}
+                {t('compareBooks')}{form.selection ? ` · ${form.selection}` : ''}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                 {sorted.slice(0, 8).map((o, i) => (
                   <button
                     key={`${o.bookmaker}-${o.selection}-${i}`}
                     type="button"
-                    title={`Use ${o.price.toFixed(2)} from ${o.bookmakerTitle ?? o.bookmaker}`}
+                    title={t('useBookPrice', { price: o.price.toFixed(2), book: o.bookmakerTitle ?? o.bookmaker })}
                     onClick={() =>
                       setForm((f) => ({
                         ...f,
@@ -651,7 +656,7 @@ export default function DashboardPage() {
           type="number"
           step="0.1"
           min="0.1"
-          placeholder="Stake (units)"
+          placeholder={t('stakeUnits')}
           value={form.stakeUnits}
           onChange={(e) => setForm({ ...form, stakeUnits: e.target.value })}
           required
@@ -668,12 +673,12 @@ export default function DashboardPage() {
           }}
         >
           <legend style={{ padding: '0 0.35rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
-            Pick type
+            {t('pickType')}
           </legend>
           {(
             [
-              { key: 'pre_match', label: 'Pre-match', hint: 'before kickoff' },
-              { key: 'live', label: 'Live / in-play', hint: 'during the game' },
+              { key: 'pre_match', label: t('preMatch'), hint: t('preMatchHint') },
+              { key: 'live', label: t('liveInPlay'), hint: t('liveHint') },
             ] as const
           ).map((opt) => (
             <label
@@ -696,20 +701,19 @@ export default function DashboardPage() {
         </fieldset>
         {form.pickType === 'live' ? (
           <p style={{ color: 'var(--muted)', fontSize: '0.8rem', margin: 0 }}>
-            Live picks are locked mid-game and excluded from CLV — they’re shown
-            and scored separately from your pre-match record.
+            {t('liveNote')}
           </p>
         ) : null}
         <textarea
           style={{ ...formStyles.input, minHeight: 72, resize: 'vertical' }}
-          placeholder="Optional context / reasoning (shown to subscribers)"
+          placeholder={t('notePlaceholder')}
           value={form.note}
           maxLength={280}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
         />
         {msg ? <p style={{ color: 'var(--accent)', margin: 0 }}>{msg}</p> : null}
         <button className="btn btn--primary" disabled={submitting}>
-          {submitting ? 'Locking…' : 'Lock pick'}
+          {submitting ? t('locking') : t('lockPick')}
         </button>
       </form>
       )}
@@ -717,7 +721,7 @@ export default function DashboardPage() {
       <PerformanceDashboardView data={performance} />
 
       <section id="earnings" style={{ marginTop: '2.5rem', scrollMarginTop: '1rem' }}>
-        <h2 style={{ margin: '0 0 0.75rem' }}>Earnings &amp; payouts</h2>
+        <h2 style={{ margin: '0 0 0.75rem' }}>{t('earningsTitle')}</h2>
         {earnings ? (
           <>
             <div
@@ -729,17 +733,17 @@ export default function DashboardPage() {
             >
               {[
                 {
-                  label: 'Available now',
+                  label: t('availableNow'),
                   value: money(earnings.availableCents),
-                  hint: 'ready to withdraw',
+                  hint: t('readyToWithdraw'),
                 },
                 {
-                  label: 'Projected this cycle',
+                  label: t('projectedCycle'),
                   value: money(earnings.projected.netCents),
-                  hint: `after ${Math.round(earnings.feeRate * 100)}% platform fee`,
+                  hint: t('afterFee', { fee: Math.round(earnings.feeRate * 100) }),
                 },
-                { label: 'Paid out', value: money(earnings.paidCents) },
-                { label: 'Pending', value: money(earnings.pendingCents) },
+                { label: t('paidOut'), value: money(earnings.paidCents) },
+                { label: t('pending'), value: money(earnings.pendingCents) },
               ].map((c) => (
                 <div
                   key={c.label}
@@ -765,11 +769,11 @@ export default function DashboardPage() {
               ))}
             </div>
             <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.9rem' }}>
-              Payouts are processed <strong>every Tuesday</strong>. Need funds
-              sooner? Request an off-schedule payout below — it’s released once an
-              admin approves it.{' '}
+              {t.rich('payoutsInfo', {
+                b: (chunks) => <strong>{chunks}</strong>,
+              })}{' '}
               <Link href="/earnings" style={{ color: 'var(--accent)' }}>
-                Full payout history →
+                {t('fullPayoutHistory')}
               </Link>
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginTop: '0.75rem' }}>
@@ -783,11 +787,11 @@ export default function DashboardPage() {
                 }
                 onClick={requestOnDemandPayout}
               >
-                {payoutBusy ? 'Requesting…' : 'Request payout now'}
+                {payoutBusy ? t('requesting') : t('requestPayout')}
               </button>
               {earnings.awaitingApproval ? (
                 <span style={{ color: 'var(--warning)', fontSize: '0.85rem' }}>
-                  A payout request is awaiting admin approval.
+                  {t('awaitingApproval')}
                 </span>
               ) : null}
               {payoutMsg ? (
@@ -798,7 +802,7 @@ export default function DashboardPage() {
             </div>
           </>
         ) : (
-          <p style={{ color: 'var(--muted)' }}>Loading earnings…</p>
+          <p style={{ color: 'var(--muted)' }}>{t('loadingEarnings')}</p>
         )}
       </section>
 
@@ -816,16 +820,16 @@ export default function DashboardPage() {
         ).length;
 
         const mainTabs: { key: TipsFilter; label: string; count: number }[] = [
-          { key: 'open', label: 'Open', count: openCount },
-          { key: 'settled', label: 'Settled', count: settledList.length },
-          { key: 'all', label: 'All', count: myTips.length },
+          { key: 'open', label: t('tabOpen'), count: openCount },
+          { key: 'settled', label: t('tabSettled'), count: settledList.length },
+          { key: 'all', label: t('tabAll'), count: myTips.length },
         ];
         const subTabs: { key: SettledOutcome; label: string; count: number }[] =
           [
-            { key: 'all', label: 'All', count: settledList.length },
-            { key: 'won', label: 'Won', count: wonCount },
-            { key: 'lost', label: 'Lost', count: lostCount },
-            { key: 'void', label: 'Void', count: voidCount },
+            { key: 'all', label: t('tabAll'), count: settledList.length },
+            { key: 'won', label: t('outcomeWon'), count: wonCount },
+            { key: 'lost', label: t('outcomeLost'), count: lostCount },
+            { key: 'void', label: t('outcomeVoid'), count: voidCount },
           ];
 
         const rows =
@@ -853,16 +857,16 @@ export default function DashboardPage() {
                 scrollMarginTop: '1rem',
               }}
             >
-              <h2 style={{ margin: 0 }}>My tips</h2>
+              <h2 style={{ margin: 0 }}>{t('myTips')}</h2>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
-                {mainTabs.map((t) => (
+                {mainTabs.map((tab) => (
                   <button
-                    key={t.key}
+                    key={tab.key}
                     type="button"
-                    onClick={() => setTipsFilter(t.key)}
-                    style={pillStyle(tipsFilter === t.key)}
+                    onClick={() => setTipsFilter(tab.key)}
+                    style={pillStyle(tipsFilter === tab.key)}
                   >
-                    {t.label} ({t.count})
+                    {tab.label} ({tab.count})
                   </button>
                 ))}
               </div>
@@ -872,14 +876,14 @@ export default function DashboardPage() {
               <div
                 style={{ display: 'flex', gap: '0.4rem', marginTop: '0.75rem' }}
               >
-                {subTabs.map((t) => (
+                {subTabs.map((tab) => (
                   <button
-                    key={t.key}
+                    key={tab.key}
                     type="button"
-                    onClick={() => setSettledOutcome(t.key)}
-                    style={pillStyle(settledOutcome === t.key, true)}
+                    onClick={() => setSettledOutcome(tab.key)}
+                    style={pillStyle(settledOutcome === tab.key, true)}
                   >
-                    {t.label} ({t.count})
+                    {tab.label} ({tab.count})
                   </button>
                 ))}
               </div>
@@ -888,10 +892,10 @@ export default function DashboardPage() {
             {rows.length === 0 ? (
               <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
                 {tipsFilter === 'open'
-                  ? 'No open tips right now.'
+                  ? t('noOpenTips')
                   : tipsFilter === 'settled'
-                    ? 'No settled tips in this view.'
-                    : 'No tips yet.'}
+                    ? t('noSettledTips')
+                    : t('noTipsYet')}
               </p>
             ) : (
               <table
@@ -903,12 +907,12 @@ export default function DashboardPage() {
               >
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--muted)' }}>
-                    <th style={{ padding: '0.5rem 0' }}>Match</th>
-                    <th>Selection</th>
-                    <th>Market</th>
-                    <th>Odds</th>
+                    <th style={{ padding: '0.5rem 0' }}>{t('thMatch')}</th>
+                    <th>{t('thSelection')}</th>
+                    <th>{t('thMarket')}</th>
+                    <th>{t('thOdds')}</th>
                     <th>CLV</th>
-                    <th>Status</th>
+                    <th>{t('thStatus')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -923,7 +927,7 @@ export default function DashboardPage() {
                           setDetailPick(p);
                         }
                       }}
-                      title="View tip details"
+                      title={t('viewTipDetails')}
                       style={{
                         borderTop: '1px solid var(--border)',
                         cursor: 'pointer',
@@ -936,7 +940,7 @@ export default function DashboardPage() {
                         {p.selection}
                         {p.pickType === 'live' ? (
                           <span
-                            title="Placed in-play (after kickoff). Excluded from CLV and scored separately."
+                            title={t('liveBadgeTitle')}
                             style={{
                               marginLeft: '0.4rem',
                               padding: '0.05rem 0.4rem',
@@ -948,7 +952,7 @@ export default function DashboardPage() {
                               border: '1px solid var(--danger)',
                             }}
                           >
-                            ● Live
+                            ● {t('statusLive')}
                           </span>
                         ) : null}
                       </td>
@@ -957,7 +961,7 @@ export default function DashboardPage() {
                       <td>
                         {p.clv != null ? `${(p.clv * 100).toFixed(1)}%` : '—'}
                       </td>
-                      <td>{formatTipStatus(p.status)}</td>
+                      <td>{formatTipStatus(p.status, (k) => t(k))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -998,10 +1002,10 @@ function pillStyle(active: boolean, small = false): React.CSSProperties {
 }
 
 /** Pretty pick-status label (handles Asian half results). */
-function formatTipStatus(status: string): string {
-  if (status === 'pending') return 'Open';
-  if (status === 'half_won') return '½ won';
-  if (status === 'half_lost') return '½ lost';
+function formatTipStatus(status: string, tr: (key: string) => string): string {
+  if (status === 'pending') return tr('statusOpen');
+  if (status === 'half_won') return tr('halfWon');
+  if (status === 'half_lost') return tr('halfLost');
   return status;
 }
 
@@ -1017,6 +1021,7 @@ function TipDetailModal({
   pick: FeedPick;
   onClose: () => void;
 }) {
+  const t = useTranslations('tipsterDashboard');
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -1035,28 +1040,28 @@ function TipDetailModal({
   const beforeKickoff = pick.event ? pick.lockedAt < pick.event.startTime : true;
 
   const details: [string, string][] = [
-    ['Match', pick.event ? `${pick.event.home} v ${pick.event.away}` : '—'],
-    ['Sport', pick.event?.sport ?? '—'],
-    ['Kickoff', pick.event ? fmt(pick.event.startTime) : '—'],
-    ['Selection', pick.selection],
-    ['Market', pick.market],
-    ['Odds', pick.oddsAtPick.toFixed(2)],
-    ['Stake', `${pick.stakeUnits} unit${pick.stakeUnits === 1 ? '' : 's'}`],
-    ['Status', formatTipStatus(pick.status)],
+    [t('thMatch'), pick.event ? `${pick.event.home} v ${pick.event.away}` : '—'],
+    [t('detailSport'), pick.event?.sport ?? '—'],
+    [t('detailKickoff'), pick.event ? fmt(pick.event.startTime) : '—'],
+    [t('thSelection'), pick.selection],
+    [t('thMarket'), pick.market],
+    [t('thOdds'), pick.oddsAtPick.toFixed(2)],
+    [t('detailStake'), t('unitsValue', { count: pick.stakeUnits })],
+    [t('thStatus'), formatTipStatus(pick.status, (k) => t(k))],
     ['CLV', pick.clv != null ? `${(pick.clv * 100).toFixed(1)}%` : '—'],
-    ['Result', pick.result ?? '—'],
+    [t('detailResult'), pick.result ?? '—'],
     [
-      'Locked',
-      `${fmt(pick.lockedAt)}${beforeKickoff ? ' · before kickoff' : ''}`,
+      t('detailLocked'),
+      `${fmt(pick.lockedAt)}${beforeKickoff ? ` · ${t('beforeKickoff')}` : ''}`,
     ],
-    ['Settled', fmt(pick.settledAt)],
+    [t('detailSettled'), fmt(pick.settledAt)],
   ];
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Tip details"
+      aria-label={t('tipDetails')}
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -1090,11 +1095,11 @@ function TipDetailModal({
             gap: '1rem',
           }}
         >
-          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Tip details</h2>
+          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{t('tipDetails')}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('close')}
             className="btn btn--ghost btn--sm"
           >
             ✕
@@ -1134,7 +1139,7 @@ function TipDetailModal({
                 marginBottom: '0.25rem',
               }}
             >
-              Note
+              {t('note')}
             </div>
             <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{pick.note}</p>
           </div>
