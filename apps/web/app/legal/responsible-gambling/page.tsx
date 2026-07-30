@@ -67,7 +67,7 @@ export default function ResponsibleGamblingPage() {
           18+. Gambling can be addictive — please play responsibly.
         </strong>
         <p style={{ color: 'var(--fg)', margin: '0.5rem 0 0' }}>
-          Overlay Picks is an information, analytics and tipster-marketplace
+          Overlay Picks is an information, analytics and tipster-platform
           service. We do not accept, place, broker or settle wagers of any kind.
           If you choose to bet with a third-party operator, only stake what you
           can afford to lose.

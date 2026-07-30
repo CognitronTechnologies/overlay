@@ -4,6 +4,8 @@ import { getTranslations } from 'next-intl/server';
 import Flag from '../Flag';
 import Avatar from '../Avatar';
 import FollowButton from '../FollowButton';
+import CompareToggle from './CompareToggle';
+import CompareTray from './CompareTray';
 import { SportChipLinks } from '../SportChips';
 import {
   listMarketplace,
@@ -204,6 +206,7 @@ export default async function TipstersPage({
                     <th>{t('thPicks')}</th>
                     <th>{t('thPrice')}</th>
                     <th></th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -234,6 +237,12 @@ export default async function TipstersPage({
                         {r.subscriptionPriceCents > 0
                           ? `$${(r.subscriptionPriceCents / 100).toFixed(2)}`
                           : t('free')}
+                      </td>
+                      <td>
+                        <CompareToggle
+                          id={r.tipsterId}
+                          name={r.name ?? r.tipsterId}
+                        />
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <span
@@ -344,6 +353,7 @@ export default async function TipstersPage({
           </div>
         </aside>
       </div>
+      <CompareTray />
     </main>
   );
 }
