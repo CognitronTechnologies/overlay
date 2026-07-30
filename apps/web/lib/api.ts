@@ -391,8 +391,10 @@ export async function getTipster(id: string): Promise<TipsterProfile | null> {
 }
 
 /**
- * Side-by-side comparison of up to three tipsters (OB-160). The API returns
- * only the ids that resolve, in requested order; unknown ids are dropped.
+ * Side-by-side data for up to three tipsters (OB-160). Fans out to the existing
+ * per-tipster profile endpoint (`/api/tipsters/:id`) rather than a bespoke
+ * compare route, so it works against any deployed API. Ids that don't resolve
+ * are dropped; order follows the request and duplicates are collapsed.
  */
 export async function compareTipsters(
   ids: string[],
@@ -402,12 +404,8 @@ export async function compareTipsters(
     3,
   );
   if (clean.length === 0) return [];
-  const qs = encodeURIComponent(clean.join(','));
-  const data = await getJson<{ tipsters: TipsterProfile[] }>(
-    `/api/tipsters/compare?ids=${qs}`,
-    60,
-  );
-  return data?.tipsters ?? [];
+  const results = await Promise.all(clean.map((id) => getTipster(id)));
+  return results.filter((p): p is TipsterProfile => p !== null);
 }
 
 /** A fixture that has tipster picks on it (OB-161), for the /fixtures browse. */
