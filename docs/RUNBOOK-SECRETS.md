@@ -11,6 +11,7 @@ safely — **especially the pick-hash pepper**, which is not a drop-in rotation.
 | `JWT_SECRET` | Reserved signing secret for first-party tokens. | Low — stateless; rotating invalidates any tokens signed with it. |
 | `PICK_HASH_PEPPER` | Server-side pepper mixed into every pick's tamper-evident hash (`SHA256(canonical(payload) + nonce + pepper)`). | **High** — see [Rotating `PICK_HASH_PEPPER`](#rotating-pick_hash_pepper). |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payment provider credentials (required when `PAYMENTS_PROVIDER=stripe`). | Provider-managed; rotate in the Stripe dashboard, then update env. |
+| `PAYSTACK_SECRET_KEY` | Paystack API + webhook credential (required when `PAYMENTS_PROVIDER=paystack`). The same secret signs webhooks (HMAC-SHA512), so one rotation covers both. | Provider-managed; rotate in the Paystack dashboard, then update env. |
 | `SUPABASE_SERVICE_ROLE_KEY`, VAPID keys, etc. | Third-party credentials. | Rotate at the provider, then update env. |
 
 > Application auth verifies **Supabase-issued** JWTs via the project's public

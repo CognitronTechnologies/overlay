@@ -13,16 +13,16 @@ export type PaymentMethodId =
   | 'mtn_momo'
   | 'airtel_money';
 
-/** Human labels for each payment method (with a hint emoji). */
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethodId, string> = {
-  card: '💳 Card',
-  apple_pay: ' Apple Pay',
-  google_pay: '🅶 Google Pay',
-  usdc: '🪙 USDC (stablecoin)',
-  usdt: '🪙 USDT (stablecoin)',
-  mpesa: '📱 M-Pesa',
-  mtn_momo: '📱 MTN MoMo',
-  airtel_money: '📱 Airtel Money',
+/** Emoji hint shown alongside each payment method's (localized) label. */
+export const PAYMENT_METHOD_EMOJI: Record<PaymentMethodId, string> = {
+  card: '💳',
+  apple_pay: '',
+  google_pay: '🅶',
+  usdc: '🪙',
+  usdt: '🪙',
+  mpesa: '📱',
+  mtn_momo: '📱',
+  airtel_money: '📱',
 };
 
 /** Fetch the payment methods enabled by the API's wired providers. */
@@ -34,6 +34,22 @@ export async function listPaymentMethods(): Promise<PaymentMethodId[]> {
     return data.methods ?? [];
   } catch {
     return [];
+  }
+}
+
+/**
+ * Whether the configured default provider offers a hosted billing portal
+ * (Stripe). Pay-per-period providers (Paystack, crypto, mobile money) don't, so
+ * the account UI hides the “manage billing” button. Defaults to false on error.
+ */
+export async function getBillingPortalAvailable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/api/subscriptions/methods`);
+    if (!res.ok) return false;
+    const data = (await res.json()) as { billingPortal?: boolean };
+    return Boolean(data.billingPortal);
+  } catch {
+    return false;
   }
 }
 
@@ -518,11 +534,14 @@ export interface EditableTipsterProfile {
   socialTelegram: string | null;
   identityVerified: boolean;
   identityDocName: string | null;
-  payoutMethod: 'stripe' | 'crypto' | 'mobile_money' | null;
+  payoutMethod: 'stripe' | 'paystack' | 'crypto' | 'mobile_money' | null;
   payoutWalletAddress: string | null;
   payoutWalletChain: string | null;
   payoutMobileNumber: string | null;
   payoutMobileNetwork: string | null;
+  payoutBankAccount: string | null;
+  payoutBankCode: string | null;
+  payoutAccountName: string | null;
 }
 export type MarketplaceSort = 'yield' | 'clv' | 'winRate';
 

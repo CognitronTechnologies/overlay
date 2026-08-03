@@ -45,6 +45,10 @@ export class CryptoPaymentProvider implements PaymentProvider {
     methods: ['usdc', 'usdt'],
   };
 
+  isAvailable(): boolean {
+    return this.configured || this.devFallback;
+  }
+
   private readonly log = new Logger(CryptoPaymentProvider.name);
 
   private get apiKey(): string | undefined {
