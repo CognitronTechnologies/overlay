@@ -55,6 +55,19 @@ test('collectConfigProblems: requires stripe secrets when provider=stripe', () =
   assert.ok(problems.some((p) => p.includes('STRIPE_WEBHOOK_SECRET')));
 });
 
+test('collectConfigProblems: requires the paystack key when provider=paystack', () => {
+  const env = { ...goodEnv(), PAYMENTS_PROVIDER: 'paystack' };
+  const problems = collectConfigProblems(env);
+  assert.ok(problems.some((p) => p.includes('PAYSTACK_SECRET_KEY')));
+
+  const ok = collectConfigProblems({
+    ...goodEnv(),
+    PAYMENTS_PROVIDER: 'paystack',
+    PAYSTACK_SECRET_KEY: 'sk_test_abc',
+  });
+  assert.ok(!ok.some((p) => p.includes('PAYSTACK_SECRET_KEY')));
+});
+
 test('boot guard REJECTS default secrets when NODE_ENV=production', () => {
   const env = { ...goodEnv(), JWT_SECRET: 'change-me-in-prod', PICK_HASH_PEPPER: 'change-me' };
   assert.throws(

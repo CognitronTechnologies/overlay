@@ -177,7 +177,7 @@ export default function EarningsPage() {
   );
 }
 
-type PayoutMethod = 'stripe' | 'crypto' | 'mobile_money';
+type PayoutMethod = 'stripe' | 'paystack' | 'crypto' | 'mobile_money';
 
 const CHAINS = ['ethereum', 'polygon', 'tron', 'bsc', 'solana'];
 const NETWORKS = ['mpesa', 'mtn_momo', 'airtel_money'];
@@ -190,6 +190,9 @@ function PayoutSettings() {
   const [walletChain, setWalletChain] = useState('ethereum');
   const [mobileNumber, setMobileNumber] = useState('');
   const [mobileNetwork, setMobileNetwork] = useState('mpesa');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankCode, setBankCode] = useState('');
+  const [accountName, setAccountName] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -203,12 +206,18 @@ function PayoutSettings() {
         payoutWalletChain: string | null;
         payoutMobileNumber: string | null;
         payoutMobileNetwork: string | null;
+        payoutBankAccount: string | null;
+        payoutBankCode: string | null;
+        payoutAccountName: string | null;
       };
       setMethod(p.payoutMethod ?? '');
       setWalletAddress(p.payoutWalletAddress ?? '');
       if (p.payoutWalletChain) setWalletChain(p.payoutWalletChain);
       setMobileNumber(p.payoutMobileNumber ?? '');
       if (p.payoutMobileNetwork) setMobileNetwork(p.payoutMobileNetwork);
+      setBankAccount(p.payoutBankAccount ?? '');
+      setBankCode(p.payoutBankCode ?? '');
+      setAccountName(p.payoutAccountName ?? '');
     })();
   }, []);
 
@@ -225,6 +234,11 @@ function PayoutSettings() {
       if (method === 'mobile_money') {
         body.payoutMobileNumber = mobileNumber.trim();
         body.payoutMobileNetwork = mobileNetwork;
+      }
+      if (method === 'paystack') {
+        body.payoutBankAccount = bankAccount.trim();
+        body.payoutBankCode = bankCode.trim();
+        body.payoutAccountName = accountName.trim();
       }
       const res = await authFetch('/api/tipsters/me', {
         method: 'PATCH',
@@ -279,6 +293,7 @@ function PayoutSettings() {
           >
             <option value="">{t('select')}</option>
             <option value="stripe">{t('methodStripe')}</option>
+            <option value="paystack">{t('methodPaystack')}</option>
             <option value="crypto">{t('methodCrypto')}</option>
             <option value="mobile_money">{t('methodMobile')}</option>
           </select>
@@ -288,6 +303,41 @@ function PayoutSettings() {
           <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
             {t('stripeNote')}
           </p>
+        ) : null}
+
+        {method === 'paystack' ? (
+          <>
+            <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+              {t('paystackNote')}
+            </p>
+            <label style={labelStyle}>
+              {t('accountName')}
+              <input
+                style={inputStyle}
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              {t('bankAccount')}
+              <input
+                style={inputStyle}
+                placeholder={t('bankAccountPlaceholder')}
+                inputMode="numeric"
+                value={bankAccount}
+                onChange={(e) => setBankAccount(e.target.value)}
+              />
+            </label>
+            <label style={labelStyle}>
+              {t('bankCode')}
+              <input
+                style={inputStyle}
+                placeholder={t('bankCodePlaceholder')}
+                value={bankCode}
+                onChange={(e) => setBankCode(e.target.value)}
+              />
+            </label>
+          </>
         ) : null}
 
         {method === 'crypto' ? (

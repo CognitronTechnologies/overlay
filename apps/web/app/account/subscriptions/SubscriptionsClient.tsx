@@ -20,6 +20,7 @@ import {
   type FeedbackSentiment,
 } from '../../../lib/auth';
 import { EmptyState } from '../../EmptyState';
+import { getBillingPortalAvailable } from '../../../lib/api';
 
 const MUTED = 'var(--muted)';
 
@@ -33,6 +34,7 @@ export default function SubscriptionsClient() {
   const router = useRouter();
   const [subs, setSubs] = useState<SubscriptionRecord[] | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [portalAvailable, setPortalAvailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
 
@@ -59,6 +61,9 @@ export default function SubscriptionsClient() {
       } catch {
         setSubs([]);
       }
+      // Only Stripe offers a hosted billing portal; pay-per-period providers
+      // (Paystack, crypto, mobile money) don't, so the button is hidden.
+      setPortalAvailable(await getBillingPortalAvailable());
     })();
   }, [router]);
 
@@ -352,16 +357,22 @@ export default function SubscriptionsClient() {
       ) : null}
 
       {subs && views.length > 0 ? (
-        <button
-          onClick={openPortal}
-          disabled={portalLoading}
-          className="btn btn--primary"
-          style={{ marginTop: '1.5rem' }}
-        >
-          {portalLoading
-            ? t('openingPortal')
-            : t('manageBilling')}
-        </button>
+        portalAvailable ? (
+          <button
+            onClick={openPortal}
+            disabled={portalLoading}
+            className="btn btn--primary"
+            style={{ marginTop: '1.5rem' }}
+          >
+            {portalLoading
+              ? t('openingPortal')
+              : t('manageBilling')}
+          </button>
+        ) : (
+          <p style={{ color: MUTED, marginTop: '1.5rem', fontSize: '0.9rem' }}>
+            {t('payPerPeriodNote')}
+          </p>
+        )
       ) : null}
       {error ? (
         <p style={{ color: 'var(--danger)', marginTop: '0.75rem' }}>{error}</p>
