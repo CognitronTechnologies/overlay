@@ -1,11 +1,13 @@
 /**
- * User/tipster avatar. Shows the uploaded image when present, otherwise a
- * deterministic generated avatar (DiceBear "adventurer" — a friendly
- * cartoon/anime style) seeded by the username so it's stable per user.
+ * User/tipster avatar. Shows the uploaded/chosen image when present, otherwise
+ * a deterministic generated avatar (DiceBear) seeded by the username so it's
+ * stable per user.
  *
  * Plain <img> (not next/image) so no domain config is needed and it works in
  * both server and client components.
  */
+import { generatedAvatarUrl } from '../lib/avatar';
+
 export default function Avatar({
   src,
   seed,
@@ -19,12 +21,7 @@ export default function Avatar({
   alt?: string;
   style?: React.CSSProperties;
 }) {
-  const url =
-    src && src.length > 0
-      ? src
-      : `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(
-          seed || 'overlay',
-        )}`;
+  const url = src && src.length > 0 ? src : generatedAvatarUrl(seed);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

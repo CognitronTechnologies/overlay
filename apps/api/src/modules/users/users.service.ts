@@ -55,6 +55,24 @@ export class UsersService {
     return { avatarUrl: user.avatarUrl };
   }
 
+  /**
+   * Persist a chosen generated ("preset") avatar. Only DiceBear-generated URLs
+   * are accepted so a client can't set an arbitrary/off-platform image URL;
+   * uploaded photos go through the dedicated file endpoint instead.
+   */
+  async setPresetAvatar(
+    userId: string,
+    url: string,
+  ): Promise<{ avatarUrl: string | null }> {
+    if (
+      typeof url !== 'string' ||
+      !url.startsWith('https://api.dicebear.com/')
+    ) {
+      throw new BadRequestException('Invalid avatar selection');
+    }
+    return this.setAvatar(userId, url);
+  }
+
   /** Remove the user's avatar (revert to the generated fallback). */
   async clearAvatar(userId: string): Promise<{ avatarUrl: string | null }> {
     const user = await this.prisma.user.update({

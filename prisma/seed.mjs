@@ -211,7 +211,7 @@ const ARTICLES = [
   {
     slug: 'what-is-closing-line-value',
     title: 'What Is Closing Line Value (CLV) and Why It Predicts Long-Term Profit',
-    tags: ['clv', 'strategy', 'fundamentals'],
+    tags: ['content', 'clv', 'strategy', 'fundamentals'],
     excerpt:
       'Closing line value measures whether you beat the market before it corrected. It is the single best leading indicator of a betting edge.',
     body: `## The one metric sharps actually track
@@ -246,7 +246,7 @@ ranks tipsters on verified CLV, not just win rate.`,
   {
     slug: 'expected-value-betting-explained',
     title: 'Expected Value Betting Explained: Finding the Overlay',
-    tags: ['ev', 'strategy', 'fundamentals'],
+    tags: ['content', 'ev', 'strategy', 'fundamentals'],
     excerpt:
       'An overlay is a bet where the offered odds are longer than the true probability warrants. Here is how to spot one.',
     body: `## What "overlay" means
@@ -279,7 +279,7 @@ Find them, bet them, and track your CLV to confirm you were right.`,
   {
     slug: 'bankroll-management-kelly-criterion',
     title: 'Bankroll Management: Staking, Units, and the Kelly Criterion',
-    tags: ['bankroll', 'strategy', 'risk'],
+    tags: ['content', 'bankroll', 'strategy', 'risk'],
     excerpt:
       'A positive edge still busts you if you stake badly. Learn unit sizing and a practical, fractional-Kelly approach.',
     body: `## Edge without discipline goes broke
@@ -306,6 +306,77 @@ where \`b\` = odds - 1, \`p\` = true win probability, \`q\` = 1 - p.
 Because your probability estimates are noisy, most pros bet **quarter- or
 half-Kelly** to cut variance. Smaller, steadier, still growing.`,
   },
+  {
+    slug: 'how-overlay-verifies-tipster-records',
+    category: 'news',
+    title: 'How Overlay Locks Every Pick Before Kickoff',
+    tags: ['news', 'product', 'transparency'],
+    excerpt:
+      'A quick look at how Overlay hashes and timestamps every tip before the event starts — so a verified record can never be edited after the fact.',
+    body: `## Why this matters
+
+Screenshots lie. A tipster can post ten bets, delete the losers, and show you a
+"90% strike rate." Overlay makes that impossible.
+
+## What happens when a tip is posted
+
+1. **Post** — the tipster submits a selection and the odds they took.
+2. **Lock** — we hash the pick and timestamp it *before* kickoff. The hash is
+   immutable; the wager can never be edited.
+3. **Settle** — after the event, the result is graded automatically from the
+   official outcome.
+4. **Rank** — verified yield and closing line value move the tipster up the
+   board.
+
+## The takeaway
+
+Every number you see on a tipster's profile is backed by a locked, timestamped
+record. No edits. No deleted losers. That's the whole point.`,
+  },
+  {
+    slug: 'world-cup-final-preview',
+    category: 'news',
+    title: 'World Cup Final: How the Showpiece Is Shaping Up',
+    tags: ['news', 'football', 'world-cup'],
+    excerpt:
+      'The World Cup final is set, and the market has an opinion. Here’s how the matchup, the team news and the closing line are lining up ahead of kickoff.',
+    body: `## The stage is set
+
+After a month of upsets and extra-time drama, the World Cup final is here. Two
+sides that took very different roads to get here now meet for the biggest prize
+in the game — and the betting market has been busy pricing every twist.
+
+## How the market sees it
+
+The favourites opened around **1.90** on the moneyline and have shortened
+steadily as money came in, with the draw drifting out to **3.40**. That kind of
+one-way move before a final often reflects sharp confidence rather than public
+noise — exactly the sort of closing-line signal Overlay tracks.
+
+- **Favourites:** 1.85 and shortening
+- **Draw (90 mins):** 3.40 and drifting
+- **Underdogs:** 4.20
+
+## Team news that matters
+
+The favourites are close to full strength, with their playmaker passing a late
+fitness test. The underdogs will lean on the counter-attack and a goalkeeper who
+has been the tournament's breakout star — a profile that has quietly kept them
+in every knockout tie.
+
+## The overlay angle
+
+Finals are low-scoring and tight: since the group stage, the market has
+consistently **overpriced goals** in the latter rounds. The **Under 2.5** has
+landed in a majority of recent knockout matches, and the closing lines suggest
+value is drifting toward a cagey, cautious final rather than an open one.
+
+Whatever happens, remember the Overlay rule: a pick only counts if it was
+**locked before kickoff**. Post it, lock it, let the result speak.
+
+*This is an illustrative preview for demonstration, not betting advice. 18+,
+please gamble responsibly.*`,
+  },
 ];
 
 async function main() {
@@ -328,6 +399,7 @@ async function main() {
         excerpt: a.excerpt,
         body: a.body,
         tags: a.tags,
+        category: a.category ?? 'content',
         readingMinutes: readingMinutes(a.body),
         status: 'published',
       },
@@ -337,6 +409,7 @@ async function main() {
         excerpt: a.excerpt,
         body: a.body,
         tags: a.tags,
+        category: a.category ?? 'content',
         readingMinutes: readingMinutes(a.body),
         status: 'published',
         publishedAt: new Date(),
