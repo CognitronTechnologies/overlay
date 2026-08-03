@@ -40,11 +40,14 @@ export interface UpdateTipsterInput {
   socialInstagram?: string;
   socialTelegram?: string;
   // Payout destination (OB-06x).
-  payoutMethod?: 'stripe' | 'crypto' | 'mobile_money';
+  payoutMethod?: 'stripe' | 'paystack' | 'crypto' | 'mobile_money';
   payoutWalletAddress?: string;
   payoutWalletChain?: string;
   payoutMobileNumber?: string;
   payoutMobileNetwork?: string;
+  payoutBankAccount?: string;
+  payoutBankCode?: string;
+  payoutAccountName?: string;
 }
 
 /** Metadata for a stored identity document plus optional social handles. */
@@ -348,6 +351,9 @@ export class TipstersService {
       payoutWalletChain: tipster.payoutWalletChain,
       payoutMobileNumber: tipster.payoutMobileNumber,
       payoutMobileNetwork: tipster.payoutMobileNetwork,
+      payoutBankAccount: tipster.payoutBankAccount,
+      payoutBankCode: tipster.payoutBankCode,
+      payoutAccountName: tipster.payoutAccountName,
     };
   }
 
