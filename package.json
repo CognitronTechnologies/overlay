@@ -42,7 +42,7 @@
     "@bradygaster/squad-cli": "^0.11.0",
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
-    "prisma": "^5.20.0",
-    "typescript": "^5.6.0"
+    "prisma": "^7.9.1",
+    "typescript": "^7.0.2"
   }
 }
