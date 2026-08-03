@@ -11,18 +11,18 @@
   },
   "dependencies": {
     "@overlay/shared": "*",
-    "@supabase/supabase-js": "^2.110.7",
+    "@supabase/supabase-js": "^2.111.0",
     "flag-icons": "^7.5.0",
     "marked": "^18.0.6",
     "next": "^16.2.12",
     "next-intl": "^4.13.4",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "typescript": "^5.6.0"
   }
 }
