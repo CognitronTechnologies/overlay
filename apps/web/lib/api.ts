@@ -13,18 +13,6 @@ export type PaymentMethodId =
   | 'mtn_momo'
   | 'airtel_money';
 
-/** Emoji hint shown alongside each payment method's (localized) label. */
-export const PAYMENT_METHOD_EMOJI: Record<PaymentMethodId, string> = {
-  card: '💳',
-  apple_pay: '',
-  google_pay: '🅶',
-  usdc: '🪙',
-  usdt: '🪙',
-  mpesa: '📱',
-  mtn_momo: '📱',
-  airtel_money: '📱',
-};
-
 /** Fetch the payment methods enabled by the API's wired providers. */
 export async function listPaymentMethods(): Promise<PaymentMethodId[]> {
   try {

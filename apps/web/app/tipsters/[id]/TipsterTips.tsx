@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { authFetch, getAccessToken } from '../../../lib/auth';
 import { API_URL, type FeedPick } from '../../../lib/api';
+import Icon from '../../Icon';
 
 const MUTED = 'var(--muted)';
 const BORDER = 'var(--border)';
@@ -186,11 +187,15 @@ export default function TipsterTips({
 
   // When gated and not entitled the open count is hidden behind a lock.
   const openBadge =
-    liveGated && !entitled ? '🔒' : String(openPicks.length);
+    liveGated && !entitled ? (
+      <Icon name="lock" size={12} style={{ verticalAlign: '-1px' }} />
+    ) : (
+      String(openPicks.length)
+    );
   const allCount = entitled
     ? live.picks.length
     : openPicks.length + settledPicks.length;
-  const mainTabs: { key: Filter; label: string; badge: string }[] = [
+  const mainTabs: { key: Filter; label: string; badge: ReactNode }[] = [
     { key: 'open', label: 'Open', badge: openBadge },
     { key: 'settled', label: 'Settled', badge: String(settledPicks.length) },
     { key: 'all', label: 'All', badge: String(allCount) },
@@ -255,8 +260,8 @@ export default function TipsterTips({
             textAlign: 'center',
           }}
         >
-          <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
-            🔒 Open picks are for subscribers
+          <p style={{ fontWeight: 600, margin: '0 0 0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            <Icon name="lock" size={16} /> Open picks are for subscribers
           </p>
           <p style={{ color: MUTED, margin: '0 0 0.75rem' }}>
             {live.kind === 'signedout'
@@ -265,7 +270,8 @@ export default function TipsterTips({
           </p>
           <div style={{ display: 'inline-block' }}>
             <a href="#subscribe" className="btn btn--primary">
-              ★ Subscribe to unlock
+              <Icon name="star" size={15} filled style={{ verticalAlign: '-2px', marginRight: '0.35rem' }} />
+              Subscribe to unlock
             </a>
           </div>
         </div>
@@ -326,7 +332,7 @@ export default function TipsterTips({
                         gap: '0.3rem',
                       }}
                     >
-                      <span aria-hidden>🔒</span>
+                      <Icon name="lock" size={12} />
                       Locked{' '}
                       {new Date(p.lockedAt).toLocaleDateString(undefined, {
                         month: 'short',

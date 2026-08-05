@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { authFetch, getAccessToken } from '../../../lib/auth';
 import type { LivePick } from '../../../lib/api';
 import SubscribeButton from '../../SubscribeButton';
+import Icon from '../../Icon';
 
 const MUTED = 'var(--muted)';
 const BORDER = 'var(--border)';
@@ -197,8 +198,8 @@ function Paywall({
           marginTop: '0.5rem',
         }}
       >
-        <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
-          🔒 Live picks are for subscribers
+        <p style={{ fontWeight: 600, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+          <Icon name="lock" size={16} /> Live picks are for subscribers
         </p>
         <p style={{ color: MUTED, marginTop: 0 }}>
           {signedOut

@@ -14,7 +14,7 @@ export default function NewsletterConfirmPage() {
         <NewsletterActionClient
           action="confirm"
           workingText="Confirming your subscription…"
-          successTitle="You’re subscribed 🎉"
+          successTitle="You’re subscribed"
           successText="Thanks for confirming. You’ll get our weekly “Picks of the Week” digest and no spam. You can unsubscribe in one click from any email."
           errorText="This confirmation link is invalid or has already been used."
         />

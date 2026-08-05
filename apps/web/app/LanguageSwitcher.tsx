@@ -3,12 +3,25 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { setLocale } from './actions/locale';
+import Flag from './Flag';
 import {
   locales,
   localeNames,
   localeLabels,
   type Locale,
 } from '../i18n/config';
+
+/** Country flag shown next to each locale (nearest well-known flag). */
+const localeFlags: Record<Locale, string> = {
+  en: 'gb',
+  fr: 'fr',
+  es: 'es',
+  pt: 'pt',
+  de: 'de',
+  nl: 'nl',
+  zh: 'cn',
+  tr: 'tr',
+};
 
 /**
  * Language selector shown in the header. Persists the choice via the setLocale
@@ -57,22 +70,22 @@ export default function LanguageSwitcher() {
         onClick={() => setOpen((o) => !o)}
         disabled={pending}
       >
+        <Flag code={localeFlags[active]} className="lang-switch__flag" />
+        <span className="lang-switch__code">{localeLabels[active]}</span>
         <svg
-          width="18"
-          height="18"
+          className="lang-switch__chevron"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          <polyline points="6 9 12 15 18 9" />
         </svg>
-        <span className="lang-switch__code">{localeLabels[active]}</span>
       </button>
 
       {open ? (
@@ -90,7 +103,26 @@ export default function LanguageSwitcher() {
               }
               onClick={() => choose(loc)}
             >
-              {localeNames[loc]}
+              <Flag code={localeFlags[loc]} className="lang-switch__flag" />
+              <span className="lang-switch__item-name">
+                {localeNames[loc]}
+              </span>
+              {loc === active ? (
+                <svg
+                  className="lang-switch__check"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : null}
             </button>
           ))}
         </div>

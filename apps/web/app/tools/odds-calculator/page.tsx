@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import { getTranslations } from 'next-intl/server';
 import OddsCalculator from './OddsCalculator';
 
@@ -18,9 +19,7 @@ export default async function OddsCalculatorPage() {
   return (
     <main style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          {t('backHome')}
-        </Link>
+        <BackLink href="/">{t('backHome')}</BackLink>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
         {t('title')}

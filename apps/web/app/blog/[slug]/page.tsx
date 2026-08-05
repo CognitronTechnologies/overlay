@@ -5,6 +5,7 @@ import { getLocale } from 'next-intl/server';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@overlay/shared/markdown';
 import { getArticle, listArticleSlugs, SITE_URL } from '../../../lib/api';
+import BackLink from '../../BackLink';
 
 export const revalidate = 300;
 
@@ -86,9 +87,7 @@ export default async function ArticlePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <p style={{ margin: 0 }}>
-        <Link href="/blog" style={{ color: 'var(--accent)' }}>
-          ← Blog
-        </Link>
+        <BackLink href="/blog">Blog</BackLink>
       </p>
       <h1 style={{ fontSize: '2.3rem', marginBottom: '0.25rem' }}>
         {article.title}

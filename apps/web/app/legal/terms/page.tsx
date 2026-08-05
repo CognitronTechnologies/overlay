@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,9 +15,7 @@ export default function TermsPage() {
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Picks
-        </Link>
+        <BackLink href="/">Overlay Picks</BackLink>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
         Terms of Service
