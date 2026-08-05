@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Icon from './Icon';
+import Icon from '../Icon';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../lib/auth';
