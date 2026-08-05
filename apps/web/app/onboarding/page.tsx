@@ -13,6 +13,7 @@ import type {
 } from '../../lib/api';
 import { COUNTRIES, countryByCode, flagEmoji } from '@overlay/shared/countries';
 import { formStyles } from '../formStyles';
+import Icon from '../Icon';
 
 type ContactMethod = 'phone' | 'telegram' | 'whatsapp';
 
@@ -372,7 +373,11 @@ export default function OnboardingPage() {
                   cursor: 'pointer',
                 }}
               >
-                {isDone ? '✓ ' : `${i + 1}. `}
+                {isDone ? (
+                  <Icon name="check" size={14} style={{ marginRight: '0.35rem', verticalAlign: '-2px' }} />
+                ) : (
+                  `${i + 1}. `
+                )}
                 {stepTitle(key)}
                 {optional ? t('optional') : ''}
               </button>
@@ -656,6 +661,7 @@ export default function OnboardingPage() {
               cursor: current === 0 ? 'default' : 'pointer',
             }}
           >
+            <Icon name="chevron-left" size={14} style={{ verticalAlign: '-2px', marginRight: '0.3rem' }} />
             {t('back')}
           </button>
 

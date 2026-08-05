@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import { useRouter } from 'next/navigation';
 import { getProfile } from '../../../lib/auth';
 import { roleHasPermission, type Role } from '@overlay/shared/rbac';
@@ -38,9 +39,7 @@ export default function AdminEventsPage() {
   return (
     <div>
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.5rem 0' }}>
-        <Link href="/admin" style={{ color: 'var(--accent)', fontSize: '0.9rem' }}>
-          ← Back to admin
-        </Link>
+        <BackLink href="/admin">Back to admin</BackLink>
         <p style={{ color: 'var(--muted)', margin: '0.75rem 0 0' }}>
           Every ingested event with live odds, bookmaker comparison and full
           market inventory. Use the operations panel on the dashboard to ingest

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { authFetch } from '../../../lib/auth';
+import Icon from '../../Icon';
 
 /**
  * Post-checkout return screen. With a real payment provider the subscription is
@@ -49,7 +50,16 @@ export default function SubscribeSuccessClient() {
 
   return (
     <>
-      <h1>{state === 'done' ? 'You’re subscribed 🎉' : 'Finishing up…'}</h1>
+      <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {state === 'done' ? (
+          <>
+            <Icon name="check-circle" size={26} style={{ color: 'var(--success)' }} />
+            You’re subscribed
+          </>
+        ) : (
+          'Finishing up…'
+        )}
+      </h1>
       <p style={{ color: 'var(--muted)' }}>
         {state === 'done'
           ? 'Your subscription is active. You now get this tipster’s live picks the moment they’re locked.'
@@ -58,8 +68,8 @@ export default function SubscribeSuccessClient() {
             : 'Confirming your subscription…'}
       </p>
       <p>
-        <Link href="/account" style={{ color: 'var(--accent)' }}>
-          → Go to your account
+        <Link href="/account" style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+          <Icon name="chevron-right" size={14} /> Go to your account
         </Link>
       </p>
     </>

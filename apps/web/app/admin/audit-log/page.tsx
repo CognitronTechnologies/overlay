@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../../lib/auth';
+import Icon from '../../Icon';
 import { roleHasPermission } from '@overlay/shared/rbac';
 import { formStyles } from '../../formStyles';
 
@@ -292,7 +293,7 @@ export default function AdminAuditLogPage() {
               cursor: data.page <= 1 ? 'default' : 'pointer',
             }}
           >
-            ← Prev
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Icon name="chevron-left" size={14} /> Prev</span>
           </button>
           <span style={muted}>
             Page {data.page} of {data.totalPages} · {data.total} entries
@@ -310,7 +311,7 @@ export default function AdminAuditLogPage() {
               cursor: data.page >= data.totalPages ? 'default' : 'pointer',
             }}
           >
-            Next →
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>Next <Icon name="chevron-right" size={14} /></span>
           </button>
         </div>
       ) : null}

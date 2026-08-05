@@ -4,6 +4,8 @@ import { getTranslations } from 'next-intl/server';
 import { buildClvChart } from '@overlay/shared/tipster-profile';
 import Avatar from '../../Avatar';
 import Flag from '../../Flag';
+import Icon from '../../Icon';
+import BackLink from '../../BackLink';
 import { compareTipsters, type TipsterProfile } from '../../../lib/api';
 
 export const revalidate = 60;
@@ -122,9 +124,7 @@ export default async function CompareTipstersPage({
 
   const backLink = (
     <p style={{ margin: '0 0 1rem' }}>
-      <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
-        {t('back')}
-      </Link>
+      <BackLink href="/tipsters">{t('back')}</BackLink>
     </p>
   );
 
@@ -293,8 +293,8 @@ export default async function CompareTipstersPage({
                       {p.sports.length ? p.sports.join(', ') : '—'}
                     </span>
                     {p.verified ? (
-                      <span style={{ color: 'var(--success)', fontSize: '0.75rem' }}>
-                        ✓ {t('verified')}
+                      <span style={{ color: 'var(--success)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Icon name="check" size={13} /> {t('verified')}
                       </span>
                     ) : null}
                   </span>

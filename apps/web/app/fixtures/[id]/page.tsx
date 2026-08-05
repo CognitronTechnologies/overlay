@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import Avatar from '../../Avatar';
 import Flag from '../../Flag';
+import Icon from '../../Icon';
+import BackLink from '../../BackLink';
 import { getFixturePicks } from '../../../lib/api';
 
 export const revalidate = 60;
@@ -49,9 +51,7 @@ export default async function FixtureDetailPage({
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: '0 0 1rem' }}>
-        <Link href="/fixtures" style={{ color: 'var(--accent)' }}>
-          {t('backToFixtures')}
-        </Link>
+        <BackLink href="/fixtures">{t('backToFixtures')}</BackLink>
       </p>
 
       <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>

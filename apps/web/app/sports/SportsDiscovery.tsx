@@ -16,7 +16,8 @@ import {
   type MarketOdds,
   type ProviderSport,
 } from '../../lib/events';
-import { sportIcon } from '../SportChips';
+import Icon from '../Icon';
+import SportIcon from '../SportIcon';
 
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
@@ -295,7 +296,7 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
             onClick={() => setGroup('')}
           >
             <span className="sport-chip__icon" aria-hidden>
-              🏅
+              <Icon name="trophy" size={18} />
             </span>
             <span>{t('allSports')}</span>
           </button>
@@ -308,7 +309,7 @@ export default function SportsDiscovery({ showTitle = true }: { showTitle?: bool
               onClick={() => setGroup(g)}
             >
               <span className="sport-chip__icon" aria-hidden>
-                {sportIcon(g)}
+                <SportIcon sport={g} size={18} />
               </span>
               <span>{g}</span>
             </button>

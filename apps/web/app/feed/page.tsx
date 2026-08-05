@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { authFetch, getProfile } from '../../lib/auth';
 import type { FeedPick } from '../../lib/api';
 import { EmptyState } from '../EmptyState';
+import Icon from '../Icon';
 
 /** How often we poll for settlement status updates (ms). */
 const POLL_MS = 30_000;
@@ -147,7 +148,7 @@ export default function FeedPage() {
       ) : list.length === 0 ? (
         <div style={{ marginTop: '2rem' }}>
           <EmptyState
-            icon="📭"
+            icon={<Icon name="inbox" size={34} />}
             title={t('emptyTitle')}
             description={t('emptyBody')}
             actions={[{ href: '/tipsters', label: t('findTipster') }]}
