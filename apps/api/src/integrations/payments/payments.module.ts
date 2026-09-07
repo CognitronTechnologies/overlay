@@ -1,7 +1,6 @@
 import { Logger, Module } from '@nestjs/common';
 import { MockPaymentProvider } from './mock.provider';
 import { StripePaymentProvider } from './stripe.provider';
-import { PaystackPaymentProvider } from './paystack.provider';
 import { CryptoPaymentProvider } from './crypto.provider';
 import { MobileMoneyPaymentProvider } from './mobile-money.provider';
 import { PaymentProviderRegistry } from './payment-provider.registry';
@@ -19,7 +18,6 @@ function defaultProviderName(): string {
   const explicit = process.env.PAYMENTS_PROVIDER?.toLowerCase();
   const name =
     explicit === 'stripe' ||
-    explicit === 'paystack' ||
     explicit === 'crypto' ||
     explicit === 'mobile_money'
       ? explicit
@@ -37,7 +35,7 @@ function defaultProviderName(): string {
     } else {
       throw new Error(
         'Refusing to start: PAYMENTS_PROVIDER must be a real provider ' +
-          '(stripe | paystack | crypto | mobile_money) in production, not ' +
+          '(stripe | crypto | mobile_money) in production, not ' +
           'the mock. Set ALLOW_MOCK_PAYMENTS=true to run mock payments ' +
           'deliberately (staging/demo only).',
       );
@@ -51,7 +49,6 @@ function defaultProviderName(): string {
   providers: [
     MockPaymentProvider,
     StripePaymentProvider,
-    PaystackPaymentProvider,
     CryptoPaymentProvider,
     MobileMoneyPaymentProvider,
     {
@@ -59,14 +56,12 @@ function defaultProviderName(): string {
       inject: [
         MockPaymentProvider,
         StripePaymentProvider,
-        PaystackPaymentProvider,
         CryptoPaymentProvider,
         MobileMoneyPaymentProvider,
       ],
       useFactory: (
         mock: MockPaymentProvider,
         stripe: StripePaymentProvider,
-        paystack: PaystackPaymentProvider,
         crypto: CryptoPaymentProvider,
         mobileMoney: MobileMoneyPaymentProvider,
       ): PaymentProviderRegistry => {
@@ -76,8 +71,8 @@ function defaultProviderName(): string {
         // when it's the default (dev / staging without real keys).
         const providers =
           defaultName === 'mock'
-            ? [mock, stripe, paystack, crypto, mobileMoney]
-            : [stripe, paystack, crypto, mobileMoney];
+            ? [mock, stripe, crypto, mobileMoney]
+            : [stripe, crypto, mobileMoney];
         return new PaymentProviderRegistry(providers, defaultName);
       },
     },

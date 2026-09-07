@@ -7,6 +7,8 @@ import Flag from '../../Flag';
 import FollowButton from '../../FollowButton';
 import SubscribeButton from '../../SubscribeButton';
 import Avatar from '../../Avatar';
+import Icon from '../../Icon';
+import BackLink from '../../BackLink';
 import { getTipster, listTipsterIds, tipsterStaticParams, SITE_URL } from '../../../lib/api';
 import type { VerifiedMetrics as VerifiedMetricsData } from '../../../lib/api';
 import TipsterTips from './TipsterTips';
@@ -351,9 +353,7 @@ export default async function TipsterPage({
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Leaderboard
-        </Link>
+        <BackLink href="/">Leaderboard</BackLink>
       </p>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.75rem' }}>
         <Avatar src={t.avatarUrl} seed={t.username ?? t.tipsterId} size={80} />
@@ -372,9 +372,12 @@ export default async function TipsterPage({
                   fontWeight: 600,
                   color: 'var(--accent)',
                   verticalAlign: 'middle',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
                 }}
               >
-                ✓ Verified
+                <Icon name="check-circle" size={16} /> Verified
               </span>
             ) : null}
             {t.graduation?.provisional ? (
@@ -389,9 +392,12 @@ export default async function TipsterPage({
                   borderRadius: 999,
                   padding: '0.1rem 0.5rem',
                   verticalAlign: 'middle',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
                 }}
               >
-                🌱 Rising tipster
+                <Icon name="trending-up" size={14} /> Rising tipster
               </span>
             ) : null}
           </h1>
@@ -419,7 +425,8 @@ export default async function TipsterPage({
             className="btn btn--primary"
             title="Paid — unlock this tipster’s premium picks the moment they’re locked, before kickoff. Cancel anytime."
           >
-            ★ Subscribe · ${(t.subscriptionPriceCents / 100).toFixed(2)}/
+            <Icon name="star" size={15} filled style={{ verticalAlign: '-2px', marginRight: '0.35rem' }} />
+            Subscribe · ${(t.subscriptionPriceCents / 100).toFixed(2)}/
             {t.billingInterval === 'weekly' ? 'wk' : 'mo'}
           </a>
         ) : null}
@@ -442,8 +449,8 @@ export default async function TipsterPage({
         <p style={{ color: 'var(--muted)', marginTop: 0 }}>{t.sports.join(' · ')}</p>
       ) : null}
       {t.articlesPublished > 0 ? (
-        <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-          ✍️ {t.articlesPublished} published article
+        <p style={{ color: 'var(--muted)', marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <Icon name="edit" size={15} /> {t.articlesPublished} published article
           {t.articlesPublished === 1 ? '' : 's'}
         </p>
       ) : null}

@@ -45,7 +45,7 @@ export class PaymentProviderRegistry {
 
   /**
    * The provider that settles a given method, or undefined if none does. When
-   * several providers settle the same method (e.g. both Stripe and Paystack
+  * several providers settle the same method (e.g. two card processors
    * settle `card`), the configured **default** provider wins, so the operator's
    * chosen processor is used for its markets. Unavailable providers (missing
    * keys, no dev fallback) are skipped so a routed method can actually be paid.

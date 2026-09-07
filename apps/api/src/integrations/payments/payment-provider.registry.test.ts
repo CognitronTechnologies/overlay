@@ -61,12 +61,15 @@ test('forMethod returns undefined when no provider settles the method', () => {
 });
 
 test('forMethod prefers the default provider for a shared method', () => {
-  // Both Stripe and Paystack settle `card`; the configured default wins.
-  const paystack = fake('paystack', ['card'], { billingPortal: false });
-  const reg = new PaymentProviderRegistry([stripe, paystack], 'paystack');
-  assert.equal(reg.forMethod('card')?.name, 'paystack');
+  // Both providers settle `card`; the configured default wins.
+  const alternateCard = fake('alternate_card', ['card'], { billingPortal: false });
+  const reg = new PaymentProviderRegistry([stripe, alternateCard], 'alternate_card');
+  assert.equal(reg.forMethod('card')?.name, 'alternate_card');
   // A method the default doesn't settle still falls back to whoever does.
-  const reg2 = new PaymentProviderRegistry([stripe, paystack, crypto], 'paystack');
+  const reg2 = new PaymentProviderRegistry(
+    [stripe, alternateCard, crypto],
+    'alternate_card',
+  );
   assert.equal(reg2.forMethod('apple_pay')?.name, 'stripe');
   assert.equal(reg2.forMethod('usdc')?.name, 'crypto');
 });
@@ -85,10 +88,13 @@ test('methods and forMethod skip unavailable providers', () => {
 
 test('forMethod skips an unavailable default and falls back', () => {
   const offlineDefault = {
-    ...fake('paystack', ['card']),
+    ...fake('alternate_card', ['card']),
     isAvailable: () => false,
   } as PaymentProvider;
-  const reg = new PaymentProviderRegistry([offlineDefault, stripe], 'paystack');
+  const reg = new PaymentProviderRegistry(
+    [offlineDefault, stripe],
+    'alternate_card',
+  );
   assert.equal(reg.forMethod('card')?.name, 'stripe');
 });
 

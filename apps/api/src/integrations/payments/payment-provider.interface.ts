@@ -53,21 +53,12 @@ export interface TransferResult {
 /**
  * Where a tipster is paid out, tagged by rail. Each provider accepts only the
  * destination kind(s) it settles (Stripe → connected account, crypto → wallet,
- * mobile money → phone + network, Paystack → bank account).
+ * mobile money → phone + network).
  */
 export type PayoutDestination =
   | { kind: 'stripe'; accountId: string }
   | { kind: 'crypto'; address: string; chain: string }
-  | { kind: 'mobile_money'; phone: string; network: string }
-  | {
-      kind: 'paystack';
-      /** Local bank account number (NUBAN for Nigeria). */
-      accountNumber: string;
-      /** Paystack bank code for the account's bank. */
-      bankCode: string;
-      /** Account holder name, as registered with the bank. */
-      accountName: string;
-    };
+  | { kind: 'mobile_money'; phone: string; network: string };
 
 /** A normalized subscription lifecycle event from a provider webhook. */
 export interface SubscriptionEvent {
@@ -101,8 +92,8 @@ export interface PayoutEvent {
   status: 'paid' | 'failed';
   /**
    * Provider transfer identifier stored on the Payout when the transfer was
-   * initiated (Payout.stripeTransferId) — Paystack `transfer_code`, Flutterwave
-   * transfer reference — used to correlate this event back to the payout row.
+  * initiated (Payout.stripeTransferId) — for example, a Flutterwave transfer
+  * reference — used to correlate this event back to the payout row.
    */
   reference: string;
   /** Name of the provider that produced this event. */

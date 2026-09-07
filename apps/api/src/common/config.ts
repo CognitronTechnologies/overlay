@@ -61,12 +61,6 @@ export function collectConfigProblems(
     }
   }
 
-  // Paystack signs webhooks with the same secret key used for API calls, so a
-  // single key covers both checkout and webhook verification.
-  if (env.PAYMENTS_PROVIDER === 'paystack' && !env.PAYSTACK_SECRET_KEY) {
-    problems.push('PAYSTACK_SECRET_KEY is required when PAYMENTS_PROVIDER=paystack');
-  }
-
   return problems;
 }
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '../BackLink';
 import type { Metadata } from 'next';
 import { getLocale } from 'next-intl/server';
 import { listArticles } from '../../lib/api';
@@ -24,9 +25,7 @@ export default async function ContentIndex({
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Picks
-        </Link>
+        <BackLink href="/">Overlay Picks</BackLink>
       </p>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>
         Content{tag ? `: ${tag}` : ''}

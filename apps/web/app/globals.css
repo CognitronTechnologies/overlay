@@ -80,11 +80,12 @@ body {
     color 0.2s ease;
 }
 
-/* Serif display headings for a warmer, editorial feel. */
+/* Headings share the same humanist sans as the rest of the UI (matching the
+   header nav/auth text) for one clean, consistent typeface platform-wide. */
 h1,
 h2,
 h3 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -138,9 +139,9 @@ a {
   display: flex;
   gap: 1rem;
   align-items: center;
-  max-width: 980px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0.9rem 1.5rem;
+  padding: 0.9rem 2rem;
 }
 
 .site-header__brand {
@@ -210,38 +211,80 @@ a {
   color: var(--fg);
 }
 
+.nav-dropdown__caret {
+  flex: none;
+  color: var(--muted);
+}
+
 .nav-dropdown__menu {
   display: none;
   position: absolute;
   top: 100%;
   left: 0;
   margin-top: 0.5rem;
-  min-width: 180px;
+  min-width: 240px;
   flex-direction: column;
   gap: 0.15rem;
-  padding: 0.4rem;
+  padding: 0.5rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   z-index: 50;
 }
 
 .nav-dropdown__menu a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   color: var(--muted);
   text-decoration: none;
-  padding: 0.4rem 0.55rem;
-  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.nav-dropdown__title {
+  color: var(--fg);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.nav-dropdown__desc {
+  font-family: var(--font-mono, ui-monospace, 'SF Mono', 'Cascadia Mono',
+      'Roboto Mono', Menlo, Consolas, monospace);
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.3;
 }
 
 .nav-dropdown__menu a:hover,
 .nav-dropdown__menu a:focus-visible {
-  color: var(--fg);
   background: var(--surface-2);
+}
+
+.nav-dropdown__menu a:hover .nav-dropdown__title,
+.nav-dropdown__menu a:focus-visible .nav-dropdown__title {
+  color: var(--accent);
 }
 
 .nav-dropdown:hover .nav-dropdown__menu,
 .nav-dropdown:focus-within .nav-dropdown__menu {
   display: flex;
+  animation: nav-dropdown-in 0.16s ease-out;
+}
+
+@keyframes nav-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .site-header__actions a {
@@ -253,19 +296,68 @@ a {
   color: var(--accent);
 }
 
+/* Header auth buttons: outlined "Log in" + solid gold "Sign up free" CTA. */
+.header-auth {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.35rem;
+  padding: 0 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.header-auth--login {
+  color: var(--fg) !important;
+  border: 1px solid transparent;
+}
+
+.header-auth--login:hover,
+.header-auth--login:focus-visible {
+  color: var(--fg) !important;
+  background: var(--surface);
+}
+
+.header-auth--signup {
+  color: var(--on-accent) !important;
+  background: var(--accent);
+}
+
+.header-auth--signup:hover,
+.header-auth--signup:focus-visible {
+  background: var(--accent-hover);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 6px 20px rgba(227, 172, 84, 0.35);
+  transform: translateY(-1px);
+}
+
 .header-search-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--muted);
-  width: 2rem;
-  height: 2rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--border);
   border-radius: 8px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .header-search-link:hover,
 .header-search-link:focus-visible {
   color: var(--fg);
+  border-color: var(--accent);
   background: var(--surface);
 }
 
@@ -439,21 +531,36 @@ a {
 .lang-switch__trigger {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  height: 2rem;
-  padding: 0 0.5rem;
+  gap: 0.4rem;
+  height: 2.35rem;
+  padding: 0 0.65rem;
   background: transparent;
-  border: none;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--muted);
+  color: var(--fg);
   cursor: pointer;
   font: inherit;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .lang-switch__trigger:hover,
 .lang-switch__trigger:focus-visible {
   color: var(--fg);
+  border-color: var(--accent);
   background: var(--surface);
+}
+
+.lang-switch__flag {
+  width: 1.15rem;
+  height: 0.8rem;
+  flex: none;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.lang-switch__chevron {
+  color: var(--muted);
 }
 
 .lang-switch__trigger:disabled {
@@ -487,7 +594,7 @@ a {
 .lang-switch__item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.55rem;
   padding: 0.5rem 0.55rem;
   background: transparent;
   border: none;
@@ -496,6 +603,15 @@ a {
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.lang-switch__item-name {
+  flex: 1;
+}
+
+.lang-switch__check {
+  color: var(--accent);
+  flex: none;
 }
 
 .lang-switch__item:hover,
@@ -849,9 +965,19 @@ textarea:focus-visible,
 
 /* Responsive: collapse the primary nav into a toggle on small screens. */
 @media (max-width: 720px) {
+  .site-header__inner {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+    padding: 0.9rem 1.25rem;
+  }
+
+  .site-header__brand {
+    order: 1;
+  }
+
   .nav-toggle {
     display: inline-flex;
-    order: 3;
+    order: 2;
     margin-left: auto;
   }
 
@@ -869,8 +995,12 @@ textarea:focus-visible,
     display: flex;
   }
 
+  /* Header action icons (search, notifications, language, theme) sit inline
+     next to the hamburger; auth buttons drop full-width below when open. */
   .site-header__actions {
-    order: 2;
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-end;
   }
 
   /* Full-width nav items so links and dropdown sections align cleanly. */
@@ -879,31 +1009,84 @@ textarea:focus-visible,
     width: 100%;
   }
 
-  /* In the collapsed mobile menu, don't use expand-on-tap overlays (they jump
-     the header height and read as a hover artefact on touch). Instead flatten
-     each dropdown: its trigger becomes a small section heading and its links
-     are always shown inline underneath. */
+  /* When the menu is open, drop the auth buttons full-width below the nav so
+     they sit in the thumb zone, stacked and clearly differentiated. */
+  .site-nav.is-open ~ .site-header__actions {
+    order: 5;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+  }
+
+  .site-nav.is-open ~ .site-header__actions .header-auth {
+    flex-basis: 100%;
+  }
+
+  /* In the collapsed mobile menu, turn each dropdown into a real accordion:
+     the trigger is a full-width tappable row, and its links stay hidden until
+     the section is expanded (gold left border marks the open group). */
   .nav-dropdown__trigger {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.3rem 0;
+    font-size: 1rem;
     color: var(--muted);
-    cursor: default;
-    pointer-events: none;
+    cursor: pointer;
+    pointer-events: auto;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .nav-dropdown.is-open > .nav-dropdown__trigger {
+    color: var(--fg);
   }
 
   .nav-dropdown__trigger span[aria-hidden] {
     display: none;
   }
 
+  .nav-dropdown__caret {
+    transition:
+      transform 0.18s ease,
+      color 0.18s ease;
+  }
+
+  .nav-dropdown.is-open > .nav-dropdown__trigger .nav-dropdown__caret {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+
+  /* Neutralise the desktop hover/focus reveal on touch, then show only the
+     section the user explicitly expanded. */
+  .nav-dropdown:hover .nav-dropdown__menu,
+  .nav-dropdown:focus-within .nav-dropdown__menu {
+    display: none;
+    animation: none;
+  }
+
   .nav-dropdown__menu {
-    display: flex;
+    display: none;
     position: static;
     margin-top: 0.35rem;
-    padding: 0.1rem 0 0.35rem 0.75rem;
+    padding: 0.1rem 0 0.35rem 0.85rem;
     min-width: 0;
     background: transparent;
     border: none;
+    border-left: 2px solid var(--accent);
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .nav-dropdown.is-open > .nav-dropdown__menu {
+    display: flex;
+  }
+
+  /* Stacked, thumb-zone-sized auth buttons on mobile. */
+  .header-auth {
+    width: 100%;
+    height: 2.75rem;
   }
 }
 

@@ -20,6 +20,8 @@ import {
   type FeedbackSentiment,
 } from '../../../lib/auth';
 import { EmptyState } from '../../EmptyState';
+import Icon from '../../Icon';
+import BackLink from '../../BackLink';
 import { getBillingPortalAvailable } from '../../../lib/api';
 
 const MUTED = 'var(--muted)';
@@ -62,7 +64,7 @@ export default function SubscriptionsClient() {
         setSubs([]);
       }
       // Only Stripe offers a hosted billing portal; pay-per-period providers
-      // (Paystack, crypto, mobile money) don't, so the button is hidden.
+      // (crypto and mobile money) don't, so the button is hidden.
       setPortalAvailable(await getBillingPortalAvailable());
     })();
   }, [router]);
@@ -140,9 +142,7 @@ export default function SubscriptionsClient() {
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p>
-        <Link href="/account" style={{ color: 'var(--accent)' }}>
-          {t('back')}
-        </Link>
+        <BackLink href="/account">{t('back')}</BackLink>
       </p>
       <h1>{t('title')}</h1>
       <p style={{ color: MUTED }}>
@@ -190,7 +190,7 @@ export default function SubscriptionsClient() {
       ) : views.length === 0 ? (
         <div style={{ marginTop: '1.5rem' }}>
           <EmptyState
-            icon="🎟️"
+            icon={<Icon name="ticket" size={34} />}
             title={t('emptyTitle')}
             description={t('emptyDescription')}
             actions={[{ href: '/tipsters', label: t('browseTipsters') }]}

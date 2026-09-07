@@ -12,6 +12,8 @@ import {
 import { listFreeTips, type FreeTip } from '../../lib/api';
 import TipsDatePicker from './TipsDatePicker';
 import { SportChipLinks } from '../SportChips';
+import BackLink from '../BackLink';
+import Icon from '../Icon';
 
 // SSR/ISR: regenerate each date's listing periodically for SEO freshness.
 export const revalidate = 300;
@@ -114,9 +116,7 @@ export default async function FreeTipsPage({
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          {t('backHome')}
-        </Link>
+        <BackLink href="/">{t('backHome')}</BackLink>
       </p>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>
         {t('title')}
@@ -140,9 +140,9 @@ export default async function FreeTipsPage({
           href={`/tips?date=${prev}`}
           rel="prev"
           aria-label={t('prevDay')}
-          style={navBtn}
+          style={{ ...navBtn, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
         >
-          {t('prev')}
+          <Icon name="chevron-left" size={14} /> {t('prev')}
         </Link>
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
           {strip.map((day) => (
@@ -165,9 +165,9 @@ export default async function FreeTipsPage({
           href={`/tips?date=${next}`}
           rel="next"
           aria-label={t('nextDay')}
-          style={navBtn}
+          style={{ ...navBtn, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
         >
-          {t('next')}
+          {t('next')} <Icon name="chevron-right" size={14} />
         </Link>
         <span style={{ marginLeft: 'auto' }}>
           <TipsDatePicker value={date} />

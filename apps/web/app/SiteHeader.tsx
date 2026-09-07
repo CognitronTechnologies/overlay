@@ -7,12 +7,14 @@ import { getProfile } from '../lib/auth';
 import ThemeToggle from './ThemeToggle';
 import NotificationBell from './NotificationBell';
 import LanguageSwitcher from './LanguageSwitcher';
+import Icon from './Icon';
 
 export default function SiteHeader() {
   const t = useTranslations('nav');
   const [role, setRole] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   useEffect(() => {
     getProfile()
@@ -20,7 +22,13 @@ export default function SiteHeader() {
       .finally(() => setReady(true));
   }, []);
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setOpenSection(null);
+  };
+
+  const toggleSection = (key: string) =>
+    setOpenSection((cur) => (cur === key ? null : key));
 
   return (
     <header className="site-header">
@@ -49,7 +57,7 @@ export default function SiteHeader() {
           aria-label={menuOpen ? t('closeMenu') : t('openMenu')}
           onClick={() => setMenuOpen((open) => !open)}
         >
-          <span aria-hidden="true">{menuOpen ? '\u2715' : '\u2630'}</span>
+          <Icon name={menuOpen ? 'close' : 'menu'} size={22} />
         </button>
 
         <nav
@@ -66,37 +74,75 @@ export default function SiteHeader() {
           <Link href="/tools/odds-calculator" onClick={closeMenu}>
             {t('calculator')}
           </Link>
-          <div className="nav-dropdown">
+          <div
+            className={
+              openSection === 'insights'
+                ? 'nav-dropdown is-open'
+                : 'nav-dropdown'
+            }
+          >
             <button
               type="button"
               className="nav-dropdown__trigger"
               aria-haspopup="true"
+              aria-expanded={openSection === 'insights'}
+              onClick={() => toggleSection('insights')}
             >
-              {t('contentHub')} <span aria-hidden="true">▾</span>
+              {t('insights')}{' '}
+              <Icon name="chevron-down" size={16} className="nav-dropdown__caret" />
             </button>
             <div className="nav-dropdown__menu" role="menu">
               <Link href="/content" onClick={closeMenu} role="menuitem">
-                {t('content')}
+                <span className="nav-dropdown__title">{t('content')}</span>
+                <span className="nav-dropdown__desc">{t('contentDesc')}</span>
               </Link>
               <Link href="/news" onClick={closeMenu} role="menuitem">
-                {t('news')}
+                <span className="nav-dropdown__title">{t('news')}</span>
+                <span className="nav-dropdown__desc">{t('newsDesc')}</span>
+              </Link>
+              <Link href="/glossary" onClick={closeMenu} role="menuitem">
+                <span className="nav-dropdown__title">{t('glossary')}</span>
+                <span className="nav-dropdown__desc">{t('glossaryDesc')}</span>
               </Link>
             </div>
           </div>
-          <div className="nav-dropdown">
+          <div
+            className={
+              openSection === 'about' ? 'nav-dropdown is-open' : 'nav-dropdown'
+            }
+          >
             <button
               type="button"
               className="nav-dropdown__trigger"
               aria-haspopup="true"
+              aria-expanded={openSection === 'about'}
+              onClick={() => toggleSection('about')}
             >
-              {t('about')} <span aria-hidden="true">▾</span>
+              {t('about')}{' '}
+              <Icon name="chevron-down" size={16} className="nav-dropdown__caret" />
             </button>
             <div className="nav-dropdown__menu" role="menu">
               <Link href="/about" onClick={closeMenu} role="menuitem">
-                {t('howItWorks')}
+                <span className="nav-dropdown__title">{t('howItWorks')}</span>
+                <span className="nav-dropdown__desc">
+                  {t('howItWorksDesc')}
+                </span>
+              </Link>
+              <Link href="/onboarding" onClick={closeMenu} role="menuitem">
+                <span className="nav-dropdown__title">
+                  {t('becomeTipster')}
+                </span>
+                <span className="nav-dropdown__desc">
+                  {t('becomeTipsterDesc')}
+                </span>
               </Link>
               <Link href="/support" onClick={closeMenu} role="menuitem">
-                {t('supportCenter')}
+                <span className="nav-dropdown__title">
+                  {t('supportCenter')}
+                </span>
+                <span className="nav-dropdown__desc">
+                  {t('supportCenterDesc')}
+                </span>
               </Link>
             </div>
           </div>
@@ -148,10 +194,18 @@ export default function SiteHeader() {
               </Link>
             ) : (
               <>
-                <Link href="/login" onClick={closeMenu}>
+                <Link
+                  href="/login"
+                  onClick={closeMenu}
+                  className="header-auth header-auth--login"
+                >
                   {t('signIn')}
                 </Link>
-                <Link href="/signup" onClick={closeMenu}>
+                <Link
+                  href="/signup"
+                  onClick={closeMenu}
+                  className="header-auth header-auth--signup"
+                >
                   {t('getStarted')}
                 </Link>
               </>

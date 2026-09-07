@@ -13,18 +13,6 @@ export type PaymentMethodId =
   | 'mtn_momo'
   | 'airtel_money';
 
-/** Emoji hint shown alongside each payment method's (localized) label. */
-export const PAYMENT_METHOD_EMOJI: Record<PaymentMethodId, string> = {
-  card: '💳',
-  apple_pay: '',
-  google_pay: '🅶',
-  usdc: '🪙',
-  usdt: '🪙',
-  mpesa: '📱',
-  mtn_momo: '📱',
-  airtel_money: '📱',
-};
-
 /** Fetch the payment methods enabled by the API's wired providers. */
 export async function listPaymentMethods(): Promise<PaymentMethodId[]> {
   try {
@@ -39,7 +27,7 @@ export async function listPaymentMethods(): Promise<PaymentMethodId[]> {
 
 /**
  * Whether the configured default provider offers a hosted billing portal
- * (Stripe). Pay-per-period providers (Paystack, crypto, mobile money) don't, so
+ * (Stripe). Pay-per-period providers (crypto and mobile money) don't, so
  * the account UI hides the “manage billing” button. Defaults to false on error.
  */
 export async function getBillingPortalAvailable(): Promise<boolean> {
@@ -534,14 +522,11 @@ export interface EditableTipsterProfile {
   socialTelegram: string | null;
   identityVerified: boolean;
   identityDocName: string | null;
-  payoutMethod: 'stripe' | 'paystack' | 'crypto' | 'mobile_money' | null;
+  payoutMethod: 'stripe' | 'crypto' | 'mobile_money' | null;
   payoutWalletAddress: string | null;
   payoutWalletChain: string | null;
   payoutMobileNumber: string | null;
   payoutMobileNetwork: string | null;
-  payoutBankAccount: string | null;
-  payoutBankCode: string | null;
-  payoutAccountName: string | null;
 }
 export type MarketplaceSort = 'yield' | 'clv' | 'winRate';
 

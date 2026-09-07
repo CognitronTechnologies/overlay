@@ -42,7 +42,7 @@ export class SubscriptionsService {
     return {
       methods: this.registry.methods(),
       // Whether the subscriber can manage/cancel via a hosted billing portal
-      // (Stripe). Pay-per-period providers (Paystack, crypto, mobile money) have
+      // (Stripe). Pay-per-period providers (crypto and mobile money) have
       // none — access simply lapses — so the UI hides the “manage billing” button.
       billingPortal: this.registry.default.capabilities.billingPortal,
     };
