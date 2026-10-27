@@ -106,10 +106,17 @@ export interface Article extends ArticleCard {
 
 async function getJson<T>(path: string, revalidate = 300): Promise<T | null> {
   try {
-    const res = await fetch(`${API_URL}${path}`, { next: { revalidate } });
-    if (!res.ok) return null;
+    const res = await fetch(`${API_URL}${path}`, {
+      next: { revalidate },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      console.warn(`API read failed for ${path}: HTTP ${res.status}`);
+      return null;
+    }
     return (await res.json()) as T;
-  } catch {
+  } catch (error) {
+    console.warn(`API read failed for ${path}`, error);
     return null;
   }
 }

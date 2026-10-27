@@ -4,9 +4,11 @@ import { listArticleSlugs, listFreeTipDates, listTipsterIds, SITE_URL } from '..
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const slugs = await listArticleSlugs();
-  const tipDates = await listFreeTipDates();
-  const tipsters = await listTipsterIds();
+  const [slugs, tipDates, tipsters] = await Promise.all([
+    listArticleSlugs(),
+    listFreeTipDates(),
+    listTipsterIds(),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: 'hourly', priority: 1 },
