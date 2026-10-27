@@ -393,7 +393,7 @@ async function main() {
 
   for (const a of ARTICLES) {
     await prisma.article.upsert({
-      where: { slug: a.slug },
+      where: { slug_locale: { slug: a.slug, locale: 'en' } },
       update: {
         title: a.title,
         excerpt: a.excerpt,
@@ -405,6 +405,7 @@ async function main() {
       },
       create: {
         slug: a.slug,
+        locale: 'en',
         title: a.title,
         excerpt: a.excerpt,
         body: a.body,
