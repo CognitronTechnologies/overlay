@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useFollow } from './FollowProvider';
+import Icon from './Icon';
 
 /**
  * Watchlist toggle for a tipster. Reads shared state from
@@ -48,7 +49,7 @@ export default function FollowButton({
           color: following ? 'var(--accent)' : 'var(--fg)',
         }}
       >
-        {following ? '✓' : '+'}
+        <Icon name={following ? 'check' : 'plus'} size={17} />
       </button>
     );
   }
@@ -72,7 +73,10 @@ export default function FollowButton({
       style={block ? { width: '100%' } : undefined}
       title={title}
     >
-      {following ? `✓ ${t('added')}` : `+ ${t('add')}`}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+        <Icon name={following ? 'check' : 'plus'} size={16} />
+        {following ? t('added') : t('add')}
+      </span>
     </button>
   );
 }

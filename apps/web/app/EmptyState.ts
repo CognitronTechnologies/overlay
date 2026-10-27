@@ -52,7 +52,7 @@ export function EmptyState({
         {
           key: 'icon',
           'aria-hidden': true,
-          style: { fontSize: '2rem', lineHeight: 1 },
+          style: { color: 'var(--muted)', lineHeight: 1 },
         },
         icon,
       ),

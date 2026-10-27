@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { roleHasPermission, type Role } from '@overlay/shared/rbac';
 import { authFetch, getProfile } from '../../../lib/auth';
+import Icon from '../../Icon';
 import { formStyles } from '../../formStyles';
 
 type TipsterStatus = 'active' | 'suspended';
@@ -289,9 +290,9 @@ export default function AdminUsersPage() {
                       {u.tipster.verified ? (
                         <span
                           title="Identity verified"
-                          style={{ color: 'var(--accent)', marginLeft: '0.4rem' }}
+                          style={{ color: 'var(--accent)', marginLeft: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                         >
-                          ✓ verified
+                          <Icon name="check" size={13} /> verified
                         </span>
                       ) : null}
                     </>
@@ -373,7 +374,7 @@ export default function AdminUsersPage() {
               cursor: data.page <= 1 ? 'default' : 'pointer',
             }}
           >
-            ← Prev
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Icon name="chevron-left" size={14} /> Prev</span>
           </button>
           <span style={muted}>
             Page {data.page} of {data.totalPages} · {data.total} users
@@ -391,7 +392,7 @@ export default function AdminUsersPage() {
               cursor: data.page >= data.totalPages ? 'default' : 'pointer',
             }}
           >
-            Next →
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>Next <Icon name="chevron-right" size={14} /></span>
           </button>
         </div>
       ) : null}

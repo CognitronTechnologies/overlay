@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '../BackLink';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { listFixturesWithPicks } from '../../lib/api';
@@ -50,9 +51,7 @@ export default async function FixturesPage({
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          {t('back')}
-        </Link>
+        <BackLink href="/">{t('back')}</BackLink>
       </p>
       <h1 style={{ fontSize: '2.2rem', marginBottom: '0.25rem' }}>{t('title')}</h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>{t('subtitle')}</p>

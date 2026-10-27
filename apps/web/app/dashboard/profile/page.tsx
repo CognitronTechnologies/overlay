@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
+import Icon from '../../Icon';
 import { useRouter } from 'next/navigation';
 import {
   validateTipsterProfile,
@@ -91,9 +93,7 @@ export default function ProfileEditorPage() {
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
-          ← Dashboard
-        </Link>
+        <BackLink href="/dashboard">Dashboard</BackLink>
       </p>
       <h1>Edit your profile</h1>
       <p style={{ color: MUTED }}>
@@ -161,8 +161,8 @@ export default function ProfileEditorPage() {
 
       {tipsterId ? (
         <p style={{ marginTop: '1.5rem' }}>
-          <Link href={`/tipsters/${tipsterId}`} style={{ color: 'var(--accent)' }}>
-            → View public profile
+          <Link href={`/tipsters/${tipsterId}`} style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Icon name="chevron-right" size={14} /> View public profile
           </Link>
         </p>
       ) : null}

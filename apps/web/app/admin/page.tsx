@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Icon from '../Icon';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../lib/auth';
@@ -265,7 +266,8 @@ export default function AdminPage() {
                 fontSize: '0.95rem',
               }}
             >
-              {item.label} →
+              {item.label}{' '}
+              <Icon name="chevron-right" size={15} style={{ verticalAlign: '-2px' }} />
             </Link>
           ))}
       </nav>

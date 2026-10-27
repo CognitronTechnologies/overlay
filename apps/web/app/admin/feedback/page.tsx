@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import { roleHasPermission } from '@overlay/shared/rbac';
 import {
   getProfile,
@@ -78,9 +79,7 @@ export default function AdminFeedbackPage() {
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p>
-        <Link href="/admin" style={{ color: 'var(--accent)' }}>
-          ← Admin
-        </Link>
+        <BackLink href="/admin">Admin</BackLink>
       </p>
       <h1>Support &amp; feedback</h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>

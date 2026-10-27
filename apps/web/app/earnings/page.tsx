@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import BackLink from '../BackLink';
 import { useTranslations } from 'next-intl';
 import { authFetch, getProfile } from '../../lib/auth';
 
@@ -94,9 +95,7 @@ export default function EarningsPage() {
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
-          {t('backDashboard')}
-        </Link>
+        <BackLink href="/dashboard">{t('backDashboard')}</BackLink>
       </p>
       <h1>{t('title')}</h1>
       <p style={{ color: 'var(--muted)' }}>

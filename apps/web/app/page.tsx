@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Icon from './Icon';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import Flag from './Flag';
@@ -304,7 +305,8 @@ export default async function Home() {
             </p>
           </div>
           <Link href="/fixtures" style={{ color: 'var(--accent)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
-            {tFixtures('title')} →
+            {tFixtures('title')}{' '}
+            <Icon name="chevron-right" size={14} style={{ verticalAlign: '-2px' }} />
           </Link>
         </div>
         <SportsDiscovery showTitle={false} />

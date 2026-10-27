@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import { useRouter } from 'next/navigation';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@overlay/shared/markdown';
@@ -214,9 +215,7 @@ export default function BlogAuthoringPage() {
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/blog" style={{ color: 'var(--accent)' }}>
-          ← Blog
-        </Link>
+        <BackLink href="/blog">Blog</BackLink>
       </p>
       <h1>Blog authoring</h1>
       <p style={{ color: MUTED }}>

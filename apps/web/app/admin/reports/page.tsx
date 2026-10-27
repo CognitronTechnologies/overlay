@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
+import Icon from '../../Icon';
 import { roleHasPermission } from '@overlay/shared/rbac';
 import {
   getProfile,
@@ -88,9 +90,7 @@ export default function AdminReportsPage() {
   return (
     <main style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p>
-        <Link href="/admin" style={{ color: 'var(--accent)' }}>
-          ← Admin
-        </Link>
+        <BackLink href="/admin">Admin</BackLink>
       </p>
       <h1>Tipster feedback</h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
@@ -143,8 +143,8 @@ export default function AdminReportsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
                   <strong>
-                    <span aria-hidden style={{ marginRight: '0.4rem' }}>
-                      {r.sentiment === 'positive' ? '👍' : '👎'}
+                    <span aria-hidden style={{ marginRight: '0.4rem', verticalAlign: '-2px', color: r.sentiment === 'positive' ? 'var(--success)' : 'var(--danger)' }}>
+                      <Icon name={r.sentiment === 'positive' ? 'thumbs-up' : 'thumbs-down'} size={15} />
                     </span>
                     {(
                       (r.sentiment === 'positive'

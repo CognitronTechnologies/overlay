@@ -1,46 +1,6 @@
 import Link from 'next/link';
-
-/**
- * Emoji icon for a sport or sport-group name (case/spacing-insensitive).
- * Kept dependency-free; falls back to a target for anything unmapped.
- */
-const SPORT_ICONS: Record<string, string> = {
-  soccer: '⚽',
-  football: '⚽',
-  americanfootball: '🏈',
-  americanfootballnfl: '🏈',
-  basketball: '🏀',
-  baseball: '⚾',
-  icehockey: '🏒',
-  hockey: '🏒',
-  tennis: '🎾',
-  rugby: '🏉',
-  rugbyleague: '🏉',
-  rugbyunion: '🏉',
-  aussierules: '🏉',
-  cricket: '🏏',
-  golf: '⛳',
-  boxing: '🥊',
-  mma: '🥊',
-  mixedmartialarts: '🥊',
-  motorsport: '🏎️',
-  formula1: '🏎️',
-  darts: '🎯',
-  snooker: '🎱',
-  volleyball: '🏐',
-  handball: '🤾',
-  cycling: '🚴',
-};
-
-export function sportIcon(name: string): string {
-  const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (SPORT_ICONS[key]) return SPORT_ICONS[key];
-  // Prefix match (e.g. "soccer_epl" → soccer, "rugbyleaguenrl" → rugby).
-  for (const k of Object.keys(SPORT_ICONS)) {
-    if (key.startsWith(k)) return SPORT_ICONS[k];
-  }
-  return '🎯';
-}
+import Icon from './Icon';
+import SportIcon from './SportIcon';
 
 export interface SportChipItem {
   /** Value used for filtering (sport key or group name). */
@@ -82,7 +42,7 @@ export function SportChipLinks({
         aria-current={!active ? 'true' : undefined}
       >
         <span className="sport-chip__icon" aria-hidden>
-          🏅
+          <Icon name="trophy" size={18} />
         </span>
         <span>{allLabel}</span>
       </Link>
@@ -97,7 +57,7 @@ export function SportChipLinks({
             aria-current={isActive ? 'true' : undefined}
           >
             <span className="sport-chip__icon" aria-hidden>
-              {sportIcon(it.key)}
+              <SportIcon sport={it.key} size={18} />
             </span>
             <span>{it.label}</span>
             {it.count ? <span className="sport-chip__count">{it.count}</span> : null}

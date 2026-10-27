@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { CURRENCY_CODES } from '@overlay/shared/currencies';
 import { authFetch, getAccessToken, getProfile, type Profile } from '../lib/auth';
 import {
-  PAYMENT_METHOD_EMOJI,
   detectCountry,
   getSubscriptionQuote,
   listPaymentMethods,
@@ -157,7 +156,7 @@ export default function SubscribeButton({
           >
             {methods.map((m) => (
               <option key={m} value={m}>
-                {`${PAYMENT_METHOD_EMOJI[m] ?? ''} ${t(`method_${m}`)}`.trim()}
+                {t(`method_${m}`)}
               </option>
             ))}
           </select>

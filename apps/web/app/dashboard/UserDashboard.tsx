@@ -16,6 +16,7 @@ import Avatar from '../Avatar';
 import FollowButton from '../FollowButton';
 import { useFollow } from '../FollowProvider';
 import { EmptyState } from '../EmptyState';
+import Icon from '../Icon';
 
 interface Sub {
   id: string;
@@ -232,7 +233,7 @@ export default function UserDashboard() {
       ) : recent.length === 0 ? (
         <div style={{ marginTop: '0.75rem' }}>
           <EmptyState
-            icon="📭"
+            icon={<Icon name="inbox" size={34} />}
             title={t('noPicksTitle')}
             description={t('noPicksBody')}
             actions={[{ href: '/tipsters', label: t('findTipster') }]}
@@ -281,7 +282,7 @@ export default function UserDashboard() {
       ) : subs.length === 0 ? (
         <div style={{ marginTop: '0.75rem' }}>
           <EmptyState
-            icon="🎟️"
+            icon={<Icon name="ticket" size={34} />}
             title={t('noSubsTitle')}
             description={t('noSubsBody')}
             actions={[{ href: '/tipsters', label: t('browseTipsters') }]}
@@ -353,7 +354,7 @@ export default function UserDashboard() {
       ) : followingOnly && followingOnly.length === 0 ? (
         <div style={{ marginTop: '0.75rem' }}>
           <EmptyState
-            icon="👀"
+            icon={<Icon name="eye" size={34} />}
             title={
               shownFollowing && shownFollowing.length > 0
                 ? t('allAlsoSubscribedTitle')

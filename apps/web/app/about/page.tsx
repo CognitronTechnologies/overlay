@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '../BackLink';
 import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
@@ -41,9 +42,7 @@ export default function AboutPage() {
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          {t('backHome')}
-        </Link>
+        <BackLink href="/">{t('backHome')}</BackLink>
       </p>
       <h1 style={{ fontSize: '2.3rem', marginBottom: '0.25rem' }}>
         {t('title')}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Icon from '../Icon';
 import { useSearchParams } from 'next/navigation';
 import { API_URL } from '../../lib/api';
 
@@ -54,8 +55,8 @@ export default function NewsletterActionClient({
             : workingText}
       </p>
       <p>
-        <Link href="/newsletter" style={{ color: 'var(--accent)' }}>
-          → Back to the newsletter
+        <Link href="/newsletter" style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+          <Icon name="chevron-right" size={14} /> Back to the newsletter
         </Link>
       </p>
     </>
