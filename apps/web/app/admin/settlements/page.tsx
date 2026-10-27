@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, getProfile } from '../../../lib/auth';
+import Icon from '../../Icon';
+import { roleHasPermission } from '@overlay/shared/rbac';
 import { formStyles } from '../../formStyles';
 
 type Outcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';
@@ -19,7 +21,10 @@ interface Settlement {
   closingOdds: number | null;
   clv: number | null;
   settledAt: string | null;
-  tipster: { user: { email: string } } | null;
+  tipster: {
+    displayName: string | null;
+    user: { username: string | null; email: string };
+  } | null;
   event: {
     sport: string;
     league: string | null;
@@ -100,7 +105,7 @@ export default function AdminSettlementsPage() {
         router.replace('/login');
         return;
       }
-      if (profile.role !== 'admin') {
+      if (!roleHasPermission(profile.role, 'finance:manage')) {
         router.replace('/account');
         return;
       }
@@ -248,7 +253,13 @@ export default function AdminSettlementsPage() {
                 <td style={{ padding: '0.6rem 0', ...muted }}>
                   {s.settledAt ? new Date(s.settledAt).toLocaleString() : '—'}
                 </td>
-                <td>{s.tipster?.user.email ?? s.tipsterId}</td>
+                <td>
+                  {s.tipster
+                    ? (s.tipster.displayName ??
+                      s.tipster.user.username ??
+                      s.tipster.user.email)
+                    : s.tipsterId}
+                </td>
                 <td style={muted}>
                   {s.event ? `${s.event.home} v ${s.event.away}` : '—'}
                 </td>
@@ -308,7 +319,7 @@ export default function AdminSettlementsPage() {
               cursor: skip <= 0 ? 'default' : 'pointer',
             }}
           >
-            ← Prev
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Icon name="chevron-left" size={14} /> Prev</span>
           </button>
           <span style={muted}>
             Page {page} of {totalPages} · {data.total} settled
@@ -326,7 +337,7 @@ export default function AdminSettlementsPage() {
               cursor: page >= totalPages ? 'default' : 'pointer',
             }}
           >
-            Next →
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>Next <Icon name="chevron-right" size={14} /></span>
           </button>
         </div>
       ) : null}

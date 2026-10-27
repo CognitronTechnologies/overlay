@@ -40,6 +40,10 @@ export interface MarketplaceRow {
   subscriptionPriceCents: number;
   bio: string | null;
   country: string | null;
+  /** Public display name (displayName → username); null falls back to id in UI. */
+  name: string | null;
+  /** Optional avatar URL; null falls back to a generated avatar in the UI. */
+  avatarUrl: string | null;
 }
 
 export interface MarketplacePage {

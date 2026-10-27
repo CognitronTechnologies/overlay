@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Overlay Bets',
+  title: 'Terms of Service — Overlay Picks',
   description:
-    'The terms governing your use of Overlay Bets. Overlay Bets is an information and analytics service only — we take no bets and accept no wagers.',
+    'The terms governing your use of Overlay Picks. Overlay Picks is an information and analytics service only — we take no bets and accept no wagers.',
   alternates: { canonical: '/legal/terms' },
 };
 
@@ -14,9 +15,7 @@ export default function TermsPage() {
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/" style={{ color: 'var(--accent)' }}>
-          ← Overlay Bets
-        </Link>
+        <BackLink href="/">Overlay Picks</BackLink>
       </p>
       <h1 style={{ fontSize: '2.1rem', marginBottom: '0.25rem' }}>
         Terms of Service
@@ -36,7 +35,7 @@ export default function TermsPage() {
           Information only — we take no bets.
         </strong>
         <p style={{ color: 'var(--fg)', margin: '0.5rem 0 0' }}>
-          Overlay Bets is an information, analytics and tipster-marketplace
+          Overlay Picks is an information, analytics and tipster-platform
           service. We do not accept, place, broker or settle wagers of any kind,
           we do not hold betting stakes, and we are not a bookmaker, sportsbook
           or gambling operator. Nothing on this platform is a solicitation to
@@ -47,7 +46,7 @@ export default function TermsPage() {
       <div style={{ color: 'var(--fg)', lineHeight: 1.7 }}>
         <h2>1. Acceptance of these terms</h2>
         <p>
-          By accessing or using Overlay Bets (the &ldquo;Service&rdquo;), you
+          By accessing or using Overlay Picks (the &ldquo;Service&rdquo;), you
           agree to be bound by these Terms of Service and by our{' '}
           <Link href="/legal/privacy" style={{ color: 'var(--accent)' }}>
             Privacy Policy
@@ -64,7 +63,7 @@ export default function TermsPage() {
 
         <h2>3. Nature of the Service</h2>
         <p>
-          Overlay Bets ranks tipsters by verified performance and lets users
+          Overlay Picks ranks tipsters by verified performance and lets users
           subscribe to their picks and analysis. All picks, ratings, statistics
           and commentary are provided for informational and entertainment
           purposes only. They are opinions and analysis, not financial, betting
@@ -99,7 +98,7 @@ export default function TermsPage() {
         <h2>7. Disclaimers and limitation of liability</h2>
         <p>
           The Service is provided &ldquo;as is&rdquo; without warranties of any
-          kind. To the fullest extent permitted by law, Overlay Bets is not
+          kind. To the fullest extent permitted by law, Overlay Picks is not
           liable for any losses — including gambling losses — arising from your
           use of, or reliance on, the Service.
         </p>
@@ -114,8 +113,8 @@ export default function TermsPage() {
         <h2>9. Contact</h2>
         <p>
           Questions about these terms can be sent to{' '}
-          <a href="mailto:legal@overlaybets.com" style={{ color: 'var(--accent)' }}>
-            legal@overlaybets.com
+          <a href="mailto:hello@overlaypicks.com" style={{ color: 'var(--accent)' }}>
+            hello@overlaypicks.com
           </a>
           .
         </p>

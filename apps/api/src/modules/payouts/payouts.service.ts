@@ -27,7 +27,7 @@ export class PayoutsService {
   ) {}
 
   private get feeRate(): number {
-    return Number(process.env.PLATFORM_FEE_RATE ?? 0.25);
+    return Number(process.env.PLATFORM_FEE_RATE ?? 0.2);
   }
 
   /**
@@ -201,12 +201,20 @@ export class PayoutsService {
     const payouts = await this.prisma.payout.findMany({
       where: { status: 'awaiting_approval' },
       orderBy: { createdAt: 'asc' },
-      include: { tipster: { select: { userId: true, displayName: true } } },
+      include: {
+        tipster: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: { select: { username: true } },
+          },
+        },
+      },
     });
     return payouts.map((p) => ({
       id: p.id,
       tipsterId: p.tipsterId,
-      tipsterName: p.tipster.displayName,
+      tipsterName: p.tipster.displayName ?? p.tipster.user?.username ?? null,
       amountCents: p.amountCents,
       grossCents: p.grossCents,
       feeCents: p.feeCents,

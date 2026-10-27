@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { authFetch, getAccessToken } from '../../../lib/auth';
 import type { LivePick } from '../../../lib/api';
 import SubscribeButton from '../../SubscribeButton';
+import Icon from '../../Icon';
 
 const MUTED = 'var(--muted)';
 const BORDER = 'var(--border)';
@@ -111,7 +112,26 @@ function EntitledPicks({ picks }: { picks: LivePick[] }) {
       <tbody>
         {live.map((p) => (
           <tr key={p.id} style={{ borderTop: `1px solid ${BORDER}` }}>
-            <td style={{ padding: '0.5rem 0' }}>{p.selection}</td>
+            <td style={{ padding: '0.5rem 0' }}>
+              {p.selection}
+              {p.pickType === 'live' ? (
+                <span
+                  title="Placed in-play (after kickoff). Excluded from CLV and scored separately."
+                  style={{
+                    marginLeft: '0.4rem',
+                    padding: '0.05rem 0.4rem',
+                    borderRadius: 999,
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    color: 'var(--danger)',
+                    border: '1px solid var(--danger)',
+                  }}
+                >
+                  ● Live
+                </span>
+              ) : null}
+            </td>
             <td>{p.market}</td>
             <td>{p.oddsAtPick.toFixed(2)}</td>
             <td>{p.stakeUnits}u</td>
@@ -178,8 +198,8 @@ function Paywall({
           marginTop: '0.5rem',
         }}
       >
-        <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
-          🔒 Live picks are for subscribers
+        <p style={{ fontWeight: 600, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+          <Icon name="lock" size={16} /> Live picks are for subscribers
         </p>
         <p style={{ color: MUTED, marginTop: 0 }}>
           {signedOut

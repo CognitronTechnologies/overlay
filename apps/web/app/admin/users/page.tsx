@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { roleHasPermission, type Role } from '@overlay/shared/rbac';
 import { authFetch, getProfile } from '../../../lib/auth';
+import Icon from '../../Icon';
 import { formStyles } from '../../formStyles';
 
-type Role = 'user' | 'tipster' | 'admin';
 type TipsterStatus = 'active' | 'suspended';
 
 interface AdminUser {
   id: string;
   email: string;
+  username: string | null;
   role: Role;
   createdAt: string;
   tipster: {
@@ -28,7 +30,7 @@ interface AdminUsersPage {
   totalPages: number;
 }
 
-const ROLES: Role[] = ['user', 'tipster', 'admin'];
+const ROLES: Role[] = ['user', 'tipster', 'staff', 'admin'];
 const PAGE_SIZE = 20;
 
 const muted = { color: 'var(--muted)' } as const;
@@ -72,7 +74,7 @@ export default function AdminUsersPage() {
         router.replace('/login');
         return;
       }
-      if (profile.role !== 'admin') {
+      if (!roleHasPermission(profile.role, 'user:manage')) {
         router.replace('/account');
         return;
       }
@@ -247,7 +249,8 @@ export default function AdminUsersPage() {
         >
           <thead>
             <tr style={{ textAlign: 'left', ...muted }}>
-              <th style={{ padding: '0.5rem 0' }}>Email</th>
+              <th style={{ padding: '0.5rem 0' }}>Username</th>
+              <th>Email</th>
               <th>Role</th>
               <th>Tipster</th>
               <th>Subscribers</th>
@@ -257,6 +260,9 @@ export default function AdminUsersPage() {
           <tbody>
             {data.items.map((u) => (
               <tr key={u.id} style={{ borderTop: '1px solid var(--border)' }}>
+                <td style={{ padding: '0.6rem 0' }}>
+                  {u.username ?? <span style={muted}>—</span>}
+                </td>
                 <td style={{ padding: '0.6rem 0' }}>{u.email}</td>
                 <td>
                   <select
@@ -284,9 +290,9 @@ export default function AdminUsersPage() {
                       {u.tipster.verified ? (
                         <span
                           title="Identity verified"
-                          style={{ color: 'var(--accent)', marginLeft: '0.4rem' }}
+                          style={{ color: 'var(--accent)', marginLeft: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                         >
-                          ✓ verified
+                          <Icon name="check" size={13} /> verified
                         </span>
                       ) : null}
                     </>
@@ -368,7 +374,7 @@ export default function AdminUsersPage() {
               cursor: data.page <= 1 ? 'default' : 'pointer',
             }}
           >
-            ← Prev
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Icon name="chevron-left" size={14} /> Prev</span>
           </button>
           <span style={muted}>
             Page {data.page} of {data.totalPages} · {data.total} users
@@ -386,7 +392,7 @@ export default function AdminUsersPage() {
               cursor: data.page >= data.totalPages ? 'default' : 'pointer',
             }}
           >
-            Next →
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>Next <Icon name="chevron-right" size={14} /></span>
           </button>
         </div>
       ) : null}

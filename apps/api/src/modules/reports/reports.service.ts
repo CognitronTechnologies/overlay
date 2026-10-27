@@ -97,7 +97,13 @@ export class ReportsService {
       take: 200,
       include: {
         reporter: { select: { id: true, username: true, email: true } },
-        tipster: { select: { userId: true, displayName: true } },
+        tipster: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: { select: { username: true } },
+          },
+        },
       },
     });
     return reports.map((r) => ({
@@ -115,7 +121,7 @@ export class ReportsService {
         email: r.reporter.email,
       },
       tipsterId: r.tipster.userId,
-      tipsterName: r.tipster.displayName,
+      tipsterName: r.tipster.displayName ?? r.tipster.user?.username ?? null,
     }));
   }
 

@@ -1,17 +1,21 @@
 'use client';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Role } from '@overlay/shared/rbac';
 import { API_URL } from './api';
 
 /** Resolved local profile returned by GET /api/auth/me. */
 export interface Profile {
   userId: string;
-  role: 'user' | 'tipster' | 'admin';
+  role: Role;
   tipsterId?: string;
 }
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+
+/** localStorage key holding the role a user picked just before an OAuth redirect. */
+const PENDING_OAUTH_ROLE_KEY = 'overlay.pendingOAuthRole';
 
 let client: SupabaseClient | null = null;
 
@@ -56,6 +60,50 @@ export async function signIn(email: string, password: string): Promise<void> {
     email,
     password,
   });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Start a social sign-in (e.g. Google). Redirects the browser to the provider
+ * and back to `/auth/callback`, which consumes the session and routes by role.
+ * A `role` chosen on the signup page is stashed locally and applied to the new
+ * account in the callback (before the API first provisions it); returning users
+ * keep their existing role regardless.
+ */
+export async function signInWithOAuth(
+  provider: 'google',
+  role?: 'user' | 'tipster',
+): Promise<void> {
+  if (role && typeof window !== 'undefined') {
+    window.localStorage.setItem(PENDING_OAUTH_ROLE_KEY, role);
+  }
+  const { error } = await supabase().auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo:
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : undefined,
+    },
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Read and clear the role stashed before an OAuth redirect, if any. */
+export function takePendingOAuthRole(): 'user' | 'tipster' | null {
+  if (typeof window === 'undefined') return null;
+  const v = window.localStorage.getItem(PENDING_OAUTH_ROLE_KEY);
+  window.localStorage.removeItem(PENDING_OAUTH_ROLE_KEY);
+  return v === 'tipster' || v === 'user' ? v : null;
+}
+
+/**
+ * Persist the self-selected role into Supabase `user_metadata`. The API reads
+ * this only when it first provisions a new account, so call it in the OAuth
+ * callback before resolving the profile. No-op for the role of existing users.
+ */
+export async function setSelfRole(role: 'user' | 'tipster'): Promise<void> {
+  const { error } = await supabase().auth.updateUser({ data: { role } });
   if (error) throw new Error(error.message);
 }
 
@@ -106,7 +154,8 @@ export interface FullProfile {
   userId: string;
   email: string;
   username: string | null;
-  role: 'user' | 'tipster' | 'admin';
+  avatarUrl: string | null;
+  role: Role;
   createdAt: string;
   tipsterId: string | null;
   subscriptionCount: number;
@@ -217,13 +266,6 @@ export async function exportMyData(): Promise<void> {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-}
-
-/** Erase the caller's account (anonymizes PII), then sign out. */
-export async function deleteMyAccount(): Promise<void> {
-  const res = await authFetch('/api/privacy/me', { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete your account');
-  await signOut();
 }
 
 /** Feedback sentiment about a tipster. */
@@ -382,6 +424,35 @@ export async function adminUpdateFeedback(
   if (!res.ok) throw new Error(`Failed to update feedback (${res.status})`);
 }
 
+/** A newsletter subscriber row for admin review. */
+export interface AdminNewsletterSubscriber {
+  id: string;
+  email: string;
+  status: string;
+  createdAt: string;
+}
+
+export async function adminListNewsletter(
+  status?: string,
+): Promise<AdminNewsletterSubscriber[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await authFetch(`/api/admin/newsletter${qs}`);
+  if (!res.ok) return [];
+  return (await res.json()) as AdminNewsletterSubscriber[];
+}
+
+/** Admin: compose + send the weekly "Picks of the Week" digest (OB-157). */
+export async function adminSendNewsletterDigest(): Promise<{
+  sent: number;
+  picks: number;
+}> {
+  const res = await authFetch('/api/admin/newsletter/digest', {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Failed to send digest (${res.status})`);
+  return (await res.json()) as { sent: number; picks: number };
+}
+
 /** Tipster requests an off-schedule payout (created awaiting admin approval). */
 export async function requestPayout(): Promise<{ amountCents: number }> {
   const res = await authFetch('/api/payouts/request', { method: 'POST' });
@@ -428,3 +499,107 @@ export async function adminRejectPayout(id: string): Promise<void> {
   );
   if (!res.ok) throw new Error(`Failed to reject payout (${res.status})`);
 }
+
+// --- Follow (free tracking) -------------------------------------------------
+
+/** A tipster the signed-in user follows, with public performance stats. */
+export interface FollowedTipster {
+  tipsterId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  country: string | null;
+  subscriptionPriceCents: number;
+  billingInterval: 'weekly' | 'monthly';
+  isSubscribed: boolean;
+  followedAt: string;
+  stats: {
+    yield: number;
+    clvAvg: number;
+    winRate: number;
+    sampleSize: number;
+  } | null;
+}
+
+/** The set of tipster ids the signed-in user follows (empty when signed out). */
+export async function listFollowingIds(): Promise<string[]> {
+  const token = await getAccessToken();
+  if (!token) return [];
+  const res = await authFetch('/api/follows/me/ids');
+  if (!res.ok) return [];
+  return (await res.json()) as string[];
+}
+
+/** The signed-in user's followed tipsters with stats, for the Following list. */
+export async function listFollowing(): Promise<FollowedTipster[]> {
+  const token = await getAccessToken();
+  if (!token) return [];
+  const res = await authFetch('/api/follows/me');
+  if (!res.ok) return [];
+  return (await res.json()) as FollowedTipster[];
+}
+
+export async function followTipster(
+  tipsterId: string,
+): Promise<{ following: boolean; followerCount: number }> {
+  const res = await authFetch(`/api/follows/${encodeURIComponent(tipsterId)}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Failed to follow (${res.status})`);
+  return (await res.json()) as { following: boolean; followerCount: number };
+}
+
+export async function unfollowTipster(
+  tipsterId: string,
+): Promise<{ following: boolean; followerCount: number }> {
+  const res = await authFetch(`/api/follows/${encodeURIComponent(tipsterId)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Failed to unfollow (${res.status})`);
+  return (await res.json()) as { following: boolean; followerCount: number };
+}
+
+// --- Avatar (optional profile picture) --------------------------------------
+
+/** Upload/replace the signed-in user's avatar. Returns the new avatar URL. */
+export async function uploadAvatar(
+  file: File,
+): Promise<{ avatarUrl: string | null }> {
+  const token = await getAccessToken();
+  const form = new FormData();
+  form.append('file', file);
+  // No content-type header: the browser sets the multipart boundary itself.
+  const res = await fetch(`${API_URL}/api/users/me/avatar`, {
+    method: 'POST',
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
+    throw new Error(msg || `Could not upload avatar (${res.status})`);
+  }
+  return (await res.json()) as { avatarUrl: string | null };
+}
+
+/** Remove the signed-in user's avatar (revert to the generated fallback). */
+export async function removeAvatar(): Promise<{ avatarUrl: string | null }> {
+  const res = await authFetch('/api/users/me/avatar', { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Could not remove avatar (${res.status})`);
+  return (await res.json()) as { avatarUrl: string | null };
+}
+
+/** Choose a generated ("preset") avatar by its URL. */
+export async function selectAvatarPreset(
+  url: string,
+): Promise<{ avatarUrl: string | null }> {
+  const res = await authFetch('/api/users/me/avatar-preset', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) throw new Error(`Could not select avatar (${res.status})`);
+  return (await res.json()) as { avatarUrl: string | null };
+}
+
+

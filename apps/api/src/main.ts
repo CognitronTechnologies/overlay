@@ -1,10 +1,12 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { loadDotenv } from './common/load-env';
 import { AppModule } from './app.module';
 import { validateEnv } from './common/config';
+import { createLogger } from './common/logging/logger.factory';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { SettlementService } from './workers/settlement.service';
 import { EventsService } from './modules/events/events.service';
@@ -15,10 +17,33 @@ async function bootstrap() {
 
   // rawBody: true preserves the exact request bytes on req.rawBody so payment
   // webhook signatures (Stripe) can be verified against the untouched payload.
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  // bufferLogs holds startup logs until the structured logger (OB-091) is
+  // installed, so even boot-time lines are emitted as JSON.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+    bufferLogs: true,
+  });
+
+  // Structured JSON logging + correlation ids (OB-091). useLogger reroutes
+  // every existing Nest `Logger` instance through this transport.
+  app.useLogger(createLogger());
 
   app.setGlobalPrefix('api');
   app.use(helmet());
+
+  // Cap request body sizes (OB-081) so oversized payloads are rejected early.
+  // useBodyParser preserves the rawBody capture enabled above (needed for
+  // Stripe webhook signature verification).
+  const bodyLimit = process.env.MAX_BODY_SIZE ?? '256kb';
+  app.useBodyParser('json', { limit: bodyLimit });
+  app.useBodyParser('urlencoded', { limit: bodyLimit, extended: true });
+
+  // Serve locally-stored avatars (dev fallback when Supabase Storage isn't
+  // configured). In production avatars live in a public Supabase bucket, so
+  // this directory is typically empty. Not affected by the global 'api' prefix.
+  const { join } = await import('node:path');
+  const uploadsDir = process.env.UPLOAD_DIR ?? join(process.cwd(), 'uploads');
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
 
   // CORS: allow the configured origins (comma-separated, trailing-slash and
   // whitespace tolerant) plus — unless disabled — any *.vercel.app origin so
@@ -45,7 +70,17 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Global input validation (OB-081): strip unknown properties, reject payloads
+  // that carry properties outside the DTO allowlist, coerce/transform to the
+  // declared types. Combined with the body-parser size limits above, this
+  // rejects oversized/malformed payloads before they reach handlers.
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();
 

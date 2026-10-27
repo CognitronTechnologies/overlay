@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import BackLink from '../../BackLink';
 import { useRouter } from 'next/navigation';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@overlay/shared/markdown';
+import type { Role } from '@overlay/shared/rbac';
 import { authFetch, getProfile } from '../../../lib/auth';
 import { formStyles } from '../../formStyles';
 
@@ -25,6 +27,7 @@ interface ManagedArticle {
   excerpt: string;
   coverImage: string | null;
   tags: string[];
+  category: 'content' | 'news';
   status: Status;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -39,6 +42,7 @@ interface Draft {
   slug: string;
   tags: string;
   coverImage: string;
+  category: 'content' | 'news';
   status: Status;
   body: string;
   seoTitle: string;
@@ -52,6 +56,7 @@ const EMPTY_DRAFT: Draft = {
   slug: '',
   tags: '',
   coverImage: '',
+  category: 'content',
   status: 'draft',
   body: '',
   seoTitle: '',
@@ -68,6 +73,7 @@ function toDraft(a: ManagedArticle): Draft {
     slug: a.slug,
     tags: a.tags.join(', '),
     coverImage: a.coverImage ?? '',
+    category: a.category,
     status: a.status,
     body: a.body,
     seoTitle: a.seoTitle ?? '',
@@ -79,7 +85,7 @@ function toDraft(a: ManagedArticle): Draft {
 export default function BlogAuthoringPage() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
-  const [role, setRole] = useState<'admin' | 'tipster' | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [articles, setArticles] = useState<ManagedArticle[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +114,11 @@ export default function BlogAuthoringPage() {
         router.replace('/login');
         return;
       }
-      if (profile.role !== 'admin' && profile.role !== 'tipster') {
+      if (
+        profile.role !== 'admin' &&
+        profile.role !== 'staff' &&
+        profile.role !== 'tipster'
+      ) {
         router.replace('/account');
         return;
       }
@@ -144,6 +154,7 @@ export default function BlogAuthoringPage() {
         body: draft.body,
         coverImage: draft.coverImage || undefined,
         tags,
+        category: draft.category,
         status: draft.status,
         seoTitle: draft.seoTitle || undefined,
         seoDescription: draft.seoDescription || undefined,
@@ -204,9 +215,7 @@ export default function BlogAuthoringPage() {
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <p style={{ margin: 0 }}>
-        <Link href="/blog" style={{ color: 'var(--accent)' }}>
-          ← Blog
-        </Link>
+        <BackLink href="/blog">Blog</BackLink>
       </p>
       <h1>Blog authoring</h1>
       <p style={{ color: MUTED }}>
@@ -278,6 +287,19 @@ export default function BlogAuthoringPage() {
                 />
               </label>
               <label>
+                Section
+                <select
+                  style={formStyles.input}
+                  value={draft.category}
+                  onChange={(e) =>
+                    update('category', e.target.value as 'content' | 'news')
+                  }
+                >
+                  <option value="content">Content (guides)</option>
+                  <option value="news">News</option>
+                </select>
+              </label>
+              <label>
                 Status
                 <select
                   style={formStyles.input}
@@ -285,7 +307,7 @@ export default function BlogAuthoringPage() {
                   onChange={(e) => update('status', e.target.value as Status)}
                 >
                   <option value="draft">Draft</option>
-                  {role === 'admin' ? (
+                  {role === 'admin' || role === 'staff' ? (
                     <>
                       <option value="pending">Pending review</option>
                       <option value="published">Published</option>
@@ -399,6 +421,7 @@ export default function BlogAuthoringPage() {
                   <div>
                     <strong>{a.title}</strong>
                     <div style={{ color: MUTED, fontSize: '0.85rem' }}>
+                      {a.category === 'news' ? 'News' : 'Content'} ·{' '}
                       {STATUS_LABELS[a.status]} · /{a.slug}
                     </div>
                   </div>

@@ -2,21 +2,46 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { authFetch, getFullProfile } from '../../lib/auth';
+import { useTranslations } from 'next-intl';
+import {
+  authFetch,
+  getFullProfile,
+  listFollowing,
+  type FollowedTipster,
+} from '../../lib/auth';
 import type { FeedPick } from '../../lib/api';
+import { downloadExport } from '../../lib/export';
+import Flag from '../Flag';
+import Avatar from '../Avatar';
+import FollowButton from '../FollowButton';
+import { useFollow } from '../FollowProvider';
+import { EmptyState } from '../EmptyState';
+import Icon from '../Icon';
 
 interface Sub {
   id: string;
   tipsterId: string;
+  tipsterName: string | null;
+  avatarUrl: string | null;
+  country: string | null;
+  subscriptionPriceCents: number;
+  billingInterval: 'weekly' | 'monthly';
   status: string;
   currentPeriodEnd: string | null;
+  isFollowing: boolean;
+  stats: {
+    yield: number;
+    clvAvg: number;
+    winRate: number;
+    sampleSize: number;
+  } | null;
 }
 
-function statusLabel(status: string): string {
-  if (status === 'pending') return 'Live';
-  if (status === 'half_won') return '½ won';
-  if (status === 'half_lost') return '½ lost';
-  return status;
+/** Colour for a subscription's billing status. */
+function subStatusColor(status: string): string {
+  if (status === 'active') return 'var(--success)';
+  if (status === 'past_due') return 'var(--danger)';
+  return 'var(--muted)';
 }
 
 /**
@@ -25,12 +50,48 @@ function statusLabel(status: string): string {
  * /dashboard for `user` accounts (tipsters get the tipster dashboard there).
  */
 export default function UserDashboard() {
+  const t = useTranslations('userDashboard');
+  const statusLabel = (status: string): string =>
+    status === 'pending'
+      ? t('statusLive')
+      : status === 'half_won'
+        ? t('halfWon')
+        : status === 'half_lost'
+          ? t('halfLost')
+          : status;
+  const subStatusLabel = (status: string): string =>
+    status === 'active'
+      ? t('subActive')
+      : status === 'past_due'
+        ? t('subPastDue')
+        : status === 'canceled'
+          ? t('subCanceled')
+          : status;
+  const renewalLine = (status: string, iso: string | null): string | null => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    const when = d.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return status === 'canceled'
+      ? t('accessUntil', { date: when })
+      : t('renews', { date: when });
+  };
   const [username, setUsername] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [subs, setSubs] = useState<Sub[] | null>(null);
   const [picks, setPicks] = useState<FeedPick[] | null>(null);
+  const [following, setFollowing] = useState<FollowedTipster[] | null>(null);
+  const { ready: followReady, isFollowing } = useFollow();
 
   useEffect(() => {
-    getFullProfile().then((p) => setUsername(p?.username ?? null));
+    getFullProfile().then((p) => {
+      setUsername(p?.username ?? null);
+      setAvatarUrl(p?.avatarUrl ?? null);
+    });
     authFetch('/api/subscriptions/me')
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setSubs(d as Sub[]))
@@ -39,10 +100,32 @@ export default function UserDashboard() {
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setPicks(d as FeedPick[]))
       .catch(() => setPicks([]));
+    listFollowing()
+      .then(setFollowing)
+      .catch(() => setFollowing([]));
   }, []);
 
   const activeCount = (subs ?? []).filter((s) => s.status === 'active').length;
   const recent = (picks ?? []).slice(0, 3);
+  // Reflect live unfollows: once the provider has loaded, only show tipsters
+  // still followed, so unfollowing here removes the row immediately.
+  const shownFollowing =
+    following === null
+      ? null
+      : followReady
+        ? following.filter((f) => isFollowing(f.tipsterId))
+        : following;
+
+  // Clean separation of the two relationships: a tipster you actively pay for
+  // lives in "Subscribed"; "Following" then only shows tipsters you track for
+  // free, so nobody appears in both lists at once.
+  const activeSubIds = new Set(
+    (subs ?? []).filter((s) => s.status === 'active').map((s) => s.tipsterId),
+  );
+  const followingOnly =
+    shownFollowing === null
+      ? null
+      : shownFollowing.filter((f) => !activeSubIds.has(f.tipsterId));
 
   const cardStyle: React.CSSProperties = {
     border: '1px solid var(--border)',
@@ -53,26 +136,60 @@ export default function UserDashboard() {
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ marginBottom: '0.25rem' }}>
-        Welcome{username ? `, ${username}` : ''}
-      </h1>
-      <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Your subscriptions and live picks, all in one place.
-      </p>
+      <div style={{ display: 'flex', gap: '0.9rem', alignItems: 'center' }}>
+        <Avatar src={avatarUrl} seed={username ?? 'me'} size={56} />
+        <div>
+          <h1 style={{ margin: '0 0 0.15rem' }}>
+            {username ? t('welcomeNamed', { name: username }) : t('welcome')}
+          </h1>
+          <p style={{ color: 'var(--muted)', margin: 0 }}>
+            {t('subtitle')}
+          </p>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', margin: '1.25rem 0' }}>
         <Link href="/feed" className="btn btn--primary btn--sm">
-          My feed
+          {t('btnFeed')}
         </Link>
         <Link href="/account/subscriptions" className="btn btn--secondary btn--sm">
-          My subscriptions
+          {t('btnSubs')}
         </Link>
         <Link href="/tipsters" className="btn btn--secondary btn--sm">
-          Browse tipsters
+          {t('btnBrowse')}
+        </Link>
+        <Link href="/sports" className="btn btn--secondary btn--sm">
+          {t('btnEvents')}
         </Link>
         <Link href="/account" className="btn btn--secondary btn--sm">
-          My account
+          {t('btnAccount')}
         </Link>
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={() =>
+            downloadExport(
+              '/api/exports/users/subscriptions',
+              'xlsx',
+              'my-subscriptions.xlsx',
+            ).catch((e) =>
+              alert(e instanceof Error ? e.message : t('exportFailed')),
+            )
+          }
+        >
+          {t('btnExportSubs')}
+        </button>
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={() =>
+            downloadExport('/api/exports/users/feed', 'xlsx', 'my-feed.xlsx').catch(
+              (e) => alert(e instanceof Error ? e.message : t('exportFailed')),
+            )
+          }
+        >
+          {t('btnExportFeed')}
+        </button>
       </div>
 
       <div
@@ -84,7 +201,7 @@ export default function UserDashboard() {
       >
         <div style={cardStyle}>
           <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            Active subscriptions
+            {t('statActiveSubs')}
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
             {subs === null ? '—' : activeCount}
@@ -92,7 +209,7 @@ export default function UserDashboard() {
         </div>
         <div style={cardStyle}>
           <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            Live picks right now
+            {t('statLivePicks')}
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
             {picks === null
@@ -100,19 +217,28 @@ export default function UserDashboard() {
               : picks.filter((p) => p.status === 'pending').length}
           </div>
         </div>
+        <div style={cardStyle}>
+          <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+            {t('statFollowing')}
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
+            {shownFollowing === null ? '—' : shownFollowing.length}
+          </div>
+        </div>
       </div>
 
-      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>Latest from your feed</h2>
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('latestFeed')}</h2>
       {picks === null ? (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
       ) : recent.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>
-          No picks yet.{' '}
-          <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
-            Find a tipster to subscribe to
-          </Link>
-          .
-        </p>
+        <div style={{ marginTop: '0.75rem' }}>
+          <EmptyState
+            icon={<Icon name="inbox" size={34} />}
+            title={t('noPicksTitle')}
+            description={t('noPicksBody')}
+            actions={[{ href: '/tipsters', label: t('findTipster') }]}
+          />
+        </div>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0 0' }}>
           {recent.map((p) => (
@@ -127,7 +253,7 @@ export default function UserDashboard() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
                 <Link href={`/tipsters/${p.tipsterId}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                  {p.tipsterId}
+                  {p.tipsterName ?? p.tipsterId}
                 </Link>
                 <span style={{ color: 'var(--muted)' }}>{statusLabel(p.status)}</span>
               </div>
@@ -141,9 +267,158 @@ export default function UserDashboard() {
           ))}
           <li style={{ marginTop: '0.25rem' }}>
             <Link href="/feed" style={{ color: 'var(--accent)' }}>
-              View all in My feed →
+              {t('viewAllFeed')}
             </Link>
           </li>
+        </ul>
+      )}
+
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('subscribed')}</h2>
+      <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
+        {t('subscribedSub')}
+      </p>
+      {subs === null ? (
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
+      ) : subs.length === 0 ? (
+        <div style={{ marginTop: '0.75rem' }}>
+          <EmptyState
+            icon={<Icon name="ticket" size={34} />}
+            title={t('noSubsTitle')}
+            description={t('noSubsBody')}
+            actions={[{ href: '/tipsters', label: t('browseTipsters') }]}
+          />
+        </div>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0 0' }}>
+          {subs.map((s) => {
+            const stColor = subStatusColor(s.status);
+            const stLabel = subStatusLabel(s.status);
+            const renews = renewalLine(s.status, s.currentPeriodEnd);
+            return (
+              <li
+                key={s.id}
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '0.85rem 1rem',
+                  marginBottom: '0.6rem',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ minWidth: 0, display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <Avatar src={s.avatarUrl} seed={s.tipsterName ?? s.tipsterId} size={40} />
+                  <div style={{ minWidth: 0 }}>
+                    <Link
+                      href={`/tipsters/${s.tipsterId}`}
+                      style={{ color: 'var(--accent)', fontWeight: 600 }}
+                    >
+                      {s.tipsterName ?? s.tipsterId}
+                    </Link>
+                    {s.country ? (
+                      <Flag code={s.country} style={{ marginLeft: '0.4rem', verticalAlign: 'middle' }} />
+                    ) : null}
+                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                      <span style={{ color: stColor, fontWeight: 600 }}>{stLabel}</span>
+                      {renews ? ` · ${renews}` : ''}
+                      {s.stats
+                        ? ` · ${t('subStatLine', { yield: s.stats.yield.toFixed(1), count: s.stats.sampleSize })}`
+                        : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Link
+                    href="/account/subscriptions"
+                    className="btn btn--secondary btn--sm"
+                  >
+                    {t('manage')}
+                  </Link>
+                  <FollowButton tipsterId={s.tipsterId} size="sm" />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('following')}</h2>
+      <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
+        {t('followingSub')}
+      </p>
+      {following === null ? (
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
+      ) : followingOnly && followingOnly.length === 0 ? (
+        <div style={{ marginTop: '0.75rem' }}>
+          <EmptyState
+            icon={<Icon name="eye" size={34} />}
+            title={
+              shownFollowing && shownFollowing.length > 0
+                ? t('allAlsoSubscribedTitle')
+                : t('notFollowingTitle')
+            }
+            description={
+              shownFollowing && shownFollowing.length > 0
+                ? t('allAlsoSubscribedBody')
+                : t('notFollowingBody')
+            }
+            actions={[{ href: '/tipsters', label: t('browseTipsters') }]}
+          />
+        </div>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0 0' }}>
+          {(followingOnly ?? []).map((f) => (
+            <li
+              key={f.tipsterId}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '0.85rem 1rem',
+                marginBottom: '0.6rem',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+              }}
+            >
+              <div style={{ minWidth: 0, display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <Avatar src={f.avatarUrl} seed={f.name ?? f.tipsterId} size={40} />
+                <div style={{ minWidth: 0 }}>
+                  <Link
+                    href={`/tipsters/${f.tipsterId}`}
+                    style={{ color: 'var(--accent)', fontWeight: 600 }}
+                  >
+                    {f.name ?? f.tipsterId}
+                  </Link>
+                  {f.country ? (
+                    <Flag code={f.country} style={{ marginLeft: '0.4rem', verticalAlign: 'middle' }} />
+                  ) : null}
+                  <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                    {f.stats
+                      ? t('followStatLine', {
+                          yield: f.stats.yield.toFixed(1),
+                          clv: (f.stats.clvAvg * 100).toFixed(1),
+                          count: f.stats.sampleSize,
+                        })
+                      : t('noSettled')}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Link
+                  href={`/tipsters/${f.tipsterId}`}
+                  className="btn btn--primary btn--sm"
+                >
+                  {t('subscribe')}
+                </Link>
+                <FollowButton tipsterId={f.tipsterId} size="sm" />
+              </div>
+            </li>
+          ))}
         </ul>
       )}
     </main>

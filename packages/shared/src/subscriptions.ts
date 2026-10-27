@@ -18,6 +18,8 @@ export type SubscriptionEventType = 'activated' | 'canceled' | 'past_due';
 export interface SubscriptionRecord {
   id: string;
   tipsterId: string;
+  /** Public display name of the tipster (null falls back to id in the UI). */
+  tipsterName?: string | null;
   status: SubscriptionStatus;
   /** ISO timestamp of the current period end, or null when unknown. */
   currentPeriodEnd: string | null;
@@ -27,6 +29,7 @@ export interface SubscriptionRecord {
 export interface SubscriptionView {
   id: string;
   tipsterId: string;
+  tipsterName: string | null;
   status: SubscriptionStatus;
   /** Human-readable status label, e.g. "Active". */
   statusLabel: string;
@@ -174,6 +177,7 @@ export function toSubscriptionView(
   return {
     id: sub.id,
     tipsterId: sub.tipsterId,
+    tipsterName: sub.tipsterName ?? null,
     status: sub.status,
     statusLabel: subscriptionStatusLabel(sub.status),
     isActive,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   authFetch,
   signOut,
@@ -10,18 +11,26 @@ import {
   updateUsername,
   changePassword,
   changeEmail,
+  exportMyData,
   getNotificationPreferences,
   updateNotificationPreferences,
-  exportMyData,
-  deleteMyAccount,
   type FullProfile,
   type NotificationPreferences,
 } from '../../lib/auth';
+import {
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from '../../lib/push';
+import { roleHasPermission } from '@overlay/shared/rbac';
+import { validateNewPassword } from '../../lib/account';
 import { formStyles } from '../formStyles';
+import AvatarPicker from '../AvatarPicker';
 
 interface Subscription {
   id: string;
   tipsterId: string;
+  tipsterName: string | null;
   status: string;
   currentPeriodEnd: string | null;
 }
@@ -30,11 +39,15 @@ const cardStyle: React.CSSProperties = {
   border: '1px solid var(--border)',
   borderRadius: 10,
   padding: '1.25rem 1.4rem',
-  marginTop: '1.25rem',
+};
+const dividerStyle: React.CSSProperties = {
+  borderTop: '1px solid var(--border)',
+  margin: '1.1rem 0',
 };
 const labelStyle: React.CSSProperties = { color: 'var(--muted)', fontSize: '0.9rem' };
 
 export default function AccountPage() {
+  const t = useTranslations('account');
   const router = useRouter();
   const [profile, setProfile] = useState<FullProfile | null>(null);
   const [subs, setSubs] = useState<Subscription[] | null>(null);
@@ -51,10 +64,17 @@ export default function AccountPage() {
 
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const [prefsMsg, setPrefsMsg] = useState<string | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
 
-  const [privacyMsg, setPrivacyMsg] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  useEffect(() => {
+    setPushSupported(isPushSupported());
+  }, []);
   useEffect(() => {
     (async () => {
       const p = await getFullProfile();
@@ -64,6 +84,7 @@ export default function AccountPage() {
       }
       setProfile(p);
       setUsername(p.username ?? '');
+      setAvatarUrl(p.avatarUrl);
       authFetch('/api/subscriptions/me')
         .then((r) => (r.ok ? r.json() : []))
         .then((data) => setSubs(data as Subscription[]))
@@ -79,9 +100,9 @@ export default function AccountPage() {
     try {
       const updated = await updateUsername(username);
       setProfile(updated);
-      setUsernameMsg('Username saved ✓');
+      setUsernameMsg(t('usernameSaved'));
     } catch (err) {
-      setUsernameMsg(err instanceof Error ? err.message : 'Failed');
+      setUsernameMsg(err instanceof Error ? err.message : t('failed'));
     } finally {
       setSavingUsername(false);
     }
@@ -92,28 +113,46 @@ export default function AccountPage() {
     setEmailMsg(null);
     try {
       await changeEmail(newEmail);
-      setEmailMsg('Confirmation sent — check your new inbox to finish.');
+      setEmailMsg(t('emailSent'));
       setNewEmail('');
     } catch (err) {
-      setEmailMsg(err instanceof Error ? err.message : 'Failed');
+      setEmailMsg(err instanceof Error ? err.message : t('failed'));
     }
   }
 
   async function savePassword(e: React.FormEvent) {
     e.preventDefault();
     setPasswordMsg(null);
+    const invalid = validateNewPassword(newPassword);
+    if (invalid) {
+      setPasswordMsg(invalid);
+      return;
+    }
     try {
       await changePassword(newPassword);
-      setPasswordMsg('Password updated ✓');
+      setPasswordMsg(t('passwordUpdated'));
       setNewPassword('');
     } catch (err) {
-      setPasswordMsg(err instanceof Error ? err.message : 'Failed');
+      setPasswordMsg(err instanceof Error ? err.message : t('failed'));
     }
   }
 
   async function logout() {
     await signOut();
     router.push('/');
+  }
+
+  async function downloadData() {
+    setExportMsg(null);
+    setExportBusy(true);
+    try {
+      await exportMyData();
+      setExportMsg(t('downloadStarted'));
+    } catch (err) {
+      setExportMsg(err instanceof Error ? err.message : t('exportFailed'));
+    } finally {
+      setExportBusy(false);
+    }
   }
 
   async function savePrefs(patch: Partial<NotificationPreferences>) {
@@ -123,57 +162,52 @@ export default function AccountPage() {
     try {
       const updated = await updateNotificationPreferences(patch);
       setPrefs(updated);
-      setPrefsMsg('Saved \u2713');
+      setPrefsMsg(t('saved'));
     } catch (err) {
       setPrefs(previous);
-      setPrefsMsg(err instanceof Error ? err.message : 'Failed');
+      setPrefsMsg(err instanceof Error ? err.message : t('failed'));
     }
   }
 
-  async function downloadData() {
-    setPrivacyMsg(null);
+  /**
+   * Toggling push both saves the preference and (de)registers this browser with
+   * the Push API so alerts actually reach the device. If the browser opt-in
+   * fails (unsupported / permission denied) we surface the reason and leave the
+   * preference off.
+   */
+  async function togglePush(enabled: boolean) {
+    setPrefsMsg(null);
+    setPushBusy(true);
     try {
-      await exportMyData();
-      setPrivacyMsg('Export downloaded \u2713');
+      if (enabled) {
+        await subscribeToPush();
+        await savePrefs({ pushEnabled: true });
+      } else {
+        await unsubscribeFromPush();
+        await savePrefs({ pushEnabled: false });
+      }
     } catch (err) {
-      setPrivacyMsg(err instanceof Error ? err.message : 'Failed');
-    }
-  }
-
-  async function deleteAccount() {
-    if (
-      !window.confirm(
-        'Delete your account? This anonymizes your personal data and cannot be undone.',
-      )
-    ) {
-      return;
-    }
-    setPrivacyMsg(null);
-    setDeleting(true);
-    try {
-      await deleteMyAccount();
-      router.push('/');
-    } catch (err) {
-      setPrivacyMsg(err instanceof Error ? err.message : 'Failed');
-      setDeleting(false);
+      setPrefsMsg(err instanceof Error ? err.message : t('pushFailed'));
+    } finally {
+      setPushBusy(false);
     }
   }
 
   if (!profile) {
     return (
-      <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+      <main style={{ maxWidth: 920, margin: '0 auto', padding: '3rem 1.5rem' }}>
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
       </main>
     );
   }
 
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+    <main style={{ maxWidth: 920, margin: '0 auto', padding: '3rem 1.5rem' }}>
       <h1 style={{ marginBottom: '0.25rem' }}>
-        Welcome, {profile.username ?? 'there'}
+        {t('welcome', { name: profile.username ?? t('there') })}
       </h1>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Manage your account and activity.
+        {t('subtitle')}
       </p>
 
       {/* Key actions up top so they're reachable without scrolling. */}
@@ -188,243 +222,232 @@ export default function AccountPage() {
         {profile.role === 'user' ? (
           <>
             <Link href="/feed" className="btn btn--primary btn--sm">
-              My feed
+              {t('myFeed')}
             </Link>
             <Link
               href="/account/subscriptions"
               className="btn btn--secondary btn--sm"
             >
-              My subscriptions
+              {t('mySubscriptions')}
             </Link>
           </>
         ) : null}
         {profile.role === 'tipster' ? (
           <>
             <Link href="/dashboard" className="btn btn--primary btn--sm">
-              Tipster dashboard
+              {t('tipsterDashboard')}
             </Link>
             <Link
               href="/account/subscriptions"
               className="btn btn--secondary btn--sm"
             >
-              My subscriptions
+              {t('mySubscriptions')}
             </Link>
           </>
         ) : null}
-        {profile.role === 'admin' ? (
+        {roleHasPermission(profile.role, 'audit:read') ? (
           <Link href="/admin" className="btn btn--primary btn--sm">
-            Admin dashboard
+            {t('adminDashboard')}
           </Link>
         ) : null}
       </div>
 
       {/* --- Profile summary --- */}
-      <div style={cardStyle}>
-        <div style={{ display: 'grid', gap: '0.5rem' }}>
-          <Row label="Username" value={profile.username ?? '— not set —'} />
-          <Row label="Email" value={profile.email} />
-          <Row label="Account type" value={profile.role} />
-          <Row
-            label="Member since"
+      <div style={{ ...cardStyle, marginTop: '1.25rem' }}>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <AvatarPicker
+            seed={profile.username ?? profile.userId}
+            value={avatarUrl}
+            onChange={setAvatarUrl}
+          />
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '0.85rem 1.5rem',
+          }}
+        >
+          <Fact label={t('factUsername')} value={profile.username ?? t('notSet')} />
+          <Fact label={t('factEmail')} value={profile.email} />
+          <Fact label={t('factAccountType')} value={profile.role} />
+          <Fact
+            label={t('factMemberSince')}
             value={new Date(profile.createdAt).toLocaleDateString()}
           />
           {profile.role === 'tipster' ? (
-            <Row label="Role" value="Verified tipster" />
+            <Fact label={t('factRole')} value={t('verifiedTipster')} />
           ) : (
-            <Row
-              label="Subscriptions"
+            <Fact
+              label={t('factSubscriptions')}
               value={String(profile.subscriptionCount)}
             />
           )}
         </div>
         {profile.role === 'tipster' ? (
-          <p style={{ marginTop: '1rem' }}>
+          <p style={{ margin: '1rem 0 0' }}>
             <Link href="/dashboard" style={{ color: 'var(--accent)' }}>
-              → Go to tipster dashboard
+              {t('linkTipsterDashboard')}
             </Link>
             {' · '}
             <Link href="/onboarding" style={{ color: 'var(--accent)' }}>
-              Onboarding
+              {t('linkOnboarding')}
             </Link>
             {' · '}
             <Link href="/earnings" style={{ color: 'var(--accent)' }}>
-              Earnings
+              {t('linkEarnings')}
             </Link>
           </p>
         ) : null}
       </div>
 
-      {/* --- Username --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Username</h2>
-        <form onSubmit={saveUsername} style={{ ...formStyles.form, gap: '0.6rem' }}>
-          <input
-            style={formStyles.input}
-            placeholder="your_handle"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            minLength={3}
-            maxLength={20}
-            required
-          />
-          <span style={labelStyle}>3–20 chars: letters, numbers, underscore.</span>
-          {usernameMsg ? <p style={labelStyle}>{usernameMsg}</p> : null}
-          <button style={formStyles.button} disabled={savingUsername}>
-            {savingUsername ? 'Saving…' : 'Save username'}
-          </button>
-        </form>
-      </section>
+      {/* --- Settings: a horizontal grid instead of a tall stack of cards --- */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '1.25rem',
+          marginTop: '1.25rem',
+          alignItems: 'start',
+        }}
+      >
+        {/* Login & security — username, email and password in one card */}
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>{t('loginSecurity')}</h2>
 
-      {/* --- Change email --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Change email</h2>
-        <form onSubmit={saveEmail} style={{ ...formStyles.form, gap: '0.6rem' }}>
-          <input
-            style={formStyles.input}
-            type="email"
-            placeholder="new@email.com"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            required
-          />
-          {emailMsg ? <p style={labelStyle}>{emailMsg}</p> : null}
-          <button style={formStyles.button}>Send confirmation</button>
-        </form>
-      </section>
+          <form onSubmit={saveUsername} style={{ ...formStyles.form, gap: '0.5rem' }}>
+            <span style={labelStyle}>{t('username')}</span>
+            <input
+              style={formStyles.input}
+              placeholder={t('usernamePlaceholder')}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              minLength={3}
+              maxLength={20}
+              required
+            />
+            {usernameMsg ? <p style={labelStyle}>{usernameMsg}</p> : null}
+            <button style={formStyles.button} disabled={savingUsername}>
+              {savingUsername ? t('saving') : t('saveUsername')}
+            </button>
+          </form>
 
-      {/* --- Change password --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Change password</h2>
-        <form
-          onSubmit={savePassword}
-          style={{ ...formStyles.form, gap: '0.6rem' }}
-        >
-          <input
-            style={formStyles.input}
-            type="password"
-            placeholder="New password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            minLength={6}
-            required
-          />
-          {passwordMsg ? <p style={labelStyle}>{passwordMsg}</p> : null}
-          <button style={formStyles.button}>Update password</button>
-        </form>
-      </section>
+          <div style={dividerStyle} />
 
-      {/* --- Notification preferences --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Notifications</h2>
-        {prefs === null ? (
-          <p style={labelStyle}>Loading…</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-            >
-              <input
-                type="checkbox"
-                checked={prefs.emailEnabled}
-                onChange={(e) => savePrefs({ emailEnabled: e.target.checked })}
-              />
-              Email notifications
-            </label>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-            >
-              <input
-                type="checkbox"
-                checked={prefs.pushEnabled}
-                onChange={(e) => savePrefs({ pushEnabled: e.target.checked })}
-              />
-              Push notifications
-            </label>
-            <label style={{ display: 'grid', gap: '0.3rem' }}>
-              <span style={labelStyle}>New-pick delivery</span>
-              <select
-                style={formStyles.input}
-                value={prefs.frequency}
-                onChange={(e) =>
-                  savePrefs({
-                    frequency: e.target.value as 'instant' | 'daily',
-                  })
-                }
+          <form onSubmit={saveEmail} style={{ ...formStyles.form, gap: '0.5rem' }}>
+            <span style={labelStyle}>{t('changeEmail')}</span>
+            <input
+              style={formStyles.input}
+              type="email"
+              placeholder={t('emailPlaceholder')}
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              required
+            />
+            {emailMsg ? <p style={labelStyle}>{emailMsg}</p> : null}
+            <button style={formStyles.button}>{t('sendConfirmation')}</button>
+          </form>
+
+          <div style={dividerStyle} />
+
+          <form onSubmit={savePassword} style={{ ...formStyles.form, gap: '0.5rem' }}>
+            <span style={labelStyle}>{t('changePassword')}</span>
+            <input
+              style={formStyles.input}
+              type="password"
+              placeholder={t('newPasswordPlaceholder')}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={6}
+              required
+            />
+            {passwordMsg ? <p style={labelStyle}>{passwordMsg}</p> : null}
+            <button style={formStyles.button}>{t('updatePassword')}</button>
+          </form>
+        </section>
+
+        {/* --- Notification preferences --- */}
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>{t('notifications')}</h2>
+          {prefs === null ? (
+            <p style={labelStyle}>{t('loading')}</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <label
+                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
               >
-                <option value="instant">Instant — every pick</option>
-                <option value="daily">Daily digest</option>
-              </select>
-            </label>
-            {prefsMsg ? <p style={labelStyle}>{prefsMsg}</p> : null}
-          </div>
-        )}
-      </section>
-
-      {/* --- Privacy & data --- */}
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Privacy &amp; data</h2>
-        <p style={labelStyle}>
-          Download everything we hold about you, or permanently delete your
-          account.
-        </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={downloadData}
-            style={{
-              ...formStyles.button,
-              width: 'auto',
-              background: 'transparent',
-              color: 'var(--accent)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            Download my data
-          </button>
-          <button
-            type="button"
-            onClick={deleteAccount}
-            disabled={deleting}
-            style={{
-              ...formStyles.button,
-              width: 'auto',
-              background: 'transparent',
-              color: 'var(--danger)',
-              border: '1px solid var(--danger)',
-            }}
-          >
-            {deleting ? 'Deleting…' : 'Delete account'}
-          </button>
-        </div>
-        {privacyMsg ? (
-          <p style={{ ...labelStyle, marginTop: '0.75rem' }}>{privacyMsg}</p>
-        ) : null}
-      </section>
+                <input
+                  type="checkbox"
+                  checked={prefs.emailEnabled}
+                  onChange={(e) => savePrefs({ emailEnabled: e.target.checked })}
+                />
+                {t('emailNotifications')}
+              </label>
+              <label
+                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={prefs.pushEnabled}
+                  disabled={pushBusy}
+                  onChange={(e) => togglePush(e.target.checked)}
+                />
+                {t('pushNotifications')}
+              </label>
+              {!pushSupported ? (
+                <p style={labelStyle}>
+                  {t('pushUnsupported')}
+                </p>
+              ) : null}
+              <label style={{ display: 'grid', gap: '0.3rem' }}>
+                <span style={labelStyle}>{t('newPickDelivery')}</span>
+                <select
+                  style={formStyles.input}
+                  value={prefs.frequency}
+                  onChange={(e) =>
+                    savePrefs({
+                      frequency: e.target.value as 'instant' | 'daily',
+                    })
+                  }
+                >
+                  <option value="instant">{t('instant')}</option>
+                  <option value="daily">{t('dailyDigest')}</option>
+                </select>
+              </label>
+              {prefsMsg ? <p style={labelStyle}>{prefsMsg}</p> : null}
+            </div>
+          )}
+        </section>
+      </div>
 
       {/* --- Subscriptions --- */}
-      {profile.role === 'admin' ? (
+      {roleHasPermission(profile.role, 'user:manage') ? (
         <p>
           <Link href="/admin/users" style={{ color: 'var(--accent)' }}>
-            → Manage users
+            {t('manageUsers')}
           </Link>
         </p>
       ) : null}
 
-      <h2 style={{ marginTop: '2rem' }}>Your subscriptions</h2>
+      {profile.role !== 'tipster' ? (
+        <>
+          <h2 style={{ marginTop: '2rem' }}>{t('yourSubscriptions')}</h2>
       <p>
         <Link href="/account/subscriptions" style={{ color: 'var(--accent)' }}>
-          → Manage subscriptions
+          {t('manageSubscriptions')}
         </Link>
       </p>
       {subs === null ? (
-        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+        <p style={{ color: 'var(--muted)' }}>{t('loading')}</p>
       ) : subs.length === 0 ? (
         <p style={{ color: 'var(--muted)' }}>
-          No active subscriptions.{' '}
-          <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
-            Browse tipsters
-          </Link>{' '}
-          to find a tipster.
+          {t.rich('noActiveSubs', {
+            link: (chunks) => (
+              <Link href="/tipsters" style={{ color: 'var(--accent)' }}>
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -442,13 +465,42 @@ export default function AccountPage() {
                 href={`/tipsters/${s.tipsterId}`}
                 style={{ color: 'var(--accent)' }}
               >
-                {s.tipsterId}
+                {s.tipsterName ?? s.tipsterId}
               </Link>
               <span style={{ color: 'var(--muted)' }}>{s.status}</span>
             </li>
           ))}
         </ul>
       )}
+        </>
+      ) : null}
+
+      {/* --- Data & privacy (GDPR self-service) --- */}
+      <section style={{ ...cardStyle, marginTop: '2rem' }}>
+        <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>{t('dataPrivacy')}</h2>
+        <p style={labelStyle}>
+          {t('dataPrivacyBody')}
+        </p>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.6rem',
+            alignItems: 'center',
+            marginTop: '0.75rem',
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={downloadData}
+            disabled={exportBusy}
+          >
+            {exportBusy ? t('preparing') : t('exportMyData')}
+          </button>
+          {exportMsg ? <span style={labelStyle}>{exportMsg}</span> : null}
+        </div>
+      </section>
 
       <button
         onClick={logout}
@@ -462,17 +514,17 @@ export default function AccountPage() {
           cursor: 'pointer',
         }}
       >
-        Sign out
+        {t('signOut')}
       </button>
     </main>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: 'var(--muted)' }}>{label}</span>
-      <span>{value}</span>
+    <div>
+      <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>{label}</div>
+      <div style={{ marginTop: '0.15rem', wordBreak: 'break-word' }}>{value}</div>
     </div>
   );
 }

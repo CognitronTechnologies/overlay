@@ -21,6 +21,7 @@ export class UsersService {
         id: true,
         email: true,
         username: true,
+        avatarUrl: true,
         role: true,
         createdAt: true,
         tipster: { select: { userId: true } },
@@ -32,6 +33,7 @@ export class UsersService {
       userId: user.id,
       email: user.email,
       username: user.username,
+      avatarUrl: user.avatarUrl,
       role: user.role,
       createdAt: user.createdAt,
       tipsterId: user.tipster?.userId ?? null,
@@ -41,6 +43,44 @@ export class UsersService {
 
   private normalize(username: string): string {
     return (username ?? '').trim().toLowerCase();
+  }
+
+  /** Persist the user's uploaded avatar URL. */
+  async setAvatar(userId: string, url: string): Promise<{ avatarUrl: string | null }> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: url },
+      select: { avatarUrl: true },
+    });
+    return { avatarUrl: user.avatarUrl };
+  }
+
+  /**
+   * Persist a chosen generated ("preset") avatar. Only DiceBear-generated URLs
+   * are accepted so a client can't set an arbitrary/off-platform image URL;
+   * uploaded photos go through the dedicated file endpoint instead.
+   */
+  async setPresetAvatar(
+    userId: string,
+    url: string,
+  ): Promise<{ avatarUrl: string | null }> {
+    if (
+      typeof url !== 'string' ||
+      !url.startsWith('https://api.dicebear.com/')
+    ) {
+      throw new BadRequestException('Invalid avatar selection');
+    }
+    return this.setAvatar(userId, url);
+  }
+
+  /** Remove the user's avatar (revert to the generated fallback). */
+  async clearAvatar(userId: string): Promise<{ avatarUrl: string | null }> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: null },
+      select: { avatarUrl: true },
+    });
+    return { avatarUrl: user.avatarUrl };
   }
 
   /** Is a handle free (and valid)? excludeUserId lets a user keep their own. */

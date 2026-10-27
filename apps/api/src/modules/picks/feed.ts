@@ -16,10 +16,14 @@ export interface FeedSubscription {
 export interface FeedPick {
   id: string;
   tipsterId: string;
+  /** Public display name of the tipster (null falls back to id in the UI). */
+  tipsterName: string | null;
   market: string;
   selection: string;
   oddsAtPick: number;
   stakeUnits: number;
+  /** Pre-match or live/in-play (OB-039). Surfaced so the UI can flag live picks. */
+  pickType: 'pre_match' | 'live';
   /** Optional tipster-authored context, or null. */
   note: string | null;
   status: string;
@@ -45,6 +49,7 @@ export interface PickRecord {
   selection: string;
   oddsAtPick: number;
   stakeUnits: number;
+  pickType?: 'pre_match' | 'live';
   note: string | null;
   status: string;
   clv: number | null;
@@ -57,6 +62,10 @@ export interface PickRecord {
     away: string;
     startTime: Date;
   } | null;
+  tipster?: {
+    displayName: string | null;
+    user: { username: string | null } | null;
+  } | null;
 }
 
 /** Map a Prisma pick (with event) to the wire {@link FeedPick} shape. */
@@ -64,10 +73,14 @@ export function toPickRow(p: PickRecord): FeedPick {
   return {
     id: p.id,
     tipsterId: p.tipsterId,
+    tipsterName: p.tipster
+      ? (p.tipster.displayName ?? p.tipster.user?.username ?? null)
+      : null,
     market: p.market,
     selection: p.selection,
     oddsAtPick: p.oddsAtPick,
     stakeUnits: p.stakeUnits,
+    pickType: p.pickType ?? 'pre_match',
     note: p.note,
     status: p.status,
     clv: p.clv,
