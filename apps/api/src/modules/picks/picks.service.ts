@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   generateNonce,
@@ -19,6 +20,7 @@ import { PrismaService } from '../../prisma.service';
 import { Inject } from '@nestjs/common';
 import type { EntityCache } from '../../common/cache/entity-cache';
 import { TIPSTER_PROFILE_CACHE } from '../../common/cache/cache.module';
+import { isFreeAccessMode } from '../../common/free-access';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { canPublishPicks } from '../tipsters/onboarding';
@@ -195,7 +197,7 @@ export class PicksService {
    * picks for free, so newcomers can build an audience without friction.
    */
   async listLiveForSubscriber(
-    userId: string,
+    userId: string | undefined,
     tipsterId: string,
   ): Promise<FeedPick[]> {
     const tipster = await this.prisma.tipster.findUnique({
@@ -206,12 +208,16 @@ export class PicksService {
       throw new NotFoundException('Tipster not found');
     }
 
-    const gated = isLivePicksGated({
-      graduationStatus: normalizeGraduationStatus(tipster.graduationStatus),
-      subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
-    });
+    const gated = isLivePicksGated(
+      {
+        graduationStatus: normalizeGraduationStatus(tipster.graduationStatus),
+        subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
+      },
+      isFreeAccessMode(),
+    );
 
     if (gated) {
+      if (!userId) throw new UnauthorizedException('Missing bearer token');
       const entitled = await this.subs.isEntitled(userId, tipsterId);
       if (!entitled) {
         throw new ForbiddenException('Active subscription required');
@@ -235,13 +241,14 @@ export class PicksService {
   }
 
   /**
-   * Aggregated subscriber "My feed" (OB-012): live/pending + settled picks from
-   * every tipster the user is *actively* subscribed to, newest first. Entitlement
+   * Aggregated subscriber feed: subscribed picks when paid mode is active, or
+   * the public catalog in free mode. Results are ordered newest first. Entitlement
    * is enforced by only querying tipsters with an active subscription, so a lapsed
    * or never-subscribed tipster's picks can never appear. Clients poll this to pick
    * up settlement status updates.
    */
   async feedForSubscriber(userId: string): Promise<FeedPick[]> {
+    if (isFreeAccessMode()) return this.publicFeed();
     const subscriptions = await this.subs.listForUser(userId);
     const tipsterIds = entitledTipsterIds(subscriptions);
     if (tipsterIds.length === 0) return [];
@@ -264,6 +271,30 @@ export class PicksService {
 
     // Defense-in-depth: re-apply the entitlement gate and deterministic ordering.
     return buildSubscriberFeed(rows, subscriptions);
+  }
+
+  /** Public all-tipster feed, intentionally available only in free-access mode. */
+  async publicFeed(): Promise<FeedPick[]> {
+    if (!isFreeAccessMode()) {
+      throw new ForbiddenException({
+        code: 'FREE_ACCESS_MODE_DISABLED',
+        message: 'The public picks feed is not enabled.',
+      });
+    }
+    const picks = await this.prisma.pick.findMany({
+      where: { tipster: { status: 'active' } },
+      orderBy: { lockedAt: 'desc' },
+      take: 100,
+      include: {
+        event: {
+          select: { sport: true, home: true, away: true, startTime: true },
+        },
+        tipster: {
+          select: { displayName: true, user: { select: { username: true } } },
+        },
+      },
+    });
+    return picks.map((pick) => toPickRow(pick));
   }
 
   /**

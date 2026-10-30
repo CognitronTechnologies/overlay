@@ -1,4 +1,4 @@
-// Pure authorization helpers for the blog authoring workflow (OB-071).
+﻿// Pure authorization helpers for the blog authoring workflow (OB-071).
 //
 // Kept free of Nest decorators / DB access so it can be unit-tested with
 // Node's native type-stripping test runner.
@@ -7,7 +7,7 @@ import type { Role } from '@overlay/shared';
 
 export type AuthorRole = Role;
 
-export type ArticleStatus = 'draft' | 'pending' | 'published' | 'archived';
+export type ArticleStatus = 'draft' | 'pending' | 'published' | 'archived' | 'rejected';
 
 export interface AuthoringActor {
   userId: string;
@@ -19,7 +19,7 @@ export interface TipsterApproval {
 }
 
 /**
- * Whether a role moderates content — may manage (edit/publish/delete) ANY
+ * Whether a role moderates content â€” may manage (edit/publish/delete) ANY
  * article regardless of authorship. Admins and staff moderate; `staff` is
  * "admin minus finance" and inherits full content moderation.
  */
@@ -48,7 +48,7 @@ export function canAuthorArticles(
  */
 export function canManageArticle(
   actor: AuthoringActor,
-  article: { authorId: string },
+  article: { authorId: string | null },
 ): boolean {
   if (isArticleModerator(actor.role)) return true;
   return actor.role === 'tipster' && article.authorId === actor.userId;
@@ -67,4 +67,9 @@ export function resolveArticleStatus(
 ): ArticleStatus {
   if (isArticleModerator(actor.role)) return requested;
   return requested === 'published' ? 'pending' : requested;
+}
+
+
+export function publishedArticleFilter() {
+  return { status: 'published' as const };
 }

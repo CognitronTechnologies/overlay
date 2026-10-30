@@ -9,3 +9,6 @@
 ## Learnings
 
 <!-- Append learnings below -->
+
+- 2026-10-30: Build editorial review as a protected admin queue and use deliberate cache revalidation after changes so public content reflects human decisions.
+- 2026-10-30: Keep manual tip edits inside Editorial Queue, with clear status/origin controls and deletion limited to manual entries. For free launch, use the client flag for presentation only, rely on API authorization, and resolve canonical metadata to the production origin.

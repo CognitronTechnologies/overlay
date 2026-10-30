@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { authFetch, getAccessToken } from '../../../lib/auth';
-import type { LivePick } from '../../../lib/api';
+import { API_URL, FREE_ACCESS_MODE, type LivePick } from '../../../lib/api';
 import SubscribeButton from '../../SubscribeButton';
 import Icon from '../../Icon';
+import FreeLaunchNotice from '../../FreeLaunchNotice';
 
 const MUTED = 'var(--muted)';
 const BORDER = 'var(--border)';
@@ -36,16 +37,17 @@ export default function LivePicks({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const token = await getAccessToken();
+      const token = FREE_ACCESS_MODE ? null : await getAccessToken();
       if (cancelled) return;
-      if (!token) {
+      if (!FREE_ACCESS_MODE && !token) {
         setState({ kind: 'signedout' });
         return;
       }
       try {
-        const res = await authFetch(
-          `/api/picks/tipster/${encodeURIComponent(tipsterId)}/live`,
-        );
+        const path = `/api/picks/tipster/${encodeURIComponent(tipsterId)}/live`;
+        const res = FREE_ACCESS_MODE
+          ? await fetch(`${API_URL}${path}`)
+          : await authFetch(path);
         if (cancelled) return;
         if (res.status === 403) {
           setState({ kind: 'locked' });
@@ -75,7 +77,10 @@ export default function LivePicks({
       ) : state.kind === 'error' ? (
         <p style={{ color: MUTED }}>Couldn’t load live picks right now.</p>
       ) : state.kind === 'entitled' ? (
-        <EntitledPicks picks={state.picks} />
+        <>
+          {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
+          <EntitledPicks picks={state.picks} />
+        </>
       ) : (
         <Paywall
           tipsterId={tipsterId}

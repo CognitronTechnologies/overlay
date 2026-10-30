@@ -9,7 +9,7 @@ import {
   listFollowing,
   type FollowedTipster,
 } from '../../lib/auth';
-import type { FeedPick } from '../../lib/api';
+import { API_URL, FREE_ACCESS_MODE, type FeedPick } from '../../lib/api';
 import { downloadExport } from '../../lib/export';
 import Flag from '../Flag';
 import Avatar from '../Avatar';
@@ -17,6 +17,7 @@ import FollowButton from '../FollowButton';
 import { useFollow } from '../FollowProvider';
 import { EmptyState } from '../EmptyState';
 import Icon from '../Icon';
+import FreeLaunchNotice from '../FreeLaunchNotice';
 
 interface Sub {
   id: string;
@@ -92,11 +93,16 @@ export default function UserDashboard() {
       setUsername(p?.username ?? null);
       setAvatarUrl(p?.avatarUrl ?? null);
     });
-    authFetch('/api/subscriptions/me')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => setSubs(d as Sub[]))
-      .catch(() => setSubs([]));
-    authFetch('/api/picks/me/feed')
+    if (!FREE_ACCESS_MODE) {
+      authFetch('/api/subscriptions/me')
+        .then((r) => (r.ok ? r.json() : []))
+        .then((d) => setSubs(d as Sub[]))
+        .catch(() => setSubs([]));
+    }
+    const feedRequest = FREE_ACCESS_MODE
+      ? fetch(`${API_URL}/api/picks/feed`)
+      : authFetch('/api/picks/me/feed');
+    feedRequest
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setPicks(d as FeedPick[]))
       .catch(() => setPicks([]));
@@ -136,6 +142,7 @@ export default function UserDashboard() {
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
       <div style={{ display: 'flex', gap: '0.9rem', alignItems: 'center' }}>
         <Avatar src={avatarUrl} seed={username ?? 'me'} size={56} />
         <div>
@@ -152,9 +159,11 @@ export default function UserDashboard() {
         <Link href="/feed" className="btn btn--primary btn--sm">
           {t('btnFeed')}
         </Link>
-        <Link href="/account/subscriptions" className="btn btn--secondary btn--sm">
-          {t('btnSubs')}
-        </Link>
+        {!FREE_ACCESS_MODE ? (
+          <Link href="/account/subscriptions" className="btn btn--secondary btn--sm">
+            {t('btnSubs')}
+          </Link>
+        ) : null}
         <Link href="/tipsters" className="btn btn--secondary btn--sm">
           {t('btnBrowse')}
         </Link>
@@ -164,7 +173,7 @@ export default function UserDashboard() {
         <Link href="/account" className="btn btn--secondary btn--sm">
           {t('btnAccount')}
         </Link>
-        <button
+        {!FREE_ACCESS_MODE ? <button
           type="button"
           className="btn btn--secondary btn--sm"
           onClick={() =>
@@ -178,8 +187,8 @@ export default function UserDashboard() {
           }
         >
           {t('btnExportSubs')}
-        </button>
-        <button
+        </button> : null}
+        {!FREE_ACCESS_MODE ? <button
           type="button"
           className="btn btn--secondary btn--sm"
           onClick={() =>
@@ -189,7 +198,7 @@ export default function UserDashboard() {
           }
         >
           {t('btnExportFeed')}
-        </button>
+        </button> : null}
       </div>
 
       <div
@@ -199,30 +208,34 @@ export default function UserDashboard() {
           gap: '0.75rem',
         }}
       >
-        <div style={cardStyle}>
-          <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            {t('statActiveSubs')}
-          </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
-            {subs === null ? '—' : activeCount}
-          </div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-            {t('statLivePicks')}
-          </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
-            {picks === null
-              ? '—'
-              : picks.filter((p) => p.status === 'pending').length}
-          </div>
-        </div>
+        {!FREE_ACCESS_MODE ? (
+          <>
+            <div style={cardStyle}>
+              <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                {t('statActiveSubs')}
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
+                {subs === null ? '?' : activeCount}
+              </div>
+            </div>
+            <div style={cardStyle}>
+              <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                {t('statLivePicks')}
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
+                {picks === null
+                  ? '?'
+                  : picks.filter((p) => p.status === 'pending').length}
+              </div>
+            </div>
+          </>
+        ) : null}
         <div style={cardStyle}>
           <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
             {t('statFollowing')}
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '0.2rem' }}>
-            {shownFollowing === null ? '—' : shownFollowing.length}
+            {shownFollowing === null ? '?' : shownFollowing.length}
           </div>
         </div>
       </div>
@@ -273,6 +286,8 @@ export default function UserDashboard() {
         </ul>
       )}
 
+      {!FREE_ACCESS_MODE ? (
+        <>
       <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('subscribed')}</h2>
       <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
         {t('subscribedSub')}
@@ -345,6 +360,8 @@ export default function UserDashboard() {
         </ul>
       )}
 
+        </>
+      ) : null}
       <h2 style={{ marginTop: '2.5rem', fontSize: '1.2rem' }}>{t('following')}</h2>
       <p style={{ color: 'var(--muted)', marginTop: 0, fontSize: '0.9rem' }}>
         {t('followingSub')}
@@ -409,12 +426,14 @@ export default function UserDashboard() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <Link
-                  href={`/tipsters/${f.tipsterId}`}
-                  className="btn btn--primary btn--sm"
-                >
-                  {t('subscribe')}
-                </Link>
+                {!FREE_ACCESS_MODE ? (
+                  <Link
+                    href={`/tipsters/${f.tipsterId}`}
+                    className="btn btn--primary btn--sm"
+                  >
+                    {t('subscribe')}
+                  </Link>
+                ) : null}
                 <FollowButton tipsterId={f.tipsterId} size="sm" />
               </div>
             </li>

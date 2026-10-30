@@ -1,0 +1,75 @@
+name: Content tip drafts
+
+on:
+  schedule:
+    - cron: "0 8,14 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate and show payloads without submitting drafts"
+        type: boolean
+        required: true
+        default: true
+      competitions:
+        description: "Comma-separated enabled competition keys or names (blank = all enabled)"
+        type: string
+        required: false
+        default: ""
+      max_drafts:
+        description: "Maximum tip drafts (0–5)"
+        type: number
+        required: false
+        default: 5
+
+concurrency:
+  group: content-tip-drafts
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    name: Research and submit tip drafts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KIND: tip
+      CONTENT_NEWS_FEEDS_ENABLED: "false"
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      COMPETITIONS: ${{ inputs.competitions || '' }}
+      MAX_DRAFTS: ${{ github.event_name == 'workflow_dispatch' && inputs.max_drafts == 0 && '0' || inputs.max_drafts || '5' }}
+      WORK_DIR: ${{ runner.temp }}/content-tip-drafts
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install Copilot CLI
+        run: npm install --global @github/copilot
+      - name: Collect contract-cleared provider evidence
+        env:
+          API_FOOTBALL_API_KEY: ${{ secrets.API_FOOTBALL_API_KEY }}
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          SPORTS_ODDS_REGIONS: ${{ vars.SPORTS_ODDS_REGIONS }}
+          API_FOOTBALL_LICENSE_APPROVED: ${{ vars.API_FOOTBALL_LICENSE_APPROVED }}
+          THE_ODDS_API_LICENSE_APPROVED: ${{ vars.THE_ODDS_API_LICENSE_APPROVED }}
+        run: node --experimental-strip-types scripts/content-automation/cli.mjs collect --competitions "$COMPETITIONS" --out "$WORK_DIR/evidence.json"
+      - name: Draft with Copilot CLI (read-only evidence)
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: node --experimental-strip-types scripts/content-automation/cli.mjs draft --kind tip --evidence "$WORK_DIR/evidence.json" --out "$WORK_DIR/raw.json" --max "$MAX_DRAFTS"
+      - name: Validate drafts deterministically
+        run: node --experimental-strip-types scripts/content-automation/cli.mjs validate --kind tip --evidence "$WORK_DIR/evidence.json" --input "$WORK_DIR/raw.json" --out "$WORK_DIR/validated.json" --max "$MAX_DRAFTS"
+      - name: Submit draft-only API payloads
+        id: submit
+        if: success() && env.DRY_RUN == 'false'
+        env:
+          AUTOMATION_INGEST_TOKEN: ${{ secrets.AUTOMATION_INGEST_TOKEN }}
+          OVERLAY_API_URL: ${{ secrets.OVERLAY_API_URL }}
+        run: node --experimental-strip-types scripts/content-automation/cli.mjs submit --kind tip --input "$WORK_DIR/validated.json"
+      - name: Write run summary
+        if: always()
+        env:
+          SUBMISSION_OUTCOME: ${{ steps.submit.outcome }}
+        run: node --experimental-strip-types scripts/content-automation/cli.mjs summary --kind tip --input "$WORK_DIR/validated.json" --dry_run "$DRY_RUN"

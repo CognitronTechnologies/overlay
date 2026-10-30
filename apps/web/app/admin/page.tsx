@@ -60,6 +60,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [role, setRole] = useState<Role | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [pendingEditorialCount, setPendingEditorialCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -81,6 +82,16 @@ export default function AdminPage() {
         return;
       }
       setRole(profile.role);
+      if (profile.role === 'admin' && roleHasPermission(profile.role, 'content:moderate')) {
+        void authFetch('/api/admin/editorial?status=pending&page=1&pageSize=1')
+          .then(async (queueRes) => {
+            if (queueRes.ok) {
+              const queue = await queueRes.json() as { total?: number };
+              setPendingEditorialCount(queue.total ?? 0);
+            }
+          })
+          .catch(() => undefined);
+      }
       const res = await authFetch('/api/admin/dashboard');
       if (!res.ok) {
         setError('Failed to load metrics.');
@@ -235,6 +246,14 @@ export default function AdminPage() {
             },
             { href: '/admin/audit-log', label: 'Audit log', perm: 'audit:read' },
             {
+              href: '/admin/editorial',
+              label: pendingEditorialCount === null
+                ? 'Editorial queue'
+                : `Editorial queue (${pendingEditorialCount} pending)`,
+              perm: 'content:moderate',
+              adminOnly: true,
+            },
+            {
               href: '/admin/blog',
               label: 'Blog authoring',
               perm: 'content:moderate',
@@ -251,7 +270,7 @@ export default function AdminPage() {
             },
           ] as const
         )
-          .filter((item) => role && roleHasPermission(role, item.perm))
+          .filter((item) => role && roleHasPermission(role, item.perm) && (!('adminOnly' in item) || !item.adminOnly || role === 'admin'))
           .map((item) => (
             <Link
               key={item.href}

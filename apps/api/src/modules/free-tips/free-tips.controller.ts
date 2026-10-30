@@ -12,6 +12,8 @@ import {
 import { FreeTipsService } from './free-tips.service';
 import { CreateFreeTipDto } from './dto/create-free-tip.dto';
 import { UpdateFreeTipDto } from './dto/update-free-tip.dto';
+import { CurrentUser } from '../../common/current-user.decorator';
+import type { AuthUser } from '../../common/crypto';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { PermissionsGuard, Permissions } from '../../common/roles.guard';
 
@@ -48,8 +50,8 @@ export class FreeTipsController {
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('content:moderate')
-  create(@Body() dto: CreateFreeTipDto) {
-    return this.freeTips.create(dto);
+  create(@Body() dto: CreateFreeTipDto, @CurrentUser() actor: AuthUser) {
+    return this.freeTips.create(dto, actor);
   }
 
   @Patch(':id')

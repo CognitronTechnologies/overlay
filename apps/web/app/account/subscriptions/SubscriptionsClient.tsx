@@ -22,7 +22,8 @@ import {
 import { EmptyState } from '../../EmptyState';
 import Icon from '../../Icon';
 import BackLink from '../../BackLink';
-import { getBillingPortalAvailable } from '../../../lib/api';
+import { FREE_ACCESS_MODE, getBillingPortalAvailable } from '../../../lib/api';
+import FreeLaunchNotice from '../../FreeLaunchNotice';
 
 const MUTED = 'var(--muted)';
 
@@ -49,6 +50,7 @@ export default function SubscriptionsClient() {
   const [feedbackBusy, setFeedbackBusy] = useState(false);
 
   useEffect(() => {
+    if (FREE_ACCESS_MODE) return;
     (async () => {
       const profile = await getProfile();
       if (!profile) {
@@ -141,6 +143,8 @@ export default function SubscriptionsClient() {
 
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+      {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
+      {!FREE_ACCESS_MODE ? <>
       <p>
         <BackLink href="/account">{t('back')}</BackLink>
       </p>
@@ -377,6 +381,7 @@ export default function SubscriptionsClient() {
       {error ? (
         <p style={{ color: 'var(--danger)', marginTop: '0.75rem' }}>{error}</p>
       ) : null}
+      </> : null}
     </main>
   );
 }

@@ -14,6 +14,7 @@ import {
 import { currencyForCountry, formatMinorUnits } from '@overlay/shared';
 import { webhookEventsTotal } from '../../common/metrics';
 import { CurrencyService } from '../../integrations/fx/currency.service';
+import { assertPaymentsEnabled, isFreeAccessMode } from '../../common/free-access';
 import type { PaymentProviderRegistry } from '../../integrations/payments/payment-provider.registry';
 import type {
   PaymentMethodId,
@@ -39,6 +40,7 @@ export class SubscriptionsService {
 
   /** Payment methods enabled across all wired providers (for the UI picker). */
   listPaymentMethods(): { methods: PaymentMethodId[]; billingPortal: boolean } {
+    if (isFreeAccessMode()) return { methods: [], billingPortal: false };
     return {
       methods: this.registry.methods(),
       // Whether the subscriber can manage/cancel via a hosted billing portal
@@ -93,6 +95,7 @@ export class SubscriptionsService {
     country?: string,
     currency?: string,
   ) {
+    assertPaymentsEnabled();
     // A tipster can't subscribe to their own account.
     if (userId === tipsterId) {
       throw new BadRequestException(
@@ -241,6 +244,7 @@ export class SubscriptionsService {
    * be used to grant a paid entitlement without real money.
    */
   async confirmDev(userId: string, tipsterId: string) {
+    assertPaymentsEnabled();
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException('Dev confirmation is disabled in production');
     }
@@ -339,6 +343,7 @@ export class SubscriptionsService {
    * subscriptions. `returnUrl` is where the provider sends them back afterwards.
    */
   createBillingPortal(userId: string, returnUrl: string) {
+    assertPaymentsEnabled();
     return this.registry.default.createBillingPortalSession({
       userId,
       returnUrl,

@@ -11,6 +11,8 @@
 // for the planning session so the assertion deterministically proves the intended
 // index can serve each query regardless of the tiny test dataset — if the index
 // were missing, Postgres would fall back to a Seq Scan and the assertion fails.
+// The multi-tipster feed also accepts the existing (tipsterId, status) index:
+// either index filters by tipster and requires a global sort across tipsters.
 //
 // DATABASE_URL is honored; it defaults to the local compose connection so the
 // test works out of the box in dev (run `npm run db:up` first).
@@ -132,11 +134,13 @@ test('profile track record uses the (tipsterId, lockedAt) index, no seq scan or 
   assert.doesNotMatch(plan, /Sort/, plan);
 });
 
-test('subscriber feed (tipsterId IN …) is served by the (tipsterId, lockedAt) index, no seq scan', async () => {
+test('subscriber feed uses a tipster-leading index, no seq scan', async () => {
   const plan = await explain(
     `SELECT * FROM "Pick" WHERE "tipsterId" IN ('${tipsterA}', '${tipsterB}') ORDER BY "lockedAt" DESC LIMIT 100`,
   );
-  assert.match(plan, /Pick_tipsterId_lockedAt_idx/, plan);
+  // Multiple tipsters require a global sort either way. PostgreSQL may choose
+  // the equally valid (tipsterId, status) index based on table statistics.
+  assert.match(plan, /Pick_tipsterId_(?:lockedAt|status)_idx/, plan);
   assert.doesNotMatch(plan, /Seq Scan/, plan);
 });
 

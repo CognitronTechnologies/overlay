@@ -139,3 +139,13 @@ test('isLivePicksGated: only verified AND gating-enabled gates live picks', () =
   // Verified AND gating enabled → gated.
   assert.equal(gate('verified', true), true);
 });
+
+test('isLivePicksGated: free access mode opens every entitlement gate', () => {
+  const verifiedAndGated = {
+    graduationStatus: 'verified' as const,
+    subscriptionGatingEnabled: true,
+  };
+  assert.equal(isLivePicksGated(verifiedAndGated), true);
+  assert.equal(isLivePicksGated(verifiedAndGated, true), false);
+  assert.equal(isLivePicksGated(verifiedAndGated, false), true);
+});

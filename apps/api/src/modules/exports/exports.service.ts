@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { isFreeAccessMode } from '../../common/free-access';
 import {
   loadUserSubscriptions,
   loadUserFeed,
@@ -43,7 +44,7 @@ export class ExportsService {
     userId: string,
     format: ExportFormat,
   ): Promise<ExportResult> {
-    const rows = await loadUserFeed(this.prisma, userId);
+    const rows = await loadUserFeed(this.prisma, userId, isFreeAccessMode());
     const headers = [
       'Tipster',
       'Market',

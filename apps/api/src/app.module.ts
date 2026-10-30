@@ -32,6 +32,7 @@ import { SearchModule } from './modules/search/search.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { UsersModule } from './modules/users/users.module';
 import { SettlementModule } from './workers/settlement.module';
+import { AutomationModule } from './modules/automation/automation.module';
 
 /**
  * Modular monolith root. Each feature is a Nest module with a clear boundary
@@ -68,6 +69,7 @@ import { SettlementModule } from './workers/settlement.module';
     PrivacyModule,
     UsersModule,
     SettlementModule,
+    AutomationModule,
   ],
   providers: [
     PrismaService,

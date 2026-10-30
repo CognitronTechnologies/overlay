@@ -13,7 +13,9 @@ import {
   API_URL,
   type MarketplaceParams,
   type MarketplaceSort,
+  FREE_ACCESS_MODE,
 } from '../../lib/api';
+import FreeLaunchNotice from '../FreeLaunchNotice';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('tipsters');
@@ -85,7 +87,7 @@ export default async function TipstersPage({
   const resolvedParams = await searchParams;
   const params: MarketplaceParams = {
     sport: resolvedParams.sport,
-    maxPrice: resolvedParams.maxPrice,
+    maxPrice: FREE_ACCESS_MODE ? undefined : resolvedParams.maxPrice,
     minSample: resolvedParams.minSample,
     sort: resolvedParams.sort,
     page: resolvedParams.page,
@@ -106,7 +108,7 @@ export default async function TipstersPage({
   const chipHref = (sport?: string) => {
     const qs = new URLSearchParams();
     if (sport) qs.set('sport', sport);
-    if (params.maxPrice) qs.set('maxPrice', params.maxPrice);
+    if (!FREE_ACCESS_MODE && params.maxPrice) qs.set('maxPrice', params.maxPrice);
     if (params.minSample) qs.set('minSample', params.minSample);
     if (params.sort) qs.set('sort', params.sort);
     const s = qs.toString();
@@ -119,6 +121,7 @@ export default async function TipstersPage({
       <p style={{ color: 'var(--muted)', marginTop: 0, maxWidth: 640 }}>
         {t('subtitle')}
       </p>
+      {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
 
       <div className="tipsters-layout">
         <div>
@@ -144,17 +147,19 @@ export default async function TipstersPage({
           >
             <input type="hidden" name="sport" value={resolvedParams.sport ?? ''} />
 
-            <label style={labelStyle}>
-              {t('maxPrice')}
-              <input
-                type="number"
-                name="maxPrice"
-                min={0}
-                placeholder={t('priceAny')}
-                defaultValue={resolvedParams.maxPrice ?? ''}
-                style={{ ...inputStyle, width: 120 }}
-              />
-            </label>
+            {!FREE_ACCESS_MODE ? (
+              <label style={labelStyle}>
+                {t('maxPrice')}
+                <input
+                  type="number"
+                  name="maxPrice"
+                  min={0}
+                  placeholder={t('priceAny')}
+                  defaultValue={resolvedParams.maxPrice ?? ''}
+                  style={{ ...inputStyle, width: 120 }}
+                />
+              </label>
+            ) : null}
 
             <label style={labelStyle}>
               {t('minSample')}
@@ -204,7 +209,7 @@ export default async function TipstersPage({
                     <th>{t('thClv')}</th>
                     <th>{t('thWin')}</th>
                     <th>{t('thPicks')}</th>
-                    <th>{t('thPrice')}</th>
+                    {!FREE_ACCESS_MODE ? <th>{t('thPrice')}</th> : null}
                     <th></th>
                     <th></th>
                   </tr>
@@ -233,11 +238,13 @@ export default async function TipstersPage({
                       <td>{(r.clvAvg * 100).toFixed(2)}%</td>
                       <td>{(r.winRate * 100).toFixed(0)}%</td>
                       <td>{r.sampleSize}</td>
-                      <td>
-                        {r.subscriptionPriceCents > 0
-                          ? `$${(r.subscriptionPriceCents / 100).toFixed(2)}`
-                          : t('free')}
-                      </td>
+                      {!FREE_ACCESS_MODE ? (
+                        <td>
+                          {r.subscriptionPriceCents > 0
+                            ? `$${(r.subscriptionPriceCents / 100).toFixed(2)}`
+                            : t('free')}
+                        </td>
+                      ) : null}
                       <td>
                         <CompareToggle
                           id={r.tipsterId}
@@ -253,7 +260,7 @@ export default async function TipstersPage({
                             justifyContent: 'flex-end',
                           }}
                         >
-                          {r.subscriptionPriceCents > 0 ? (
+                          {!FREE_ACCESS_MODE && r.subscriptionPriceCents > 0 ? (
                             <Link
                               href={`/tipsters/${r.tipsterId}#subscribe`}
                               className="btn btn--primary btn--sm"

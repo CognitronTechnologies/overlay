@@ -6,7 +6,7 @@ import Avatar from '../../Avatar';
 import Flag from '../../Flag';
 import Icon from '../../Icon';
 import BackLink from '../../BackLink';
-import { compareTipsters, type TipsterProfile } from '../../../lib/api';
+import { FREE_ACCESS_MODE, compareTipsters, type TipsterProfile } from '../../../lib/api';
 
 export const revalidate = 60;
 
@@ -229,6 +229,10 @@ export default async function CompareTipstersPage({
     },
   ];
 
+  const visibleRows = FREE_ACCESS_MODE
+    ? rows.filter((row) => row.key !== 'price')
+    : rows;
+
   const cell: React.CSSProperties = {
     padding: '0.7rem 0.9rem',
     borderTop: '1px solid var(--border)',
@@ -303,7 +307,7 @@ export default async function CompareTipstersPage({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {visibleRows.map((row) => {
               const values = tipsters.map(row.value);
               const best = bestIndices(values, row.higherBetter);
               return (
