@@ -1,0 +1,118 @@
+{
+  "leagues": {
+    "response": [
+      {
+        "league": {
+          "id": 39,
+          "name": "Premier League"
+        }
+      }
+    ]
+  },
+  "fixtures": {
+    "response": [
+      {
+        "fixture": {
+          "id": 99001,
+          "date": "2026-10-30T20:00:00Z",
+          "status": {
+            "short": "NS"
+          },
+          "venue": {
+            "name": "Emirates Stadium",
+            "city": "London"
+          }
+        },
+        "league": {
+          "name": "Premier League",
+          "id": 39,
+          "season": 2026,
+          "round": "Regular Season - 10"
+        },
+        "teams": {
+          "home": {
+            "name": "Arsenal",
+            "id": 10
+          },
+          "away": {
+            "name": "Chelsea",
+            "id": 20
+          }
+        },
+        "goals": {
+          "home": null,
+          "away": null
+        }
+      }
+    ]
+  },
+  "sports": [
+    {
+      "key": "soccer_epl",
+      "title": "Premier League",
+      "active": true
+    }
+  ],
+  "soccer_epl": [
+    {
+      "id": "odds-99001",
+      "sport_key": "soccer_epl",
+      "sport_title": "Premier League",
+      "home_team": "Arsenal",
+      "away_team": "Chelsea",
+      "commence_time": "2026-10-30T20:00:00Z",
+      "bookmakers": [
+        {
+          "key": "book-a",
+          "title": "Bookmaker A",
+          "last_update": "2026-10-30T10:00:00Z",
+          "markets": [
+            {
+              "key": "h2h",
+              "last_update": "2026-10-30T10:00:00Z",
+              "outcomes": [
+                {
+                  "name": "Arsenal",
+                  "price": 1.95
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.4
+                },
+                {
+                  "name": "Chelsea",
+                  "price": 4.1
+                }
+              ]
+            },
+            {
+              "key": "totals",
+              "last_update": "2026-10-30T10:00:00Z",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "point": 2.5,
+                  "price": 1.9
+                },
+                {
+                  "name": "Under",
+                  "point": 2.5,
+                  "price": 1.95
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "injuries": {
+    "response": []
+  },
+  "robots": "User-agent: *\nAllow: /",
+  "feeds": {
+    "feeds.bbci.co.uk": "<rss version=\"2.0\"><channel><title>Football</title><item><title>Premier League announces revised fixture schedule</title><link>https://feeds.bbci.co.uk/sport/football/fixture-update</link><description>The Premier League has confirmed the next fixture schedule. Clubs will publish further updates before the next round.</description><pubDate>__PUBLISHED_AT__</pubDate><content:encoded>FULL ARTICLE BODY MUST NEVER BE STORED</content:encoded></item></channel></rss>",
+    "www.skysports.com": "<rss version=\"2.0\"><channel><title>Football</title><item><title>Premier League announces revised fixture schedule</title><link>https://www.skysports.com/sport/football/fixture-update</link><description>The Premier League has confirmed the next fixture schedule. Clubs will publish further updates before the next round.</description><pubDate>__PUBLISHED_AT__</pubDate><content:encoded>FULL ARTICLE BODY MUST NEVER BE STORED</content:encoded></item></channel></rss>",
+    "www.theguardian.com": "<rss version=\"2.0\"><channel><title>Football</title><item><title>Premier League announces revised fixture schedule</title><link>https://www.theguardian.com/sport/football/fixture-update</link><description>The Premier League has confirmed the next fixture schedule. Clubs will publish further updates before the next round.</description><pubDate>__PUBLISHED_AT__</pubDate><content:encoded>FULL ARTICLE BODY MUST NEVER BE STORED</content:encoded></item></channel></rss>"
+  }
+}

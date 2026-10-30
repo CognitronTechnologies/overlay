@@ -26,6 +26,8 @@ import { roleHasPermission } from '@overlay/shared/rbac';
 import { validateNewPassword } from '../../lib/account';
 import { formStyles } from '../formStyles';
 import AvatarPicker from '../AvatarPicker';
+import { FREE_ACCESS_MODE } from '../../lib/api';
+import FreeLaunchNotice from '../FreeLaunchNotice';
 
 interface Subscription {
   id: string;
@@ -85,10 +87,12 @@ export default function AccountPage() {
       setProfile(p);
       setUsername(p.username ?? '');
       setAvatarUrl(p.avatarUrl);
-      authFetch('/api/subscriptions/me')
-        .then((r) => (r.ok ? r.json() : []))
-        .then((data) => setSubs(data as Subscription[]))
-        .catch(() => setSubs([]));
+      if (!FREE_ACCESS_MODE) {
+        authFetch('/api/subscriptions/me')
+          .then((r) => (r.ok ? r.json() : []))
+          .then((data) => setSubs(data as Subscription[]))
+          .catch(() => setSubs([]));
+      }
       getNotificationPreferences().then(setPrefs);
     })();
   }, [router]);
@@ -209,6 +213,7 @@ export default function AccountPage() {
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>
         {t('subtitle')}
       </p>
+      {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
 
       {/* Key actions up top so they're reachable without scrolling. */}
       <div
@@ -224,12 +229,14 @@ export default function AccountPage() {
             <Link href="/feed" className="btn btn--primary btn--sm">
               {t('myFeed')}
             </Link>
-            <Link
-              href="/account/subscriptions"
-              className="btn btn--secondary btn--sm"
-            >
-              {t('mySubscriptions')}
-            </Link>
+            {!FREE_ACCESS_MODE ? (
+              <Link
+                href="/account/subscriptions"
+                className="btn btn--secondary btn--sm"
+              >
+                {t('mySubscriptions')}
+              </Link>
+            ) : null}
           </>
         ) : null}
         {profile.role === 'tipster' ? (
@@ -237,12 +244,14 @@ export default function AccountPage() {
             <Link href="/dashboard" className="btn btn--primary btn--sm">
               {t('tipsterDashboard')}
             </Link>
-            <Link
-              href="/account/subscriptions"
-              className="btn btn--secondary btn--sm"
-            >
-              {t('mySubscriptions')}
-            </Link>
+            {!FREE_ACCESS_MODE ? (
+              <Link
+                href="/account/subscriptions"
+                className="btn btn--secondary btn--sm"
+              >
+                {t('mySubscriptions')}
+              </Link>
+            ) : null}
           </>
         ) : null}
         {roleHasPermission(profile.role, 'audit:read') ? (
@@ -429,7 +438,7 @@ export default function AccountPage() {
         </p>
       ) : null}
 
-      {profile.role !== 'tipster' ? (
+      {!FREE_ACCESS_MODE && profile.role !== 'tipster' ? (
         <>
           <h2 style={{ marginTop: '2rem' }}>{t('yourSubscriptions')}</h2>
       <p>

@@ -45,6 +45,9 @@ services:
       - fromGroup: overlay-shared
       - key: NODE_ENV
         value: production
+      # Owner-authorized free launch: public picks, no checkout or payouts.
+      - key: FREE_ACCESS_MODE
+        value: "true"
       # Free-tier: run settlement inside the API (interval mode, no Redis) since
       # a dedicated Render worker needs a paid plan. Switch off + enable the
       # overlay-worker service below when on a paid plan (see OB-143).
@@ -111,6 +114,10 @@ services:
         sync: false
       # Set to your Vercel domain(s) after the web app is deployed.
       - key: CORS_ORIGINS
+        sync: false
+      # Dedicated bearer credential for draft-only scheduled content ingestion.
+      # Leave unset to keep automation ingestion disabled.
+      - key: AUTOMATION_INGEST_TOKEN
         sync: false
 
   # --- Settlement worker (PAID plans only) -----------------------------------

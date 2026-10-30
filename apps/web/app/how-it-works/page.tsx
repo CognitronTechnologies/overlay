@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'How it works · Overlay Picks',
   description:
-    'How Overlay Picks keeps tipster records honest: every pick is hashed and locked before kickoff, settled automatically from the result, and ranked by verified yield and closing line value.',
+    'How Overlay Picks keeps tipster records honest: picks are free and public, then hashed and locked before kickoff so their record cannot be changed after the event starts.',
 };
 
 const STEPS: { n: string; title: string; body: string }[] = [
@@ -16,7 +16,7 @@ const STEPS: { n: string; title: string; body: string }[] = [
   {
     n: '02',
     title: 'It’s locked before kickoff',
-    body: 'The pick is hashed and timestamped the moment it’s submitted. It can never be edited, deleted or backdated — that’s the whole point.',
+    body: 'The pick is hashed and timestamped when submitted, then stays locked before kickoff so its record cannot be changed after the event starts.',
   },
   {
     n: '03',
@@ -26,7 +26,7 @@ const STEPS: { n: string; title: string; body: string }[] = [
   {
     n: '04',
     title: 'They’re ranked by real edge',
-    body: 'Verified yield and CLV — not follower counts or screenshots — decide where a tipster sits on the leaderboard.',
+    body: 'Verified yield and CLV — not follower counts or screenshots — contribute to how a tipster appears on the leaderboard.',
   },
 ];
 
@@ -69,7 +69,7 @@ export default function HowItWorksPage() {
         </h2>
         <p style={{ color: 'var(--muted)', lineHeight: 1.6, margin: 0 }}>
           A high strike rate is easy to cherry-pick over a short run. Overlay
-          Bets judges tipsters on the numbers that survive variance — verified
+          Picks compares tipsters on the numbers that survive variance — verified
           ROI and yield, closing line value, sample size and drawdowns —
           calculated only from settled, locked picks, never from screenshots or
           self-reported results.
@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
 
       <section style={{ marginTop: '2.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
         <p style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
-          Want the detail on verification, fees and payouts? See the{' '}
+          All picks are free and public. Browse the{' '}
           <Link href="/support" style={{ color: 'var(--accent)' }}>
             Support Center
           </Link>

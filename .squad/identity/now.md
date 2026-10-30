@@ -1,9 +1,9 @@
----
-updated_at: 2026-07-17T20:47:36.241Z
-focus_area: Initial setup
+﻿---
+updated_at: 2026-10-30T11:40:00+03:00
+focus_area: Content automation (human-reviewed drafts)
 active_issues: []
 ---
 
 # What We're Focused On
 
-Getting started. Updated by coordinator at session start.
+Content automation (human-reviewed drafts). Updated by coordinator at session handoff.

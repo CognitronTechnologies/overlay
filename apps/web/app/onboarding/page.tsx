@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { authFetch, getAccessToken, getProfile } from '../../lib/auth';
-import { API_URL } from '../../lib/api';
+import { API_URL, FREE_ACCESS_MODE } from '../../lib/api';
 import type {
   EditableTipsterProfile,
   OnboardingStatus,
@@ -58,14 +58,9 @@ function splitPhone(value: string): { dial: string; number: string } {
   return { dial: '', number: value };
 }
 
-const STEP_ORDER: OnboardingStepKey[] = [
-  'profile',
-  'sports',
-  'bio',
-  'pricing',
-  'stripe',
-  'verification',
-];
+const STEP_ORDER: OnboardingStepKey[] = FREE_ACCESS_MODE
+  ? ['profile', 'sports', 'bio', 'verification']
+  : ['profile', 'sports', 'bio', 'pricing', 'stripe', 'verification'];
 
 const CONTACT_METHODS: ContactMethod[] = ['phone', 'telegram', 'whatsapp'];
 

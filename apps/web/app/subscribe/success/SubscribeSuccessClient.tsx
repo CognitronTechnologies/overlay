@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { authFetch } from '../../../lib/auth';
 import Icon from '../../Icon';
+import FreeLaunchNotice from '../../FreeLaunchNotice';
+import { FREE_ACCESS_MODE } from '../../../lib/api';
 
 /**
  * Post-checkout return screen. With a real payment provider the subscription is
@@ -20,6 +22,7 @@ export default function SubscribeSuccessClient() {
   const [state, setState] = useState<'working' | 'done' | 'pending'>('working');
 
   useEffect(() => {
+    if (FREE_ACCESS_MODE) return;
     let tipsterId = params.get('t');
 
     // Legacy ref fallback: mock_sub_<userId>_<tipsterId>.
@@ -47,6 +50,15 @@ export default function SubscribeSuccessClient() {
       .then((r) => setState(r.ok ? 'done' : 'pending'))
       .catch(() => setState('pending'));
   }, [params]);
+
+  if (FREE_ACCESS_MODE) {
+    return (
+      <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+        <FreeLaunchNotice />
+        <Link href="/tipsters" style={{ color: 'var(--accent)' }}>Browse tipsters</Link>
+      </main>
+    );
+  }
 
   return (
     <>

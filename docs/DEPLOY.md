@@ -46,6 +46,15 @@ For an existing Render service, keep its Dockerfile path set to the root
 
 The API is served over public HTTPS at `https://<service>.onrender.com`.
 
+### Vercel web environment
+
+For the web project (root directory `apps/web`), set `NEXT_PUBLIC_SITE_URL` to
+`https://overlaypicks.com` in every deployment environment. This controls the
+metadata base, canonical URLs, robots host, and sitemap URLs; the source default
+is the production domain. During the free launch, also set
+`NEXT_PUBLIC_FREE_ACCESS_MODE=true` on Vercel and `FREE_ACCESS_MODE=true` on
+the API service so the web UI and authoritative API stay aligned.
+
 ### Worker modes
 
 - **Free tier (default):** the API runs settlement embedded

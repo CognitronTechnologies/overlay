@@ -9,3 +9,6 @@
 ## Learnings
 
 <!-- Append learnings below -->
+
+- 2026-10-30: Content automation needs explicit source-rights clearance as well as editorial evidence gates; public availability does not imply permission, and zero publishable candidates is a valid result.
+- 2026-10-30: Copy-edit house style should clarify terminology and structure without authorizing fact or source changes. Free-launch scope must preserve pick integrity while removing subscription entitlement and demo-data claims; legal review remains necessary.

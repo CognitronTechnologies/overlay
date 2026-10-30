@@ -8,11 +8,10 @@ import CookieConsent from './CookieConsent';
 import UsernameGate from './UsernameGate';
 import WhatsAppFloat from './WhatsAppFloat';
 import FollowProvider from './FollowProvider';
+import { SITE_URL } from '../lib/api';
 
 export const metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
-  ),
+  metadataBase: new URL(SITE_URL),
   title: 'Overlay Picks — Verified tipster platform',
   description:
     'Find the overlay. Beat the close. Tipsters ranked by verified ROI and closing line value — picks locked before kickoff.',

@@ -12,7 +12,8 @@ import {
   TIPSTER_PROFILE_LIMITS,
 } from '@overlay/shared/tipster-profile';
 import { authFetch, getProfile } from '../../../lib/auth';
-import { getTipster } from '../../../lib/api';
+import { FREE_ACCESS_MODE, getTipster } from '../../../lib/api';
+import FreeLaunchNotice from '../../FreeLaunchNotice';
 import { formStyles } from '../../formStyles';
 
 const MUTED = 'var(--muted)';
@@ -96,10 +97,14 @@ export default function ProfileEditorPage() {
         <BackLink href="/dashboard">Dashboard</BackLink>
       </p>
       <h1>Edit your profile</h1>
-      <p style={{ color: MUTED }}>
-        Your bio, sports and subscription price appear on your public tipster
-        page.
-      </p>
+      {FREE_ACCESS_MODE ? (
+        <FreeLaunchNotice />
+      ) : (
+        <p style={{ color: MUTED }}>
+          Your bio, sports and subscription price appear on your public tipster
+          page.
+        </p>
+      )}
 
       {loading ? (
         <p style={{ color: MUTED }}>Loading…</p>
@@ -131,18 +136,20 @@ export default function ProfileEditorPage() {
             />
           </label>
 
-          <label style={{ color: MUTED, fontSize: '0.9rem' }}>
-            Monthly subscription price (in your currency units)
-            <input
-              style={{ ...formStyles.input, marginTop: '0.35rem' }}
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="9.99"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-            />
-          </label>
+          {!FREE_ACCESS_MODE ? (
+            <label style={{ color: MUTED, fontSize: '0.9rem' }}>
+              Monthly subscription price (in your currency units)
+              <input
+                style={{ ...formStyles.input, marginTop: '0.35rem' }}
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="9.99"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+              />
+            </label>
+          ) : null}
 
           {errors.length > 0 ? (
             <ul style={{ ...formStyles.error, paddingLeft: '1.2rem' }}>

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  UnauthorizedException,
   Get,
   Param,
   Post,
@@ -11,7 +12,8 @@ import {
 import { PicksService } from './picks.service';
 import { CreatePickDto } from './dto/create-pick.dto';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard } from '../../common/jwt-auth.guard';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '../../common/jwt-auth.guard';
+import { isFreeAccessMode } from '../../common/free-access';
 import { RolesGuard, Roles } from '../../common/roles.guard';
 import { CurrentUser } from '../../common/current-user.decorator';
 import type { AuthUser } from '../../common/crypto';
@@ -65,17 +67,26 @@ export class PicksController {
     return this.picks.feedForSubscriber(user.userId);
   }
 
+  /** Public catalog feed enabled only while the API free-access flag is on. */
+  @Get('feed')
+  publicFeed() {
+    return this.picks.publicFeed();
+  }
+
   @Get('tipster/:tipsterId')
   listByTipster(@Param('tipsterId') tipsterId: string) {
     return this.picks.listByTipster(tipsterId);
   }
 
   @Get('tipster/:tipsterId/live')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   listLive(
     @Param('tipsterId') tipsterId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.picks.listLiveForSubscriber(user.userId, tipsterId);
+    if (!isFreeAccessMode() && !user) {
+      throw new UnauthorizedException('Missing bearer token');
+    }
+    return this.picks.listLiveForSubscriber(user?.userId, tipsterId);
   }
 }

@@ -17,6 +17,7 @@ import { evaluateReadiness } from './health.checks';
 export class HealthController implements OnModuleDestroy {
   private readonly startedAt = Date.now();
   private redis?: IORedis;
+  private redisConnecting?: Promise<void>;
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -51,7 +52,7 @@ export class HealthController implements OnModuleDestroy {
    * `enableOfflineQueue: false` mean an unreachable Redis rejects promptly
    * instead of buffering, and the bounded retries/timeout keep the probe fast.
    */
-  private pingRedis(): Promise<string> {
+  private async pingRedis(): Promise<string> {
     if (!this.redis) {
       const url = process.env.REDIS_URL ?? 'redis://localhost:6379';
       this.redis = new IORedis(url, {
@@ -62,7 +63,12 @@ export class HealthController implements OnModuleDestroy {
       });
       // Swallow async connection errors; the probe surfaces them via `ping()`.
       this.redis.on('error', () => undefined);
+      this.redisConnecting = this.redis.connect().finally(() => {
+        this.redisConnecting = undefined;
+      });
     }
+    // Concurrent first probes share the initial connection instead of queuing commands.
+    if (this.redisConnecting) await this.redisConnecting;
     return this.redis.ping();
   }
 }

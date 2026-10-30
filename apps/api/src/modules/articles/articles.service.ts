@@ -24,6 +24,7 @@ import {
   canManageArticle,
   isArticleModerator,
   resolveArticleStatus,
+  publishedArticleFilter,
   type AuthoringActor,
 } from './authoring';
 import { overlayTranslations, needsTranslation } from './articles.i18n';
@@ -55,7 +56,7 @@ export class ArticlesService {
       // order/metadata; translations only overlay display text.
       const base = await this.prisma.article.findMany({
         where: {
-          status: 'published',
+          ...publishedArticleFilter(),
           locale: 'en',
           ...(opts.tag ? { tags: { has: opts.tag } } : {}),
           ...(opts.category ? { category: opts.category } : {}),
@@ -77,7 +78,7 @@ export class ArticlesService {
       if (!needsTranslation(locale) || base.length === 0) return base;
       const translations = await this.prisma.article.findMany({
         where: {
-          status: 'published',
+          ...publishedArticleFilter(),
           locale,
           slug: { in: base.map((a) => a.slug) },
         },
@@ -91,15 +92,15 @@ export class ArticlesService {
   async getPublishedBySlug(slug: string, locale = 'en') {
     if (needsTranslation(locale)) {
       const localized = await this.prisma.article.findFirst({
-        where: { slug, locale, status: 'published' },
+        where: { slug, locale, ...publishedArticleFilter() },
       });
-      if (localized) return localized;
+      if (localized) return stripPrivateArticleFields(localized);
     }
     const article = await this.prisma.article.findFirst({
-      where: { slug, locale: 'en', status: 'published' },
+      where: { slug, locale: 'en', ...publishedArticleFilter() },
     });
     if (!article) throw new NotFoundException('Article not found');
-    return article;
+    return stripPrivateArticleFields(article);
   }
 
   /** All distinct tags across published articles (for topic nav / sitemap). */
@@ -108,7 +109,7 @@ export class ArticlesService {
     // write invalidates the whole namespace, so tags stay in sync.
     return readThroughCache(this.listCache, 'tags', async () => {
       const rows = await this.prisma.article.findMany({
-        where: { status: 'published', locale: 'en' },
+        where: { ...publishedArticleFilter(), locale: 'en' },
         select: { tags: true },
       });
       const set = new Set<string>();
@@ -120,7 +121,7 @@ export class ArticlesService {
   /** Slugs + timestamps for sitemap generation. */
   listPublishedSlugs() {
     return this.prisma.article.findMany({
-      where: { status: 'published', locale: 'en' },
+      where: { ...publishedArticleFilter(), locale: 'en' },
       select: { slug: true, updatedAt: true, publishedAt: true },
       orderBy: { publishedAt: 'desc' },
     });
@@ -247,4 +248,29 @@ export class ArticlesService {
     await this.listCache.invalidate();
     return { deleted: true };
   }
+}
+
+
+function stripPrivateArticleFields<T extends {
+  origin?: unknown;
+  sources?: unknown;
+  reviewerWarnings?: unknown;
+  automationRunId?: unknown;
+  dedupeKey?: unknown;
+  reviewedBy?: unknown;
+  reviewedAt?: unknown;
+  rejectionReason?: unknown;
+}>(article: T): Omit<T, 'origin' | 'sources' | 'reviewerWarnings' | 'automationRunId' | 'dedupeKey' | 'reviewedBy' | 'reviewedAt' | 'rejectionReason'> {
+  const {
+    origin: _origin,
+    sources: _sources,
+    reviewerWarnings: _reviewerWarnings,
+    automationRunId: _automationRunId,
+    dedupeKey: _dedupeKey,
+    reviewedBy: _reviewedBy,
+    reviewedAt: _reviewedAt,
+    rejectionReason: _rejectionReason,
+    ...publicArticle
+  } = article;
+  return publicArticle;
 }

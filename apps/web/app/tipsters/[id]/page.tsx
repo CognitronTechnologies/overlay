@@ -12,6 +12,8 @@ import BackLink from '../../BackLink';
 import { getTipster, listTipsterIds, tipsterStaticParams, SITE_URL } from '../../../lib/api';
 import type { VerifiedMetrics as VerifiedMetricsData } from '../../../lib/api';
 import TipsterTips from './TipsterTips';
+import { FREE_ACCESS_MODE } from '../../../lib/api';
+import FreeLaunchNotice from '../../FreeLaunchNotice';
 
 export const revalidate = 60;
 
@@ -419,7 +421,7 @@ export default async function TipsterPage({
         }}
       >
         <FollowButton tipsterId={t.tipsterId} />
-        {t.subscriptionPriceCents > 0 ? (
+        {!FREE_ACCESS_MODE && t.subscriptionPriceCents > 0 ? (
           <a
             href="#subscribe"
             className="btn btn--primary"
@@ -431,6 +433,7 @@ export default async function TipsterPage({
           </a>
         ) : null}
       </div>
+      {!FREE_ACCESS_MODE ? (
       <p
         style={{
           color: 'var(--muted)',
@@ -444,6 +447,7 @@ export default async function TipsterPage({
         <strong style={{ color: 'var(--fg)' }}>Subscribe</strong> to unlock their
         premium picks the moment they’re locked, before kickoff.
       </p>
+      ) : null}
       {t.bio ? <p style={{ color: 'var(--fg)' }}>{t.bio}</p> : null}
       {t.sports.length ? (
         <p style={{ color: 'var(--muted)', marginTop: 0 }}>{t.sports.join(' · ')}</p>
@@ -575,7 +579,7 @@ export default async function TipsterPage({
         <VerifiedMetrics metrics={t.verifiedMetrics} />
       ) : null}
 
-      {t.subscriptionPriceCents > 0 ? (
+      {!FREE_ACCESS_MODE && t.subscriptionPriceCents > 0 ? (
         <section
           id="subscribe"
           aria-labelledby="subscribe-heading"
@@ -601,6 +605,8 @@ export default async function TipsterPage({
           />
         </section>
       ) : null}
+
+      {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
 
       <div style={{ margin: '1.5rem 0' }}>
         <TipsterTips

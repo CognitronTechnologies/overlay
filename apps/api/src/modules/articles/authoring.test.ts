@@ -5,6 +5,7 @@ import {
   canManageArticle,
   isArticleModerator,
   resolveArticleStatus,
+  publishedArticleFilter,
 } from './authoring.ts';
 
 const admin = { userId: 'admin-1', role: 'admin' as const };
@@ -79,4 +80,8 @@ test('tipsters may still keep drafts, submit for review, or archive', () => {
   assert.equal(resolveArticleStatus(tipster, 'draft'), 'draft');
   assert.equal(resolveArticleStatus(tipster, 'pending'), 'pending');
   assert.equal(resolveArticleStatus(tipster, 'archived'), 'archived');
+});
+
+test('public article filter exposes published content only', () => {
+  assert.deepEqual(publishedArticleFilter(), { status: 'published' });
 });

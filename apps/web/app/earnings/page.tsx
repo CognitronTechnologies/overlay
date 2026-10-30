@@ -6,6 +6,8 @@ import Link from 'next/link';
 import BackLink from '../BackLink';
 import { useTranslations } from 'next-intl';
 import { authFetch, getProfile } from '../../lib/auth';
+import { FREE_ACCESS_MODE } from '../../lib/api';
+import FreeLaunchNotice from '../FreeLaunchNotice';
 
 interface PayoutBreakdown {
   grossCents: number;
@@ -101,6 +103,7 @@ export default function EarningsPage() {
       <p style={{ color: 'var(--muted)' }}>
         {t('intro')}
       </p>
+      {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : null}
 
       {error ? (
         <p style={{ color: 'var(--danger)' }}>{error}</p>
@@ -171,7 +174,7 @@ export default function EarningsPage() {
         </>
       )}
 
-      <PayoutSettings />
+      {!FREE_ACCESS_MODE ? <PayoutSettings /> : null}
     </main>
   );
 }

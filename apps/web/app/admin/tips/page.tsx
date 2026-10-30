@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { todayIsoDate } from '@overlay/shared/daily-tips';
+import { useTranslations } from 'next-intl';
 import { roleHasPermission } from '@overlay/shared/rbac';
-import { authFetch, getProfile } from '../../../lib/auth';
+import { authFetch, getAccessToken, getProfile } from '../../../lib/auth';
+import { readApiError } from '../../../lib/api-error';
 import {
   discoverEvents,
   getEventDetail,
@@ -19,6 +20,10 @@ import {
 interface ManagedTip {
   id: string;
   date: string;
+  status: string;
+  origin: string;
+  kickoffAt: string | null;
+  expiresAt: string | null;
   sport: string;
   league: string | null;
   match: string;
@@ -26,11 +31,11 @@ interface ManagedTip {
   selection: string;
   odds: number | null;
   analysis: string | null;
+  rationale?: { rationale?: string; counterarguments?: string[] } | null;
 }
 
 interface Draft {
-  id: string | null;
-  date: string;
+  kickoffAt: string;
   sport: string;
   league: string;
   match: string;
@@ -38,15 +43,30 @@ interface Draft {
   selection: string;
   odds: string;
   analysis: string;
+  rationale: string;
+  risks: string;
   sortOrder: string;
+}
+
+type TipFilter = 'all' | 'pending' | 'published' | 'other';
+
+function toLocalDateTime(value: Date | string | null | undefined): string {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+function utcTipDate(value: string): string {
+  const date = new Date(value);
+  return value && Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 10) : '';
 }
 
 const MUTED = 'var(--muted)';
 
 function emptyDraft(): Draft {
   return {
-    id: null,
-    date: todayIsoDate(),
+    kickoffAt: '',
     sport: '',
     league: '',
     match: '',
@@ -54,24 +74,12 @@ function emptyDraft(): Draft {
     selection: '',
     odds: '',
     analysis: '',
+    rationale: '',
+    risks: '',
     sortOrder: '0',
   };
 }
 
-function toDraft(t: ManagedTip): Draft {
-  return {
-    id: t.id,
-    date: t.date,
-    sport: t.sport,
-    league: t.league ?? '',
-    match: t.match,
-    market: t.market,
-    selection: t.selection,
-    odds: t.odds != null ? String(t.odds) : '',
-    analysis: t.analysis ?? '',
-    sortOrder: '0',
-  };
-}
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface)',
@@ -86,6 +94,8 @@ const inputStyle: React.CSSProperties = {
 
 export default function AdminTipsPage() {
   const router = useRouter();
+  const t = useTranslations('adminTips');
+  const editorial = useTranslations('editorial');
   const [authorized, setAuthorized] = useState(false);
   const [tips, setTips] = useState<ManagedTip[]>([]);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -93,6 +103,8 @@ export default function AdminTipsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [reviewItemId, setReviewItemId] = useState<string | null>(null);
+  const [tipFilter, setTipFilter] = useState<TipFilter>('all');
 
   // Live-event assist: pull real fixtures/markets/odds like the tipster form.
   const [catalog, setCatalog] = useState<ProviderSport[]>([]);
@@ -230,9 +242,25 @@ export default function AdminTipsPage() {
     setSaving(true);
     setError(null);
     setNotice(null);
+    setReviewItemId(null);
     try {
+      const kickoffAt = new Date(draft.kickoffAt);
+      if (!draft.kickoffAt || !Number.isFinite(kickoffAt.getTime())) {
+        setError(t('validationError'));
+        return;
+      }
+      if (kickoffAt.getTime() < Date.now() + 60 * 60 * 1000) {
+        setError(t('kickoffTooSoon'));
+        return;
+      }
+      const rationale = draft.rationale.trim();
+      const counterarguments = draft.risks.split(/\r?\n/).map((risk) => risk.trim()).filter(Boolean);
+      if ((rationale || counterarguments.length) && !rationale) {
+        setError(t('rationaleRequired'));
+        return;
+      }
       const body = {
-        date: draft.date,
+        kickoffAt: kickoffAt.toISOString(),
         sport: draft.sport.trim(),
         league: draft.league.trim() || undefined,
         match: draft.match.trim(),
@@ -241,16 +269,27 @@ export default function AdminTipsPage() {
         odds: draft.odds.trim() ? Number(draft.odds) : undefined,
         analysis: draft.analysis.trim() || undefined,
         sortOrder: draft.sortOrder.trim() ? Number(draft.sortOrder) : 0,
+        rationale: rationale ? { rationale, counterarguments } : undefined,
       };
       const res = await authFetch(
-        draft.id ? `/api/free-tips/${draft.id}` : '/api/free-tips',
+        '/api/free-tips',
         {
-          method: draft.id ? 'PATCH' : 'POST',
+          method: 'POST',
           body: JSON.stringify(body),
         },
       );
-      if (!res.ok) throw new Error(`Save failed (${res.status})`);
-      setNotice(draft.id ? 'Tip updated.' : 'Tip added.');
+      if (!res.ok) {
+        const detail = await readApiError(res, t('saveFailed'));
+        if (detail.code === 'TIP_KICKOFF_TOO_SOON') throw new Error(t('kickoffTooSoon'));
+        if (detail.code === 'TIP_DATE_MISMATCH') throw new Error(t('tipDateMismatch'));
+        if (res.status === 400 || detail.code === 'INVALID_ODDS' || detail.code === 'VALIDATION_ERROR') {
+          throw new Error(t('validationError'));
+        }
+        throw new Error(detail.message);
+      }
+      const saved = await res.json().catch(() => null) as { id?: string; item?: { id?: string } } | null;
+      setReviewItemId(saved?.id ?? saved?.item?.id ?? null);
+      setNotice(t('submitted'));
       setDraft(emptyDraft());
       clearAssist();
       await load();
@@ -266,12 +305,25 @@ export default function AdminTipsPage() {
     setError(null);
     try {
       const res = await authFetch(`/api/free-tips/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      if (!res.ok) {
+        const detail = await readApiError(res, t('deleteFailed'));
+        throw new Error(detail.code === 'USE_EDITORIAL_QUEUE' ? t('openEditorialQueue') : detail.message);
+      }
+      try {
+        const token = await getAccessToken();
+        if (token) await fetch('/api/revalidate', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ kind: 'free-tip' }),
+        });
+      } catch { /* The delete succeeded; public paths will also refresh by ISR. */ }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed');
     }
   }
+
+  const visibleTips = tips.filter((tip) => tipFilter === 'all' || (tipFilter === 'pending' ? tip.status === 'pending' : tipFilter === 'published' ? tip.status === 'published' : !['pending', 'published'].includes(tip.status)));
 
   if (!authorized) return null;
 
@@ -280,16 +332,10 @@ export default function AdminTipsPage() {
       <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
         Free Daily Picks
       </h1>
-      <p style={{ color: MUTED, marginTop: 0 }}>
-        Curate the public “picks of the day” shown on{' '}
-        <a href="/tips" style={{ color: 'var(--accent)' }}>
-          /tips
-        </a>
-        . These are ungated and not linked to any tipster.
-      </p>
+      <p style={{ color: MUTED, marginTop: 0 }}>{t('manualFallbackHelp')}</p>
 
-      {error ? <p style={{ color: 'var(--danger)' }}>{error}</p> : null}
-      {notice ? <p style={{ color: 'var(--success)' }}>{notice}</p> : null}
+      {error ? <p role="alert" style={{ color: 'var(--danger)' }}>{error}</p> : null}
+      {notice ? <p role="status" style={{ color: 'var(--success)' }}>{notice}{reviewItemId ? <> {' '}<a href={`/admin/editorial/free-tip/${encodeURIComponent(reviewItemId)}`} style={{ color: 'var(--accent)' }}>{t('reviewPublish')}</a></> : null}</p> : null}
 
       <section
         style={{
@@ -452,15 +498,20 @@ export default function AdminTipsPage() {
         }}
       >
         <label style={{ display: 'grid', gap: '0.25rem' }}>
-          <span style={{ color: MUTED, fontSize: '0.8rem' }}>Date</span>
+          <span style={{ color: MUTED, fontSize: '0.8rem' }}>{t('kickoffDateTime')}</span>
           <input
-            type="date"
+            type="datetime-local"
             required
-            value={draft.date}
-            onChange={(e) => set({ date: e.target.value })}
+            min={toLocalDateTime(new Date(Date.now() + 60 * 60 * 1000))}
+            value={draft.kickoffAt}
+            onChange={(e) => set({ kickoffAt: e.target.value })}
             style={inputStyle}
           />
         </label>
+        <div style={{ display: 'grid', alignContent: 'start', gap: '0.25rem' }}>
+          <span style={{ color: MUTED, fontSize: '0.8rem' }}>{t('utcTipDate')}</span>
+          <output style={{ ...inputStyle, minHeight: '1.3rem' }}>{utcTipDate(draft.kickoffAt) || t('notSet')}</output>
+        </div>
         <label style={{ display: 'grid', gap: '0.25rem' }}>
           <span style={{ color: MUTED, fontSize: '0.8rem' }}>Sport</span>
           <input
@@ -512,7 +563,7 @@ export default function AdminTipsPage() {
           <input
             type="number"
             step="0.01"
-            min="1"
+            min="1.01"
             value={draft.odds}
             onChange={(e) => set({ odds: e.target.value })}
             style={inputStyle}
@@ -536,6 +587,14 @@ export default function AdminTipsPage() {
             style={{ ...inputStyle, resize: 'vertical' }}
           />
         </label>
+        <label style={{ display: 'grid', gap: '0.25rem', gridColumn: '1 / -1' }}>
+          <span style={{ color: MUTED, fontSize: '0.8rem' }}>{t('rationale')}</span>
+          <textarea rows={3} value={draft.rationale} onChange={(e) => set({ rationale: e.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
+        </label>
+        <label style={{ display: 'grid', gap: '0.25rem', gridColumn: '1 / -1' }}>
+          <span style={{ color: MUTED, fontSize: '0.8rem' }}>{t('risks')}</span>
+          <textarea rows={3} placeholder={t('risksPlaceholder')} value={draft.risks} onChange={(e) => set({ risks: e.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
+        </label>
         <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '0.5rem' }}>
           <button
             type="submit"
@@ -550,37 +609,28 @@ export default function AdminTipsPage() {
               cursor: 'pointer',
             }}
           >
-            {saving ? 'Saving…' : draft.id ? 'Update tip' : 'Add tip'}
+            {saving ? t('submitting') : t('submitForReview')}
           </button>
-          {draft.id ? (
-            <button
-              type="button"
-              onClick={() => setDraft(emptyDraft())}
-              style={{
-                background: 'transparent',
-                color: 'var(--fg)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: '0.6rem 1.2rem',
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-          ) : null}
         </div>
       </form>
 
       <h2 style={{ fontSize: '1.2rem' }}>All tips</h2>
+      <div role="group" aria-label={t('filterLabel')} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.8rem' }}>
+        {(['all', 'pending', 'published', 'other'] as const).map((value) => (
+          <button key={value} type="button" aria-pressed={tipFilter === value} onClick={() => setTipFilter(value)} className={tipFilter === value ? 'btn btn--primary' : 'btn btn--secondary'}>
+            {t(value === 'all' ? 'filterAll' : value === 'pending' ? 'filterPending' : value === 'published' ? 'filterPublished' : 'filterOther')}
+          </button>
+        ))}
+      </div>
       {loading ? (
         <p style={{ color: MUTED }}>Loading…</p>
-      ) : tips.length === 0 ? (
-        <p style={{ color: MUTED }}>No free tips yet. Add one above.</p>
+      ) : visibleTips.length === 0 ? (
+        <p style={{ color: MUTED }}>{tips.length === 0 ? 'No free tips yet. Add one above.' : t('noFilteredTips')}</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {tips.map((t) => (
+          {visibleTips.map((tip) => (
             <li
-              key={t.id}
+              key={tip.id}
               style={{
                 border: '1px solid var(--border)',
                 borderRadius: 8,
@@ -594,49 +644,31 @@ export default function AdminTipsPage() {
             >
               <div>
                 <div style={{ fontWeight: 600 }}>
-                  {t.match}{' '}
+                  {tip.match}{' '}
                   <span style={{ color: MUTED, fontWeight: 400 }}>
-                    · {t.market}: {t.selection}
-                    {t.odds != null ? ` @ ${t.odds.toFixed(2)}` : ''}
+                    · {tip.market}: {tip.selection}
+                    {tip.odds != null ? ` @ ${tip.odds.toFixed(2)}` : ''}
                   </span>
                 </div>
                 <div style={{ color: MUTED, fontSize: '0.8rem' }}>
-                  {t.date} · {t.sport}
-                  {t.league ? ` · ${t.league}` : ''}
+                  {tip.date} · {tip.sport}
+                  {tip.league ? ` · ${tip.league}` : ''}
+                  {tip.kickoffAt ? <div>{editorial('kickoff')}: {new Date(tip.kickoffAt).toLocaleString()}</div> : null}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDraft(toDraft(t));
-                    setNotice(null);
-                  }}
-                  style={{
-                    background: 'transparent',
-                    color: 'var(--accent)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 8,
-                    padding: '0.4rem 0.8rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(t.id)}
-                  style={{
-                    background: 'transparent',
-                    color: 'var(--danger)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 8,
-                    padding: '0.4rem 0.8rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Delete
-                </button>
+              <div style={{ display: 'grid', gap: '0.4rem', justifyItems: 'end' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', justifyContent: 'end' }}>
+                  <span style={{ border: '1px solid var(--border)', borderRadius: 999, padding: '0.15rem 0.55rem', fontSize: '0.75rem' }}>{tip.status === 'pending' ? editorial('pending') : tip.status === 'published' ? editorial('published') : tip.status === 'rejected' ? editorial('rejected') : tip.status === 'expired' ? editorial('expired') : tip.status === 'archived' ? editorial('archived') : editorial('draft')}</span>
+                  <span style={{ border: '1px solid var(--border)', borderRadius: 999, padding: '0.15rem 0.55rem', fontSize: '0.75rem' }}>{tip.origin === 'manual' ? editorial('manual') : tip.origin === 'automation' ? editorial('automation') : editorial('originUnknown')}</span>
+                </div>
+                {tip.origin !== 'manual' ? (
+                  <a href={`/admin/editorial/free-tip/${encodeURIComponent(tip.id)}`} style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>{t('openEditorialQueue')}</a>
+                ) : (
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    {tip.status === 'pending' ? <a href={`/admin/editorial/free-tip/${encodeURIComponent(tip.id)}`} style={{ color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.8rem', textDecoration: 'none' }}>{t('editInEditorial')}</a> : null}
+                    <button type="button" onClick={() => remove(tip.id)} style={{ background: 'transparent', color: 'var(--danger)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.8rem', cursor: 'pointer' }}>Delete</button>
+                  </div>
+                )}
               </div>
             </li>
           ))}
