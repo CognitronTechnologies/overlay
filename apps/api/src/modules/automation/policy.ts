@@ -103,7 +103,7 @@ export function reviewFreeTipVersionWhere(
 
 export function sanitizeText(value: string): string {
   return value
-    .replace(/<\/?[a-z][^>]*>/gi, '')
+    .replace(/[<>]/g, '')
     .replace(/\u0000/g, '')
     .trim();
 }
