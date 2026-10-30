@@ -13,7 +13,16 @@ function plainText(value) {
 
 export function parseRss(xml, publisher, feedUrl, retrievedAt) {
   if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('RSS DTD/entity declarations are not allowed');
-  const root = xml.replace(/^\uFEFF/, '').replace(/<\?[\s\S]*?\?>|<!--[\s\S]*?-->/g, '').trim();
+  const stripXmlPreambleAndComments = (value) => {
+    let current = value;
+    let previous;
+    do {
+      previous = current;
+      current = current.replace(/<\?[\s\S]*?\?>|<!--[\s\S]*?-->/g, '');
+    } while (current !== previous);
+    return current;
+  };
+  const root = stripXmlPreambleAndComments(xml.replace(/^\uFEFF/, '')).trim();
   if (!/^<(?:rss(?=[\s>])|feed(?=[\s>])|rdf:RDF(?=[\s>]))/i.test(root)) throw new Error('Not a published RSS/Atom document');
   const atom = /^<feed(?=[\s>])/i.test(root);
   const tag = (text, name) => {
