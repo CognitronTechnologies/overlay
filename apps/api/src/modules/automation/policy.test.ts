@@ -100,7 +100,7 @@ test('public free-tip query always filters to published and text sanitation stri
   const cutoff = [{ kickoffAt: null }, { kickoffAt: { gt: now } }];
   assert.deepEqual(publicFreeTipFilter(new Date('2026-10-30T00:00:00Z'), now), { status: 'published', tipDate: new Date('2026-10-30T00:00:00Z'), OR: cutoff });
   assert.deepEqual(publicFreeTipFilter(undefined, now), { status: 'published', OR: cutoff });
-  assert.equal(sanitizeText('<script>alert(1)</script><b>Text</b>'), 'alert(1)Text');
+  assert.equal(sanitizeText('<script>alert(1)</script><b>Text</b>'), 'Text');
   assert.equal(sanitizeMarkdown('[click](javascript:alert(1))'), '[click](#)');
 });
 

@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { isSettleableMarket } from '@overlay/shared';
+import { isSettleableMarket, stripHtml } from '@overlay/shared';
 
 export function bearerTokenMatches(
   authorization: string | undefined,
@@ -102,11 +102,7 @@ export function reviewFreeTipVersionWhere(
 }
 
 export function sanitizeText(value: string): string {
-  return value
-    .replace(/<[^<>]*>/g, '')
-    .replace(/[<>]/g, '')
-    .replace(/\u0000/g, '')
-    .trim();
+  return stripHtml(value).replace(/\u0000/g, '').trim();
 }
 
 export function sanitizeMarkdown(value: string): string {
