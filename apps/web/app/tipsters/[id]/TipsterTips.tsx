@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { authFetch, getAccessToken } from '../../../lib/auth';
-import { API_URL, type FeedPick } from '../../../lib/api';
+import { API_URL, FREE_ACCESS_MODE, type FeedPick } from '../../../lib/api';
 import Icon from '../../Icon';
 
 const MUTED = 'var(--muted)';
@@ -115,16 +115,17 @@ export default function TipsterTips({
 
     // Gated open picks — needs an active subscription.
     (async () => {
-      const token = await getAccessToken();
+      const token = FREE_ACCESS_MODE ? null : await getAccessToken();
       if (cancelled) return;
-      if (!token) {
+      if (!FREE_ACCESS_MODE && !token) {
         setLive({ kind: 'signedout' });
         return;
       }
       try {
-        const res = await authFetch(
-          `/api/picks/tipster/${encodeURIComponent(tipsterId)}/live`,
-        );
+        const path = `/api/picks/tipster/${encodeURIComponent(tipsterId)}/live`;
+        const res = FREE_ACCESS_MODE
+          ? await fetch(`${API_URL}${path}`)
+          : await authFetch(path);
         if (cancelled) return;
         if (res.status === 403) {
           setLive({ kind: 'locked' });
@@ -146,12 +147,13 @@ export default function TipsterTips({
   }, [tipsterId]);
 
   const entitled = live.kind === 'entitled';
+  const picksGated = liveGated && !FREE_ACCESS_MODE;
   // When the live feed loaded it already contains open + settled. Otherwise use
   // the public settled list, and — when the tipster isn't gating — the free open
   // picks fetched with the public profile.
   const openPicks = entitled
     ? live.picks.filter((p) => p.status === 'pending')
-    : liveGated
+    : picksGated
       ? []
       : freeOpenPicks;
   const settledPicks = entitled
@@ -183,11 +185,11 @@ export default function TipsterTips({
 
   // Paywall the open picks only when the tipster gates them AND the viewer isn't
   // entitled. Provisional / ungated tipsters publish their open picks for free.
-  const showPaywall = liveGated && !entitled && filter !== 'settled';
+  const showPaywall = picksGated && !entitled && filter !== 'settled';
 
   // When gated and not entitled the open count is hidden behind a lock.
   const openBadge =
-    liveGated && !entitled ? (
+    picksGated && !entitled ? (
       <Icon name="lock" size={12} style={{ verticalAlign: '-1px' }} />
     ) : (
       String(openPicks.length)

@@ -151,6 +151,10 @@ export interface LiveGatingState {
  * subscription. Gating applies ONLY once the tipster is verified AND has
  * explicitly enabled subscription gating — otherwise their tips are free/public.
  */
-export function isLivePicksGated(t: LiveGatingState): boolean {
+export function isLivePicksGated(
+  t: LiveGatingState,
+  freeAccessMode = false,
+): boolean {
+  if (freeAccessMode) return false;
   return t.graduationStatus === 'verified' && t.subscriptionGatingEnabled === true;
 }

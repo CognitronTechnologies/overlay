@@ -39,3 +39,17 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 }
+
+/** Authenticates a supplied bearer token but also permits anonymous public reads. */
+@Injectable()
+export class OptionalJwtAuthGuard extends JwtAuthGuard {
+  constructor(auth: AuthService) {
+    super(auth);
+  }
+
+  override async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    if (!request.headers?.authorization) return true;
+    return super.canActivate(context);
+  }
+}

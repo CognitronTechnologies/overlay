@@ -47,3 +47,6 @@ backups/
 .squad/
 # Squad: SubSquad activation file (local to this machine)
 .squad-workstream
+
+# Local content evidence and generated drafts (never commit)
+.content-local/

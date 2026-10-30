@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { assertPayoutsEnabled } from '../../common/free-access';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { PAYMENT_REGISTRY } from '../../integrations/payments/payments.module';
 import type { PaymentProviderRegistry } from '../../integrations/payments/payment-provider.registry';
@@ -110,6 +111,7 @@ export class PayoutsService {
    * never double-pays. `period` defaults to the current ISO week.
    */
   async runScheduled(period?: string): Promise<{ processed: number }> {
+    assertPayoutsEnabled();
     const week = period ?? isoWeekKey(new Date());
     const tipsters = await this.prisma.tipster.findMany({
       where: { status: 'active' },
@@ -162,6 +164,7 @@ export class PayoutsService {
    * admin must approve it before funds move.
    */
   async requestOnDemand(tipsterId: string) {
+    assertPayoutsEnabled();
     const tipster = await this.prisma.tipster.findUnique({
       where: { userId: tipsterId },
     });
@@ -225,6 +228,7 @@ export class PayoutsService {
 
   /** Admin: approve an on-demand request → transfer the funds. */
   async approve(payoutId: string) {
+    assertPayoutsEnabled();
     const payout = await this.prisma.payout.findUnique({
       where: { id: payoutId },
     });
@@ -279,6 +283,7 @@ export class PayoutsService {
     amountCents: number,
     idempotencyKey: string,
   ) {
+    assertPayoutsEnabled();
     const target = resolvePayoutTarget(tipster);
     if (!target) return; // no destination yet → stays pending
     try {

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/legal/terms' },
 };
 
-const UPDATED = 'July 14, 2026';
+const UPDATED = 'October 30, 2026';
 
 export default function TermsPage() {
   return (
@@ -56,36 +56,38 @@ export default function TermsPage() {
 
         <h2>2. Eligibility</h2>
         <p>
-          You must be of legal age in your jurisdiction and permitted to use a
+          You must be at least 18 years old and permitted to use a
           sports-information service where you live. You are responsible for
           ensuring your use of the Service is lawful in your location.
         </p>
 
         <h2>3. Nature of the Service</h2>
         <p>
-          Overlay Picks ranks tipsters by verified performance and lets users
-          subscribe to their picks and analysis. All picks, ratings, statistics
-          and commentary are provided for informational and entertainment
-          purposes only. They are opinions and analysis, not financial, betting
-          or investment advice, and they do not guarantee any result. Any
-          decision you make based on the Service is made solely at your own risk.
+          Overlay Picks provides free, public access to tipster picks and
+          analysis. Picks are recorded and locked before kickoff to preserve
+          their history. All picks, ratings, statistics and commentary are
+          provided for informational and entertainment purposes only. They are
+          opinions and analysis, not financial, betting or investment advice,
+          and they do not guarantee any result. Any decision you make based on
+          the Service is made solely at your own risk.
         </p>
 
         <h2>4. No wagering</h2>
         <p>
           The Service does not facilitate gambling. We take no bets, hold no
-          stakes, and pay out no winnings. Subscription payments are for access
-          to information and analytics only. If you choose to bet with a
-          third-party operator, that activity is entirely between you and that
-          operator and is outside the scope of the Service.
+          stakes, and pay out no winnings. At this time, picks are free and
+          public, and the Service does not charge users for access. Tipster
+          earnings and payouts are paused and do not accrue during the current
+          free launch. If you choose to bet with a third-party operator, that
+          activity is entirely between you and that operator and is outside the
+          scope of the Service.
         </p>
 
-        <h2>5. Accounts and subscriptions</h2>
+        <h2>5. Accounts</h2>
         <p>
           You are responsible for keeping your account credentials secure and
-          for all activity under your account. Paid subscriptions are billed
-          through our payment processor. Fees, renewal and cancellation terms are
-          shown at the point of purchase.
+          for all activity under your account. Creating an account is not
+          required to view public picks.
         </p>
 
         <h2>6. Acceptable use</h2>

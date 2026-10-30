@@ -121,3 +121,16 @@ test('canPublishPicks: blocks until Stripe onboarding is done (verification asid
   assert.equal(canPublishPicks(state({ identityVerified: false })), true);
   assert.equal(canPublishPicks(state()), true);
 });
+
+test('free access makes pricing and Stripe optional without removing profile safeguards', () => {
+  const unpriced = state({ subscriptionPriceCents: 0, stripeOnboarded: false });
+  const free = computeOnboardingStatus(unpriced, true);
+  assert.equal(free.canPublish, true);
+  assert.equal(free.totalSteps, 3);
+  assert.equal(free.steps.find((step) => step.key === 'pricing')?.optional, true);
+  assert.equal(free.steps.find((step) => step.key === 'stripe')?.optional, true);
+
+  assert.equal(canPublishPicks(state({ subscriptionPriceCents: 0, stripeOnboarded: false }), false), false);
+  assert.equal(canPublishPicks(state({ subscriptionPriceCents: 0, stripeOnboarded: false }), true), true);
+  assert.equal(canPublishPicks(state({ bio: '' }), true), false);
+});

@@ -1,6 +1,10 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.SITE_URL ??
+  'https://overlaypicks.com';
+export const FREE_ACCESS_MODE =
+  process.env.NEXT_PUBLIC_FREE_ACCESS_MODE === 'true';
 
 /** Payment methods a subscriber can choose at checkout (mirrors the API). */
 export type PaymentMethodId =
@@ -104,10 +108,10 @@ export interface Article extends ArticleCard {
   updatedAt: string;
 }
 
-async function getJson<T>(path: string, revalidate = 300): Promise<T | null> {
+async function getJson<T>(path: string, revalidate = 300, tags?: string[]): Promise<T | null> {
   try {
     const res = await fetch(`${API_URL}${path}`, {
-      next: { revalidate },
+      next: { revalidate, ...(tags ? { tags } : {}) },
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
@@ -131,7 +135,7 @@ export async function listArticles(params?: {
   if (params?.category) qs.set('category', params.category);
   if (params?.locale && params.locale !== 'en') qs.set('locale', params.locale);
   const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return (await getJson<ArticleCard[]>(`/api/articles${suffix}`)) ?? [];
+  return (await getJson<ArticleCard[]>(`/api/articles${suffix}`, 300, ['articles'])) ?? [];
 }
 
 export async function getArticle(
@@ -142,6 +146,8 @@ export async function getArticle(
     locale && locale !== 'en' ? `?locale=${encodeURIComponent(locale)}` : '';
   return getJson<Article>(
     `/api/articles/${encodeURIComponent(slug)}${suffix}`,
+    300,
+    ['articles', `article:${slug}`],
   );
 }
 
@@ -195,7 +201,7 @@ export async function search(q: string): Promise<SearchResults> {
 export async function listArticleSlugs(): Promise<
   { slug: string; updatedAt: string; publishedAt: string | null }[]
 > {
-  return (await getJson(`/api/articles/sitemap`)) ?? [];
+  return (await getJson(`/api/articles/sitemap`, 300, ['articles'])) ?? [];
 }
 
 /** One active tipster for sitemap / static-generation of public profiles. */
@@ -267,13 +273,13 @@ export interface FreeTipsForDate {
 /** Free tips for a single calendar day (defaults to today when date omitted). */
 export async function listFreeTips(date?: string): Promise<FreeTipsForDate> {
   const qs = date ? `?date=${encodeURIComponent(date)}` : '';
-  const data = await getJson<FreeTipsForDate>(`/api/free-tips${qs}`, 300);
+  const data = await getJson<FreeTipsForDate>(`/api/free-tips${qs}`, 300, ['free-tips']);
   return data ?? { date: date ?? '', tips: [] };
 }
 
 /** Distinct calendar days that currently have at least one free tip (for SEO). */
 export async function listFreeTipDates(): Promise<string[]> {
-  return (await getJson<string[]>(`/api/free-tips/dates`, 3600)) ?? [];
+  return (await getJson<string[]>(`/api/free-tips/dates`, 3600, ['free-tips'])) ?? [];
 }
 
 export interface TipsterStats {

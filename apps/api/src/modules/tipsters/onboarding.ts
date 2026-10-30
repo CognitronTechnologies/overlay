@@ -39,7 +39,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStepKey[] = [
   'verification',
 ];
 
-/** Steps that must be complete before a tipster may publish picks. */
+/** Paid-mode publish requirements; free mode uses `requiredStepsForMode`. */
 export const REQUIRED_STEPS: readonly OnboardingStepKey[] = [
   'profile',
   'sports',
@@ -130,17 +130,27 @@ function isStepComplete(
 }
 
 /**
- * Compute the wizard's step-by-step completion state and whether the tipster
- * has satisfied every REQUIRED step needed to publish picks.
+ * Compute wizard progress and the mode-specific steps required before a tipster
+ * may publish picks.
  */
+export function requiredStepsForMode(
+  freeAccessMode = process.env.FREE_ACCESS_MODE === 'true',
+): readonly OnboardingStepKey[] {
+  return freeAccessMode
+    ? ['profile', 'sports', 'bio']
+    : REQUIRED_STEPS;
+}
+
 export function computeOnboardingStatus(
   state: TipsterOnboardingState,
+  freeAccessMode = process.env.FREE_ACCESS_MODE === 'true',
 ): OnboardingStatus {
+  const requiredKeys = requiredStepsForMode(freeAccessMode);
   const steps: OnboardingStep[] = ONBOARDING_STEPS.map((key) => ({
     key,
     label: STEP_LABELS[key],
     complete: isStepComplete(key, state),
-    optional: !REQUIRED_STEPS.includes(key),
+    optional: !requiredKeys.includes(key),
   }));
 
   const requiredSteps = steps.filter((s) => !s.optional);
@@ -161,6 +171,9 @@ export function computeOnboardingStatus(
 }
 
 /** Convenience gate used by the picks service to block premature publishing. */
-export function canPublishPicks(state: TipsterOnboardingState): boolean {
-  return computeOnboardingStatus(state).canPublish;
+export function canPublishPicks(
+  state: TipsterOnboardingState,
+  freeAccessMode = process.env.FREE_ACCESS_MODE === 'true',
+): boolean {
+  return computeOnboardingStatus(state, freeAccessMode).canPublish;
 }

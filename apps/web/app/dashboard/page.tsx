@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { authFetch, getProfile, requestPayout } from '../../lib/auth';
-import { API_URL } from '../../lib/api';
+import { API_URL, FREE_ACCESS_MODE } from '../../lib/api';
+import FreeLaunchNotice from '../FreeLaunchNotice';
 import { downloadExport } from '../../lib/export';
 import { SUPPORTED_MARKETS } from '@overlay/shared/grading';
 import type {
@@ -722,7 +723,7 @@ export default function DashboardPage() {
 
       <section id="earnings" style={{ marginTop: '2.5rem', scrollMarginTop: '1rem' }}>
         <h2 style={{ margin: '0 0 0.75rem' }}>{t('earningsTitle')}</h2>
-        {earnings ? (
+        {FREE_ACCESS_MODE ? <FreeLaunchNotice /> : earnings ? (
           <>
             <div
               style={{

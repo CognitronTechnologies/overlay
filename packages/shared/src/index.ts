@@ -17,3 +17,4 @@ export * from './graduation.ts';
 export * from './daily-tips.ts';
 export * from './announcement-schedule.ts';
 export * from './odds.ts';
+export * from './competitions.ts';

@@ -134,16 +134,23 @@ export async function loadUserSubscriptions(
 export async function loadUserFeed(
   prisma: PrismaService,
   userId: string,
+  freeAccessMode = false,
 ): Promise<UserFeedRow[]> {
-  const subscribedTipsterIds = await prisma.subscription.findMany({
-    where: { userId, status: 'active' },
-    select: { tipsterId: true },
-  });
-  const ids = subscribedTipsterIds.map((s) => s.tipsterId);
-  if (ids.length === 0) return [];
+  let where: Prisma.PickWhereInput;
+  if (freeAccessMode) {
+    where = { tipster: { status: 'active' } };
+  } else {
+    const subscribedTipsterIds = await prisma.subscription.findMany({
+      where: { userId, status: 'active' },
+      select: { tipsterId: true },
+    });
+    const ids = subscribedTipsterIds.map((s) => s.tipsterId);
+    if (ids.length === 0) return [];
+    where = { tipsterId: { in: ids } };
+  }
 
   const rows = await prisma.pick.findMany({
-    where: { tipsterId: { in: ids } },
+    where,
     include: {
       tipster: { select: { displayName: true } },
       event: { select: { sport: true, home: true, away: true } },

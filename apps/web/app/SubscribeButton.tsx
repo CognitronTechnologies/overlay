@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { CURRENCY_CODES } from '@overlay/shared/currencies';
 import { authFetch, getAccessToken, getProfile, type Profile } from '../lib/auth';
+import FreeLaunchNotice from './FreeLaunchNotice';
+import { FREE_ACCESS_MODE } from '../lib/api';
 import {
   detectCountry,
   getSubscriptionQuote,
@@ -31,6 +33,7 @@ export default function SubscribeButton({
 }) {
   const router = useRouter();
   const t = useTranslations('subscribe');
+  const launch = useTranslations('launch');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methods, setMethods] = useState<PaymentMethodId[]>([]);
@@ -43,6 +46,7 @@ export default function SubscribeButton({
   const baseDisplay = `$${(priceCents / 100).toFixed(2)}`;
 
   useEffect(() => {
+    if (FREE_ACCESS_MODE) return;
     getProfile().then(setProfile);
     listPaymentMethods().then((m) => {
       setMethods(m);
@@ -62,6 +66,8 @@ export default function SubscribeButton({
     setCurrency(next);
     getSubscriptionQuote(tipsterId, { currency: next }).then(setQuote);
   }
+
+  if (FREE_ACCESS_MODE) return <FreeLaunchNotice />;
 
   if (priceCents <= 0) {
     return (
@@ -107,11 +113,16 @@ export default function SubscribeButton({
       if (!res.ok) {
         // Surface the API's message (e.g. tipster-can't-subscribe guard).
         const body = (await res.json().catch(() => null)) as {
+          code?: string;
           message?: string | string[];
         } | null;
         const msg = Array.isArray(body?.message)
           ? body?.message.join(', ')
           : body?.message;
+        if (body?.code === 'PAYMENTS_DISABLED' || msg === 'PAYMENTS_DISABLED') {
+          setError(launch('description'));
+          return;
+        }
         throw new Error(msg || t('checkoutFailed', { status: res.status }));
       }
       const data = (await res.json()) as { url?: string };

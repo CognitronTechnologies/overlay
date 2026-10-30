@@ -45,6 +45,9 @@ function seedFromString(str) {
   return h >>> 0;
 }
 
+const INCLUDE_DEMO_DATA =
+  process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO_DATA === 'true';
+
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@overlay.local';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'change-me-now';
 
@@ -392,6 +395,7 @@ async function main() {
   console.log(`Admin user: ${admin.email}`);
 
   for (const a of ARTICLES) {
+    if (a.slug === 'world-cup-final-preview' && !INCLUDE_DEMO_DATA) continue;
     await prisma.article.upsert({
       where: { slug_locale: { slug: a.slug, locale: 'en' } },
       update: {
@@ -462,14 +466,16 @@ async function main() {
       sortOrder: 0,
     },
   ];
-  const freeTipDates = [...new Set(FREE_TIPS.map((t) => t.tipDate.getTime()))].map(
-    (t) => new Date(t),
-  );
-  await prisma.freeTip.deleteMany({ where: { tipDate: { in: freeTipDates } } });
-  await prisma.freeTip.createMany({ data: FREE_TIPS });
-  console.log(`Free tips: ${FREE_TIPS.length}`);
+  if (INCLUDE_DEMO_DATA) {
+    const freeTipDates = [...new Set(FREE_TIPS.map((t) => t.tipDate.getTime()))].map(
+      (t) => new Date(t),
+    );
+    await prisma.freeTip.deleteMany({ where: { tipDate: { in: freeTipDates } } });
+    await prisma.freeTip.createMany({ data: FREE_TIPS });
+    console.log(`Free tips: ${FREE_TIPS.length}`);
+  }
 
-  for (const e of EVENTS) {
+  for (const e of (INCLUDE_DEMO_DATA ? EVENTS : [])) {
     await prisma.event.upsert({
       where: { vendorEventId: e.vendorEventId },
       update: { startTime: e.startTime, status: 'scheduled' },
@@ -486,7 +492,7 @@ async function main() {
   }
 
   // --- Dummy tipsters with settled pick history + materialized stats ---
-  const pastEvents = buildPastEvents();
+  const pastEvents = INCLUDE_DEMO_DATA ? buildPastEvents() : [];
   const pastEventById = {};
   for (const e of pastEvents) {
     const row = await prisma.event.upsert({
@@ -506,7 +512,7 @@ async function main() {
     pastEventById[e.vendorEventId] = row.id;
   }
 
-  for (const t of DUMMY_TIPSTERS) {
+  for (const t of (INCLUDE_DEMO_DATA ? DUMMY_TIPSTERS : [])) {
     const user = await prisma.user.upsert({
       where: { email: t.email },
       update: { role: 'tipster' },

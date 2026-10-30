@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { marked } from 'marked';
 import { sanitizeHtml } from '@overlay/shared/markdown';
 import type { Role } from '@overlay/shared/rbac';
-import { authFetch, getProfile } from '../../../lib/auth';
+import { authFetch, getAccessToken, getProfile } from '../../../lib/auth';
 import { formStyles } from '../../formStyles';
 
 type Status = 'draft' | 'pending' | 'published' | 'archived';
@@ -179,7 +179,21 @@ export default function BlogAuthoringPage() {
           : body?.message;
         throw new Error(msg || `Save failed (${res.status})`);
       }
-      setNotice(draft.id ? 'Article updated.' : 'Article created.');
+      let cacheUpdated = role !== 'admin' && role !== 'staff';
+      if (role === 'admin' || role === 'staff') {
+        try {
+          const token = await getAccessToken();
+          if (token) {
+            const cacheRes = await fetch('/api/revalidate', {
+              method: 'POST',
+              headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+              body: JSON.stringify({ kind: 'article', slugs: draft.slug ? [draft.slug] : [] }),
+            });
+            cacheUpdated = cacheRes.ok;
+          }
+        } catch { /* Keep the successful save and warn if cache invalidation fails. */ }
+      }
+      setNotice(cacheUpdated ? (draft.id ? 'Article updated.' : 'Article created.') : 'Article saved, but public cache refresh could not be confirmed.');
       setDraft(null);
       await load();
     } catch (err) {
@@ -196,7 +210,22 @@ export default function BlogAuthoringPage() {
     try {
       const res = await authFetch(`/api/articles/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-      setNotice('Article deleted.');
+      let cacheUpdated = role !== 'admin' && role !== 'staff';
+      if (role === 'admin' || role === 'staff') {
+        try {
+          const token = await getAccessToken();
+          if (token) {
+            const slug = articles.find((article) => article.id === id)?.slug;
+            const cacheRes = await fetch('/api/revalidate', {
+              method: 'POST',
+              headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+              body: JSON.stringify({ kind: 'article', slugs: slug ? [slug] : [] }),
+            });
+            cacheUpdated = cacheRes.ok;
+          }
+        } catch { /* Keep the successful delete and warn if cache invalidation fails. */ }
+      }
+      setNotice(cacheUpdated ? 'Article deleted.' : 'Article deleted, but public cache refresh could not be confirmed.');
       if (draft?.id === id) setDraft(null);
       await load();
     } catch (err) {

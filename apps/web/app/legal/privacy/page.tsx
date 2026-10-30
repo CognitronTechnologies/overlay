@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/legal/privacy' },
 };
 
-const UPDATED = 'July 14, 2026';
+const UPDATED = 'October 30, 2026';
 
 export default function PrivacyPage() {
   return (
@@ -37,16 +37,16 @@ export default function PrivacyPage() {
         <p>
           We collect the information you provide when you create an account
           (such as your email address and role), profile and tipster details you
-          choose to publish, subscription and payment metadata handled by our
-          payment processor, and technical data such as log and device
-          information needed to operate and secure the Service.
+          choose to publish, information about your use of the Service (such as
+          picks and related performance records), and technical data such as log
+          and device information needed to operate and secure the Service.
         </p>
 
         <h2>2. How we use your data</h2>
         <p>
           We use your data to provide and improve the Service, authenticate you,
-          process subscriptions, rank tipsters by verified performance,
-          communicate with you, and comply with legal obligations.
+          maintain public picks and verified performance records, communicate
+          with you, secure the platform, and comply with legal obligations.
         </p>
 
         <h2>3. Cookies and consent</h2>
@@ -62,8 +62,8 @@ export default function PrivacyPage() {
 
         <h2>4. Sharing</h2>
         <p>
-          We share data only with service providers who help us run the platform
-          (for example authentication and payment processors) under appropriate
+          We share data with service providers who help us run the platform
+          (such as authentication and hosting providers) under appropriate
           safeguards, or where required by law. We do not sell your personal
           data.
         </p>

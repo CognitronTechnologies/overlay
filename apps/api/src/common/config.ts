@@ -53,6 +53,10 @@ export function collectConfigProblems(
     }
   }
 
+  if (env.AUTOMATION_INGEST_TOKEN && env.AUTOMATION_INGEST_TOKEN.length < MIN_SECRET_LENGTH) {
+    problems.push(`AUTOMATION_INGEST_TOKEN is too weak: use at least ${MIN_SECRET_LENGTH} characters`);
+  }
+
   if (env.PAYMENTS_PROVIDER === 'stripe') {
     for (const key of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']) {
       if (!env[key]) {

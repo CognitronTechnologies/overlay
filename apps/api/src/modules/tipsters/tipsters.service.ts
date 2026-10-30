@@ -14,6 +14,7 @@ import {
   readThroughCache,
 } from '../../common/cache/entity-cache';
 import { TIPSTER_PROFILE_CACHE } from '../../common/cache/cache.module';
+import { isFreeAccessMode } from '../../common/free-access';
 import {
   filterAndRankTipsters,
   normalizeMarketplaceQuery,
@@ -143,9 +144,10 @@ export class TipstersService {
    * StatsService.recomputeForTipster).
    */
   getProfile(tipsterId: string) {
+    const cacheKey = `${isFreeAccessMode() ? 'free' : 'paid'}:${tipsterId}`;
     return readThroughCache(
       this.profileCache,
-      tipsterId,
+      cacheKey,
       () => this.computeProfile(tipsterId),
       tipsterId,
     );
@@ -185,10 +187,13 @@ export class TipstersService {
     const graduationStatus = normalizeGraduationStatus(
       tipster.graduationStatus,
     );
-    const liveGated = isLivePicksGated({
-      graduationStatus,
-      subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
-    });
+    const liveGated = isLivePicksGated(
+      {
+        graduationStatus,
+        subscriptionGatingEnabled: tipster.subscriptionGatingEnabled,
+      },
+      isFreeAccessMode(),
+    );
 
     const [recentPicks, articlesPublished, subscriberCount, followerCount] =
       await Promise.all([

@@ -9,7 +9,8 @@ import {
   sortSubscriptions,
   type SubscriptionRecord,
 } from '@overlay/shared/subscriptions';
-import { API_URL } from '../../../../lib/api';
+import { API_URL, FREE_ACCESS_MODE } from '../../../../lib/api';
+import FreeLaunchNotice from '../../../FreeLaunchNotice';
 import { authFetch, getProfile } from '../../../../lib/auth';
 
 const MUTED = 'var(--muted)';
@@ -38,6 +39,7 @@ export default function PortalClient() {
   }
 
   useEffect(() => {
+    if (FREE_ACCESS_MODE) return;
     (async () => {
       const profile = await getProfile();
       if (!profile) {
@@ -68,6 +70,15 @@ export default function PortalClient() {
   const views = subs
     ? sortSubscriptions(subs).map((s) => toSubscriptionView(s))
     : [];
+
+  if (FREE_ACCESS_MODE) {
+    return (
+      <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
+        <FreeLaunchNotice />
+        <Link href="/tipsters" style={{ color: 'var(--accent)' }}>Browse tipsters</Link>
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>

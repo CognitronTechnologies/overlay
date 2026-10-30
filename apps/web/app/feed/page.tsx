@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { authFetch, getProfile } from '../../lib/auth';
-import type { FeedPick } from '../../lib/api';
+import { API_URL, FREE_ACCESS_MODE, type FeedPick } from '../../lib/api';
 import { EmptyState } from '../EmptyState';
 import Icon from '../Icon';
+import FreeLaunchNotice from '../FreeLaunchNotice';
 
 /** How often we poll for settlement status updates (ms). */
 const POLL_MS = 30_000;
@@ -84,7 +85,9 @@ export default function FeedPage() {
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await authFetch('/api/picks/me/feed');
+      const res = FREE_ACCESS_MODE
+        ? await fetch(`${API_URL}/api/picks/feed`)
+        : await authFetch('/api/picks/me/feed');
       if (!res.ok) throw new Error(`Failed (${res.status})`);
       const data = (await res.json()) as FeedPick[];
       if (active.current) {
@@ -99,10 +102,12 @@ export default function FeedPage() {
   useEffect(() => {
     active.current = true;
     (async () => {
-      const profile = await getProfile();
-      if (!profile) {
-        router.replace('/login');
-        return;
+      if (!FREE_ACCESS_MODE) {
+        const profile = await getProfile();
+        if (!profile) {
+          router.replace('/login');
+          return;
+        }
       }
       await loadFeed();
     })();
@@ -138,6 +143,17 @@ export default function FeedPage() {
       <p style={{ color: 'var(--muted)' }}>
         {t('subtitle')}
       </p>
+
+      {FREE_ACCESS_MODE ? (
+        <>
+          <FreeLaunchNotice />
+          <p>
+            <Link href="/tipsters" className="btn btn--primary btn--sm">
+              {t('findTipster')}
+            </Link>
+          </p>
+        </>
+      ) : null}
 
       {error ? (
         <p style={{ color: 'var(--danger)', margin: '0 0 1rem' }}>{error}</p>

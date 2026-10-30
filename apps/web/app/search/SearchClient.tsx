@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { search, type SearchResults } from '../../lib/api';
+import { FREE_ACCESS_MODE, search, type SearchResults } from '../../lib/api';
 import Avatar from '../Avatar';
 import Flag from '../Flag';
 
@@ -122,13 +122,15 @@ export default function SearchClient() {
                     {t.sampleSize ? tr('picksSuffix', { count: t.sampleSize }) : ''}
                   </div>
                 </div>
-                <span style={{ color: MUTED, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                  {t.subscriptionPriceCents > 0
-                    ? tr('pricePerMonth', {
-                        price: `$${(t.subscriptionPriceCents / 100).toFixed(2)}`,
-                      })
-                    : tr('free')}
-                </span>
+                {!FREE_ACCESS_MODE ? (
+                  <span style={{ color: MUTED, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                    {t.subscriptionPriceCents > 0
+                      ? tr('pricePerMonth', {
+                          price: `$${(t.subscriptionPriceCents / 100).toFixed(2)}`,
+                        })
+                      : tr('free')}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
