@@ -21,8 +21,13 @@ vars + `prisma migrate deploy`) maps onto Railway or Fly if you prefer.
 
 Migrations are applied automatically on every API deploy by
 [`apps/api/start-api.sh`](../apps/api/start-api.sh), which runs
-`npm run db:deploy` (`prisma migrate deploy`) **before** the server binds its
-port.
+`node node_modules/prisma/build/index.js migrate deploy --schema prisma/schema.prisma`
+**before** the server binds its port. The runtime image intentionally excludes
+npm/npx, so startup invokes Node directly for migrations and optional seeding.
+The Prisma CLI is a production dependency so it survives `npm prune --omit=dev`.
+
+For an existing Render service, keep its Dockerfile path set to the root
+`Dockerfile` and its Docker Command set to `sh apps/api/start-api.sh`.
 
 ---
 

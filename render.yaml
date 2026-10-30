@@ -1,7 +1,7 @@
 # Render Blueprint for Overlay Picks staging (OB-101 / OB-105).
 # Deploy: Render Dashboard -> New -> Blueprint -> pick this repo/branch.
 # Provisions: Postgres + Redis + API (web) + settlement worker, all from the
-# root Dockerfile. Migrations run via preDeployCommand before each API deploy.
+# root Dockerfile. Migrations run via start-api.sh before the API starts.
 #
 # After first deploy: set CORS_ORIGINS on overlay-api to your Vercel URL.
 # Docs: https://render.com/docs/blueprint-spec
