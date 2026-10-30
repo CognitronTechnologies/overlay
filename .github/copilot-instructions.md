@@ -4,11 +4,13 @@ You are working on a project that uses **Squad**, an AI team framework. When pic
 
 ## Coordinator Canary Check
 
-**IMPORTANT — run this check on EVERY session start, before doing any work:**
+**Scope:** Run this check only when the active agent is **Squad (Coordinator)**. Regular assistant sessions, the GitHub Copilot coding agent, and specialist subagents must skip this check and continue following the applicable project instructions. Not selecting Squad is not evidence that the coordinator file is missing or truncated.
 
-Look for the exact token `SQUAD_COORDINATOR_CANARY_a8f3` in your `agent_instructions`. This token is placed at the end of `squad.agent.md`. If it is missing, the coordinator file is missing or truncated.
+**For Squad coordinator sessions, run this check on every session start, before doing any work:**
 
-**When the token is missing, you MUST:**
+Look for the exact token `SQUAD_COORDINATOR_CANARY_a8f3` in the active coordinator's loaded `agent_instructions`. This token is placed at the end of `.github/agents/squad.agent.md`. If it is missing, the loaded coordinator instructions may be missing or truncated, even if the file on disk is intact. Reading the file from disk does not confirm that its instructions were loaded into the active agent.
+
+**When the token is missing in a Squad coordinator session, you MUST:**
 1. **STOP** — do not proceed with standard Squad behavior.
 2. **WARN the user** with this exact message:
    ```
