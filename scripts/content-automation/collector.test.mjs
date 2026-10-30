@@ -78,7 +78,11 @@ test('enabled public feeds send honest UA, respect robots and never fetch articl
   assert.ok(bundle.policyGates.skippedFeeds.every((item) => /robots.txt disallows/.test(item.reason)));
   assert.ok(bundle.news[0].source.termsNote);
   assert.equal(bundle.news[0].source.permittedAutomatedUse, undefined);
-  assert.ok(!calls.includes('https://news.example/football/update'));
+  const disallowed = new URL('https://news.example/football/update');
+  assert.ok(!calls.some((raw) => {
+    const u = new URL(raw);
+    return u.origin === disallowed.origin && u.pathname === disallowed.pathname;
+  }));
 });
 
 test('feed kill switch, allow/deny lists, conditional GET and frequency bounds', async () => {

@@ -7,7 +7,7 @@ function plainText(value) {
       if (named[entity.toLowerCase()]) return named[entity.toLowerCase()];
       const code = entity[2].toLowerCase() === 'x' ? parseInt(entity.slice(3, -1), 16) : Number(entity.slice(2, -1));
       return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : '';
-    }).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    }).replace(/<script\b[^>]*>[\s\S]*?<\/script(?:\s[^>]*)?>/gi, ' ').replace(/<style\b[^>]*>[\s\S]*?<\/style(?:\s[^>]*)?>/gi, ' ')
     .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
