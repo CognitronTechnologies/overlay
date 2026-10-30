@@ -4,7 +4,7 @@
 # Render doesn't mis-split a quoted command — that produced "exited with status
 # 127". Must be LF-only.
 set -e
-npm run db:deploy
+node node_modules/prisma/build/index.js migrate deploy --schema prisma/schema.prisma
 
 # Staging convenience: set SEED_ON_START=true on the service, redeploy to seed,
 # then set it back to false (seeding is idempotent but resets dummy data on each
@@ -13,7 +13,7 @@ npm run db:deploy
 if [ "$SEED_ON_START" = "true" ]; then
   echo "SEED_ON_START=true -> seeding database"
   # Non-fatal: a seed failure must not stop the API from starting.
-  npm run db:seed || echo "WARNING: db:seed failed; starting server anyway"
+  node prisma/seed.mjs || echo "WARNING: db:seed failed; starting server anyway"
 fi
 
 exec node apps/api/dist/main.js

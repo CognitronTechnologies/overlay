@@ -36,6 +36,7 @@ RUN npm run prisma:generate \
  && npm run build -w @overlay/shared \
  && npm run build -w @overlay/api
 
+# Prisma is a production dependency because API startup applies migrations.
 # Strip dev-only packages from node_modules so they don't land in the runtime
 # image. This removes build tools (e.g. @nestjs/cli and its transitive deps
 # like glob, picomatch, tmp) that aren't needed at runtime.
