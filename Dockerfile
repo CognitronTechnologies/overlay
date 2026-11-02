@@ -9,7 +9,7 @@
 # See docs/PROD-READINESS-BACKLOG.md OB-100.
 
 # ---- Builder ----------------------------------------------------------------
-FROM node:22-bookworm-slim AS builder
+FROM node:26-bookworm-slim AS builder
 WORKDIR /app
 
 # Prisma engines need openssl at generate/runtime.
@@ -43,7 +43,7 @@ RUN npm run prisma:generate \
 RUN npm prune --omit=dev
 
 # ---- Runtime ----------------------------------------------------------------
-FROM node:22-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
