@@ -47,7 +47,7 @@ jobs:
       - name: Install Copilot CLI
         run: npm install --global @github/copilot
       - name: Restore feed request metadata
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .content-feed-state.json
           key: content-news-feeds-${{ github.run_id }}-${{ github.run_attempt }}
@@ -65,7 +65,7 @@ jobs:
         run: node --experimental-strip-types scripts/content-automation/cli.mjs collect --competitions "$COMPETITIONS" --out "$WORK_DIR/evidence.json" --feed-cache .content-feed-state.json
       - name: Save feed request metadata
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .content-feed-state.json
           key: content-news-feeds-${{ github.run_id }}-${{ github.run_attempt }}
